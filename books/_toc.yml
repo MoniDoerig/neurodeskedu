@@ -27,7 +27,7 @@ parts:
       - file: functional_imaging/first_and_second_level_spm
       - file: functional_imaging/intro_to_preprocessing
 
-  - caption: "Multimodal Imaging"
+  - caption: "Static Tutorials"
     chapters:
       - file: tutorials/MFCSC
 
