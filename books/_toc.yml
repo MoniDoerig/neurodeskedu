@@ -8,7 +8,7 @@ parts:
 
 - part: Examples
   chapters:
-  - caption: "Diffusion Imaging"
+  - file: examples/diffusion_imaging/intro
     sections:
     - file: examples/diffusion_imaging/Diffusion_TBSS_Demo
     - file: examples/diffusion_imaging/MRtrix_1
@@ -16,11 +16,11 @@ parts:
     - file: examples/diffusion_imaging/MRtrix_3
     - file: examples/diffusion_imaging/mrtrix3tissue
 
-  - caption: "Electrophysiology"
+  - file: examples/electrophysiology/intro
     sections:
     - file: examples/electrophysiology/eeg_with_mne
 
-  - caption: "Functional Imaging"
+  - file: examples/functional_imaging/intro
     sections:
     - file: examples/functional_imaging/AFNI_preprocessing_only
     - file: examples/functional_imaging/AFNI_preprocessing_plus_glm
@@ -37,12 +37,12 @@ parts:
     - file: examples/functional_imaging/NiWrap
     - file: examples/functional_imaging/process_five_echo_dataset
 
-  - caption: "Spectroscopy"
+  - file: examples/spectroscopy/intro
     sections:
     - file: examples/spectroscopy/lcmodel
     - file: examples/spectroscopy/osprey
 
-  - caption: "Structural Imaging"
+  - file: examples/structural_imaging/intro
     sections:
     - file: examples/structural_imaging/brain_extraction_different_tools
     - file: examples/structural_imaging/freesurfer
@@ -50,7 +50,7 @@ parts:
     - file: examples/structural_imaging/qsmxt
     - file: examples/structural_imaging/sct_toolbox
 
-  - caption: "Workflows"
+  - file: examples/workflows/intro
     sections:
     - file: examples/workflows/AA_Neurodesk_demo_tour
     - file: examples/workflows/bids_conversion
@@ -66,12 +66,12 @@ parts:
   chapters:
   - file: tutorials/intro
 
-  - caption: "Electrophysiology"
+  - file: tutorials/electrophysiology/intro
     sections:
     - file: tutorials/electrophysiology/EEG_mne-python
     - file: tutorials/electrophysiology/fieldtrip
 
-  - caption: "Functional Imaging"
+  - file: tutorials/functional_imaging/intro
     sections:
     - file: tutorials/functional_imaging/connectomeWorkbench
     - file: tutorials/functional_imaging/fmriprep
@@ -80,36 +80,36 @@ parts:
     - file: tutorials/functional_imaging/physio_batch_workflow
     - file: tutorials/functional_imaging/spm
 
-  - caption: "Multimodal Imaging"
+  - file: tutorials/multimodal_imaging/intro
     sections:
     - file: tutorials/multimodal_imaging/MFCSC
 
-  - caption: "Open Data"
+  - file: tutorials/open_data/intro
     sections:
     - file: tutorials/open_data/datalad
     - file: tutorials/open_data/osfclient
 
-  - caption: "Phase Processing"
+  - file: tutorials/phase_processing/intro
     sections:
     - file: tutorials/phase_processing/qsm
     - file: tutorials/phase_processing/swi
     - file: tutorials/phase_processing/unwrapping
 
-  - caption: "Programming"
+  - file: tutorials/programming/intro
     sections:
     - file: tutorials/programming/conda
     - file: tutorials/programming/matlab
 
-  - caption: "Reproducibility"
+  - file: tutorials/reproducibility/intro
     sections:
     - file: tutorials/reproducibility/datalad-run
 
-  - caption: "Spectroscopy"
+  - file: tutorials/spectroscopy/intro
     sections:
     - file: tutorials/spectroscopy/lcmodel
     - file: tutorials/spectroscopy/mrsiproc
 
-  - caption: "Structural Imaging"
+  - file: tutorials/structural_imaging/intro
     sections:
     - file: tutorials/structural_imaging/freesurfer
     - file: tutorials/structural_imaging/structuralconnectivity
