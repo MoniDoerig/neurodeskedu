@@ -42,7 +42,6 @@ html:
   use_repository_button: true
   use_download_button: true
   use_edit_page_button: true
-  show_navbar_depth: 2
   analytics:
     google_analytics_id: G-4Z9774J59Y
 
@@ -52,6 +51,7 @@ sphinx:
     nb_merge_streams: true
     mathjax_path: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
     html_theme_options:
+      show_navbar_depth: 2
       navigation_depth: 3
   local_extensions:
     multiple_jupyterhub: _ext
