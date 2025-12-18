@@ -22,7 +22,11 @@ def add_multiple_jupyterhub_buttons(
     additional JupyterHub buttons based on the 'jupyterhub_servers' configuration.
     """
     config_theme = app.config["html_theme_options"]
-    launch_buttons = config_theme.get("launch_buttons", {})
+    launch_buttons = (
+        config_theme.get("launch_buttons")
+        or getattr(app.config, "launch_buttons", None)
+        or {}
+    )
     jupyterhub_servers = launch_buttons.get("jupyterhub_servers", [])
     
     # If there are no additional servers configured, do nothing
@@ -59,8 +63,13 @@ def add_multiple_jupyterhub_buttons(
     if org is None and repo is None:
         return
     
-    # Get the branch from config
-    branch = config_theme.get("repository", {}).get("branch", "main")
+    # Get the branch from config (fall back across common config locations)
+    repo_config = getattr(app.config, "repository", None) or {}
+    branch = (
+        repo_config.get("branch")
+        or config_theme.get("repository_branch")
+        or "main"
+    )
     
     # Get the notebook interface preference
     notebook_interface = launch_buttons.get("notebook_interface", "classic")
@@ -68,7 +77,10 @@ def add_multiple_jupyterhub_buttons(
     ui_pre = notebook_interface_prefixes.get(notebook_interface, "tree")
     
     # Get the path to the current file
-    book_relpath = config_theme.get("path_to_docs", "").strip("/")
+    book_relpath = (
+        (config_theme.get("path_to_docs") or repo_config.get("path_to_book") or "")
+        .strip("/")
+    )
     if book_relpath != "":
         book_relpath += "/"
     
