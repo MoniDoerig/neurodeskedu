@@ -373,15 +373,17 @@ jobs:
               print(f"Note: Could not process notebook (may not be ipynb): {e}")
           EOF
 
-      - name: Execute notebook in Neurodesk container
-        timeout-minutes: 1500
-        env:
-          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set notebook environment variables
         run: |
           echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
           echo "DIRNAME=$(dirname ${{ matrix.notebooks }})" >> $GITHUB_ENV
+          echo "CONTAINER_NAME=neurodesktop-${{ github.run_id }}-${{ strategy.job-index }}" >> $GITHUB_ENV
 
-          docker run --rm \
+      - name: Start Neurodesktop container
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
             --user=root \
@@ -394,97 +396,164 @@ jobs:
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
-            -e BASH_ENV=/usr/share/lmod/lmod/init/bash \
-            ${{ needs.setup.outputs.neurodesk_image }} \
-            bash -c '
-              set -e
-              
-              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+            -e NOTEBOOK="${NOTEBOOK}" \
+            ${{ needs.setup.outputs.neurodesk_image }}
+          
+          echo "Started container: $CONTAINER_NAME"
 
-              # Create apptainer overlay for modules that require it
-              if [ ! -L /tmp/apptainer_overlay ]; then
-                echo "Creating /tmp/apptainer_overlay symlink to /overlay-storage..."
-                
-                # Check if overlay exists in mounted storage
-                if [ ! -f /overlay-storage/apptainer_overlay ]; then
-                    echo "Creating 300MB overlay file on secondary disk..."
-                    dd if=/dev/zero of=/overlay-storage/apptainer_overlay bs=1M count=300 status=none
-                    mkfs.ext3 -F /overlay-storage/apptainer_overlay >/dev/null
-                    chmod 777 /overlay-storage/apptainer_overlay
-                fi
-                
-                # Symlink to expected location
-                ln -sf /overlay-storage/apptainer_overlay /tmp/apptainer_overlay
+      - name: Wait for container readiness
+        run: |
+          echo "Waiting for Neurodesktop to become ready..."
+          for i in {1..120}; do
+            if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "To access the server"; then
+              echo "Container ready after ${i} seconds"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Container did not become ready within 120 seconds"
+          echo "=== Container logs ==="
+          docker logs "$CONTAINER_NAME"
+          exit 1
+
+      - name: Execute notebook in container
+        timeout-minutes: 1500
+        run: |
+          docker exec "$CONTAINER_NAME" bash -c '
+            set -e
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+
+            # Initialize the module system
+            if [ -f /usr/share/lmod/lmod/init/bash ]; then
+              source /usr/share/lmod/lmod/init/bash
+            elif [ -f /usr/share/module.sh ]; then
+              source /usr/share/module.sh
+            fi
+
+            # Create apptainer overlay for modules that require it
+            if [ ! -L /tmp/apptainer_overlay ]; then
+              echo "Creating /tmp/apptainer_overlay symlink to /overlay-storage..."
+              
+              # Check if overlay exists in mounted storage
+              if [ ! -f /overlay-storage/apptainer_overlay ]; then
+                  echo "Creating 300MB overlay file on secondary disk..."
+                  dd if=/dev/zero of=/overlay-storage/apptainer_overlay bs=1M count=300 status=none
+                  mkfs.ext3 -F /overlay-storage/apptainer_overlay >/dev/null
+                  chmod 777 /overlay-storage/apptainer_overlay
               fi
-
               
-              # Move apptainer working dir to secondary storage to save root disk space
-              mkdir -p /overlay-storage/var_lib_apptainer
-              chmod 777 /overlay-storage/var_lib_apptainer
-              
-              # Symlink /var/lib/apptainer if it doesn't exist or isn't a link yet
-              if [ ! -L /var/lib/apptainer ]; then
-                  rm -rf /var/lib/apptainer # Remove if it exists as a dir
-                  ln -sf /overlay-storage/var_lib_apptainer /var/lib/apptainer
-              fi
+              # Symlink to expected location
+              ln -sf /overlay-storage/apptainer_overlay /tmp/apptainer_overlay
+            fi
 
-              # Initialize the module system
-              if [ -f /usr/share/lmod/lmod/init/bash ]; then
-                source /usr/share/lmod/lmod/init/bash
-              elif [ -f /usr/share/module.sh ]; then
-                source /usr/share/module.sh
-              fi
+            # Move apptainer working dir to secondary storage to save root disk space
+            mkdir -p /overlay-storage/var_lib_apptainer
+            chmod 777 /overlay-storage/var_lib_apptainer
+            
+            # Symlink /var/lib/apptainer if it doesnt exist or isnt a link yet
+            if [ ! -L /var/lib/apptainer ]; then
+                rm -rf /var/lib/apptainer # Remove if it exists as a dir
+                ln -sf /overlay-storage/var_lib_apptainer /var/lib/apptainer
+            fi
 
-              # Install dependencies (use pip --user to avoid /opt/conda permission issues)
-              pip install --user nbconvert nbclient ipykernel
+            # Install dependencies (use pip --user to avoid /opt/conda permission issues)
+            pip install --user nbconvert nbclient ipykernel
 
-              echo "Executing notebook: ${{ matrix.notebooks }}"
-              
-              # Execute the notebook in-place using nbconvert
-              # --allow-errors: continue even if cells error (we detect errors later)
-              # --inplace: overwrite the original notebook with outputs
-              jupyter nbconvert --to notebook --execute --inplace --allow-errors \
-                --ExecutePreprocessor.timeout=3600 \
-                ${{ matrix.notebooks }}
-              
-              echo "Notebook execution complete"
-            '
+            # Pre-execution verification
+            echo "=== Container Environment ==="
+            which jupyter && jupyter --version
+            echo "Current directory: $(pwd)"
+            echo "Notebook to execute: ${{ matrix.notebooks }}"
 
-      - name: Print notebook output logs
+            echo "Executing notebook: ${{ matrix.notebooks }}"
+            
+            # Execute the notebook in-place using nbconvert
+            # --allow-errors: continue even if cells error (we detect errors later)
+            # --inplace: overwrite the original notebook with outputs
+            # Log is saved to mounted workspace for persistence
+            LOG_FILE="/home/jovyan/workspace/nbconvert-${NOTEBOOK}.log"
+            jupyter nbconvert --to notebook --execute --inplace --allow-errors \
+              --ExecutePreprocessor.timeout=3600 \
+              --ExecutePreprocessor.kernel_name=python3 \
+              --debug \
+              ${{ matrix.notebooks }} 2>&1 | tee "$LOG_FILE"
+            
+            echo "Notebook execution complete"
+            
+            # Post-execution verification
+            echo "=== Post-execution check ==="
+            if [ -f "${{ matrix.notebooks }}" ]; then
+              ls -la "${{ matrix.notebooks }}"
+            else
+              echo "::error::Notebook file not found after execution: ${{ matrix.notebooks }}"
+              exit 1
+            fi
+          '
+
+      - name: Cleanup container
         if: always()
         run: |
-          echo "========== NOTEBOOK OUTPUT ==========="
-          echo "PWD: $(pwd)"
-
-          echo "=== Files in notebook source directory ==="
-          ls -la books/$(dirname ${{ matrix.notebooks }}) || true
-
-          echo "=== Executed notebook file ==="
-          ls -la books/${{ matrix.notebooks }} || true
-
-          echo "=== .nii.gz files in books ==="
-          find books -name "*.nii.gz" -type f 2>/dev/null || echo "No .nii.gz files found"
-          echo "========================================"
+          echo "Stopping and removing container: $CONTAINER_NAME"
+          docker stop "$CONTAINER_NAME" 2>/dev/null || true
+          docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
       - name: Check for execution errors
         run: |
-          # Check the notebook for errors by looking for error outputs
+          # Check the notebook for errors - step/job fails (red) if errors found, but publish still runs
           python3 << 'EOF'
           import json
           import sys
+          import os
           
           notebook_path = "books/${{ matrix.notebooks }}"
+          notebook_name = "${{ matrix.notebooks }}"
+          errors_found = []
+          
           try:
               with open(notebook_path, 'r') as f:
                   nb = json.load(f)
               
-              for cell in nb.get('cells', []):
+              for cell_idx, cell in enumerate(nb.get('cells', [])):
                   if cell.get('cell_type') == 'code':
                       for output in cell.get('outputs', []):
                           if output.get('output_type') == 'error':
-                              print(f"::error::Notebook execution error: {output.get('ename', 'Unknown')}")
-                              sys.exit(1)
-              print("No errors found in notebook outputs")
+                              ename = output.get('ename', 'Unknown')
+                              evalue = output.get('evalue', '')
+                              errors_found.append({
+                                  'cell': cell_idx,
+                                  'ename': ename,
+                                  'evalue': evalue[:200]  # Truncate long error messages
+                              })
+              
+              if errors_found:
+                  # Report as error so the step shows as failed
+                  print(f"::error::Notebook {notebook_name} has {len(errors_found)} execution error(s). Please fix the notebook.")
+                  
+                  # Write to job summary for visibility
+                  summary = f"""
+          ## ⚠️ Notebook Execution Errors
+          
+          **Notebook:** `{notebook_name}`
+          
+          The following errors occurred during execution. The notebook has been published with error outputs visible, but the author should fix these issues:
+          
+          | Cell | Error Type | Message |
+          |------|-----------|---------|
+          """
+                  for err in errors_found:
+                      summary += f"| {err['cell']} | `{err['ename']}` | {err['evalue'][:100]} |\n"
+                  
+                  summary += "\n\nPlease update the notebook to fix these errors.\n"
+                  
+                  # Write to GitHub step summary
+                  with open(os.environ.get('GITHUB_STEP_SUMMARY', '/dev/null'), 'a') as f:
+                      f.write(summary)
+                  
+                  # Exit with error so step shows as failed (continue-on-error allows workflow to proceed)
+                  sys.exit(1)
+              else:
+                  print("No errors found in notebook outputs")
+                  
           except Exception as e:
               print(f"::warning::Could not check notebook for errors: {e}")
           EOF
@@ -503,7 +572,7 @@ jobs:
   publish-pages:
     name: Build & Publish to GitHub Pages
     needs: [run-notebooks, setup]
-    if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped') }}
+    if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -571,36 +640,65 @@ jobs:
 
       - name: Merge executed notebooks into books directory
         run: |
-          echo "Merging executed notebooks..."
+          echo "========== MERGING EXECUTED NOTEBOOKS =========="
           
-          # Each artifact contains a single .ipynb file
-          # We need to copy it to the correct location in books/
-          for artifact_dir in loaded-artifacts/executed-*; do
-            if [ -d "$artifact_dir" ]; then
-              echo "Processing $artifact_dir..."
+          echo "=== Step 1: Check artifact directory ==="
+          if [ -d "loaded-artifacts" ]; then
+            echo "loaded-artifacts directory exists"
+            ls -la loaded-artifacts/
+          else
+            echo "::error::loaded-artifacts directory not found!"
+            exit 1
+          fi
+          
+          echo ""
+          echo "=== Step 2: Find notebook files ==="
+          echo "Searching for .ipynb files in loaded-artifacts..."
+          find loaded-artifacts -name "*.ipynb" -type f
+          
+          echo ""
+          echo "=== Step 3: Merge notebooks ==="
+          merged=0
+          
+          # Find all .ipynb files in loaded-artifacts (handles both direct files and subdirectories)
+          while IFS= read -r nb_file; do
+            if [ -f "$nb_file" ]; then
+              nb_name=$(basename "$nb_file")
+              echo "Processing: $nb_file"
+              echo "  Notebook: $nb_name ($(du -h "$nb_file" | cut -f1))"
               
-              # Find the notebook file in the artifact
-              for nb_file in $(find "$artifact_dir" -name "*.ipynb"); do
-                # Get just the filename
-                nb_name=$(basename "$nb_file")
-                
-                # Find where this notebook should go in books/
-                target=$(find books -name "$nb_name" -type f | head -1)
-                
-                if [ -n "$target" ]; then
-                  echo "Copying $nb_file -> $target"
-                  cp "$nb_file" "$target"
-                else
-                  echo "Warning: Could not find target location for $nb_name"
-                fi
-              done
+              # Find target in books/
+              target=$(find books -name "$nb_name" -type f | head -1)
+              
+              if [ -n "$target" ]; then
+                echo "  Target: $target"
+                echo "  Before: $(du -h "$target" | cut -f1)"
+                cp -v "$nb_file" "$target"
+                echo "  After: $(du -h "$target" | cut -f1)"
+                merged=$((merged + 1))
+              else
+                echo "  ::warning::No target found for $nb_name in books/"
+              fi
+              echo ""
             fi
-          done
+          done < <(find loaded-artifacts -name "*.ipynb" -type f)
           
-          echo "Merge complete. Listing updated notebooks:"
-          find books -name "*.ipynb" -newer loaded-artifacts 2>/dev/null || echo "No recently updated notebooks found"
+          echo ""
+          echo "=== Step 4: Verify merge ==="
+          echo "Notebooks merged: $merged"
+          if [ $merged -eq 0 ]; then
+            echo "::warning::No notebooks were merged!"
+          fi
+          echo ""
+          echo "Recently modified .ipynb files in books/:"
+          find books -name "*.ipynb" -type f -mmin -5 -exec ls -lh {} \; 2>/dev/null | head -10 || true
+          
+          echo "================================================"
 
-      - name: Build complete Jupyter Book (in Container)
+      - name: Set container name
+        run: echo "CONTAINER_NAME=neurodesktop-publish-${{ github.run_id }}" >> $GITHUB_ENV
+
+      - name: Start Neurodesktop container
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -611,9 +709,8 @@ jobs:
           # NOTE: We use the exact same Docker startup settings as run-notebooks
           # to ensure the environment (Lmod, Apptainer overlay) initializes
           # correctly without permission errors.
-          # CVMFS is disabled here as we only build the book (no execution).
           # -----------------------------------------------------------------------
-          docker run --rm \
+          docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
             --user=root \
@@ -625,30 +722,78 @@ jobs:
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
-            -e BASH_ENV=/usr/share/lmod/lmod/init/bash \
-            -e CVMFS_DISABLE=true \
-            ${{ needs.setup.outputs.neurodesk_image }} \
-            bash -c '
-              set -e
-              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+            ${{ needs.setup.outputs.neurodesk_image }}
+          
+          echo "Started container: $CONTAINER_NAME"
 
-              # Install dependencies
-              # We use pip --user to take advantage of the mounted .cache/pip
-              pip install --user "jupyter-book<2.0.0" ghp-import
+      - name: Wait for container readiness
+        run: |
+          echo "Waiting for Neurodesktop to become ready..."
+          for i in {1..120}; do
+            if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "To access the server"; then
+              echo "Container ready after ${i} seconds"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Container did not become ready within 120 seconds"
+          echo "=== Container logs ==="
+          docker logs "$CONTAINER_NAME"
+          exit 1
 
-              # Generate table of contents
-              /bin/bash ../.github/scripts/write-toc-entry.sh
+      - name: Build Jupyter Book in container
+        run: |
+          docker exec "$CONTAINER_NAME" bash -c '
+            set -e
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
 
-              # Disable notebook execution (already executed in run-notebooks job)
-              sed -i "s/execute_notebooks: .*/execute_notebooks: off/" _config.yml
-              
-              # Build the book
-              jupyter-book build .
-              
-              # Fix permissions of generated files so host user can read them (if needed, though root usually fine on GHA)
-              # But gh-pages action runs as runner user.
-              chown -R 1001:1001 _build
-            '
+            # Install dependencies
+            # We use pip --user to take advantage of the mounted .cache/pip
+            pip install --user "jupyter-book<2.0.0" ghp-import
+
+            # Generate table of contents
+            /bin/bash ../.github/scripts/write-toc-entry.sh
+
+            # Disable notebook execution (already executed in run-notebooks job)
+            sed -i "s/execute_notebooks: .*/execute_notebooks: off/" _config.yml
+            
+            # Build the book
+            jupyter-book build .
+            
+            # Fix permissions of generated files so host user can read them
+            chown -R 1001:1001 _build
+          '
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          echo "Stopping and removing container: $CONTAINER_NAME"
+          docker stop "$CONTAINER_NAME" 2>/dev/null || true
+          docker rm "$CONTAINER_NAME" 2>/dev/null || true
+
+      - name: Verify build output
+        run: |
+          echo "========== VERIFYING BUILD OUTPUT =========="
+          
+          if [ -d "books/_build/html" ]; then
+            echo "✓ books/_build/html exists"
+            echo ""
+            echo "Build output size:"
+            du -sh books/_build/html
+            echo ""
+            echo "Top-level files:"
+            ls -lh books/_build/html/ | head -20
+            echo ""
+            echo "Recently modified HTML files:"
+            find books/_build/html -name "*.html" -type f -mmin -10 2>/dev/null | head -10 || true
+          else
+            echo "::error::books/_build/html directory not found!"
+            echo "Listing books/_build:"
+            ls -la books/_build/ || echo "books/_build does not exist"
+            exit 1
+          fi
+          
+          echo "============================================"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
