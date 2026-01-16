@@ -62,11 +62,11 @@ on:
         default: false
 
 # =============================================================================
-# CONCURRENCY
+# CONCURRENCY (disabled to allow multiple runs)
 # =============================================================================
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: false
 
 # =============================================================================
 # JOBS
@@ -114,40 +114,6 @@ jobs:
             echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:$VERSION" >> $GITHUB_OUTPUT
           fi
 
-      - name: Cache Docker image
-        id: docker-cache
-        uses: actions/cache@v5.0.1
-        with:
-          path: ~/docker-image-cache
-          key: docker-neurodesk-${{ steps.get_image.outputs.neurodesk_image }}
-
-      - name: Prefetch Docker image
-        if: steps.docker-cache.outputs.cache-hit != 'true'
-        run: |
-          IMAGE="${{ steps.get_image.outputs.neurodesk_image }}"
-          CACHE_FILE=~/docker-image-cache/neurodesk.tar
-          mkdir -p ~/docker-image-cache
-          
-          echo "Cache miss. Pulling $IMAGE..."
-          docker pull "$IMAGE"
-          
-          echo "Saving image to cache..."
-          docker save -o "$CACHE_FILE" "$IMAGE"
-
-      # --- CVMFS Cache Warmer ---
-      - name: Cache CVMFS apt packages
-        uses: actions/cache@v5.0.1
-        with:
-          path: ${{ github.workspace }}/.cache/cvmfs-apt
-          key: cvmfs-apt-${{ runner.os }}-v1
-
-      - name: Setup CVMFS (Warm Cache)
-        uses: cvmfs-contrib/github-action-cvmfs@v5.3
-        with:
-          cvmfs_repositories: neurodesk.ardc.edu.au
-          cvmfs_http_proxy: DIRECT
-          cvmfs_quota_limit: 5000
-          apt_cache: ${{ github.workspace }}/.cache/cvmfs-apt
 
       # --- Pip Cache Warmer ---
       - name: Cache Conda/Python dependencies
@@ -225,10 +191,20 @@ jobs:
 
     strategy:
       fail-fast: false
+      max-parallel: 8
       matrix:
         notebooks: ${{ fromJson(needs.select-notebooks.outputs.notebook_list) }}
 
     steps:
+      - name: Fix workspace permissions (for self-hosted runners)
+        if: always()
+        run: |
+          # Fix any root-owned files from previous Docker runs
+          sudo chown -R $USER:$USER ${{ github.workspace }} 2>/dev/null || true
+          # Fix git-annex read-only files (annex sets -r--r--r-- to protect data)
+          sudo chmod -R u+w ${{ github.workspace }}/.git/annex 2>/dev/null || true
+          find ${{ github.workspace }} -name '.git' -type d -exec sudo chmod -R u+w {}/annex \; 2>/dev/null || true
+
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Set notebook environment variables
@@ -253,91 +229,27 @@ jobs:
           # Setup directories
           sudo mkdir -p $BASE_PATH/tmp
           sudo chown $USER $BASE_PATH/tmp
-          sudo mkdir -p $BASE_PATH/docker
           
-          # Configure Docker to use new data-root
-          echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
-          
-          # Clean up existing space
-          docker system prune -af || true
+          # Configure Docker data-root (only for GitHub-hosted runners)
+          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+            sudo mkdir -p $BASE_PATH/docker
+            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
+            sudo systemctl restart docker
+            docker system prune -af || true
+          fi
 
       # -------------------------------------------------------------------------
-      # CVMFS Setup (for GitHub-hosted runners)
+      # Ensure Neurodesk image available
       # -------------------------------------------------------------------------
-      - name: Restore CVMFS apt cache
-        uses: actions/cache@v5.0.1
-        id: cvmfs-cache
-        with:
-          path: ${{ github.workspace }}/.cache/cvmfs-apt
-          key: cvmfs-apt-${{ runner.os }}-v1
-
-      - name: Create Neurodesk CVMFS public key
-        run: |
-          sudo mkdir -p /etc/cvmfs/keys/ardc.edu.au
-          sudo tee /etc/cvmfs/keys/ardc.edu.au/neurodesk.ardc.edu.au.pub << 'EOF'
-          -----BEGIN PUBLIC KEY-----
-          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwUPEmxDp217SAtZxaBep
-          Bi2TQcLoh5AJ//HSIz68ypjOGFjwExGlHb95Frhu1SpcH5OASbV+jJ60oEBLi3sD
-          qA6rGYt9kVi90lWvEjQnhBkPb0uWcp1gNqQAUocybCzHvoiG3fUzAe259CrK09qR
-          pX8sZhgK3eHlfx4ycyMiIQeg66AHlgVCJ2fKa6fl1vnh6adJEPULmn6vZnevvUke
-          I6U1VcYTKm5dPMrOlY/fGimKlyWvivzVv1laa5TAR2Dt4CfdQncOz+rkXmWjLjkD
-          87WMiTgtKybsmMLb2yCGSgLSArlSWhbMA0MaZSzAwE9PJKCCMvTANo5644zc8jBe
-          NQIDAQAB
-          -----END PUBLIC KEY-----
-          EOF
-
-      - name: Setup CVMFS
-        uses: cvmfs-contrib/github-action-cvmfs@v5.3
-        with:
-          cvmfs_repositories: neurodesk.ardc.edu.au
-          cvmfs_http_proxy: DIRECT
-          cvmfs_quota_limit: 5000
-          cvmfs_keys_dir: /etc/cvmfs/keys/ardc.edu.au
-          cvmfs_server_url: "http://cvmfs-geoproximity.neurodesk.org/cvmfs/@fqrn@;http://cvmfs.neurodesk.org/cvmfs/@fqrn@;http://s1osggoc-cvmfs.openhtc.io:8080/cvmfs/@fqrn@;http://s1fnal-cvmfs.openhtc.io:8080/cvmfs/@fqrn@;http://s1sampa-cvmfs.openhtc.io:8080/cvmfs/@fqrn@;http://s1brisbane-cvmfs.openhtc.io/cvmfs/@fqrn@;http://s1nikhef-cvmfs.openhtc.io/cvmfs/@fqrn@;http://s1bnl-cvmfs.openhtc.io/cvmfs/@fqrn@;http://s1perth-cvmfs.openhtc.io/cvmfs/@fqrn@"
-          apt_cache: ${{ github.workspace }}/.cache/cvmfs-apt
-
-      - name: Mount CVMFS
-        run: |
-          # Probe and verify mount
-          sudo cvmfs_config probe neurodesk.ardc.edu.au || true
-          
-          # Trigger autofs mount
-          ls /cvmfs/neurodesk.ardc.edu.au > /dev/null 2>&1 || {
-            echo "Autofs mount failed, attempting manual mount..."
-            sudo mkdir -p /cvmfs/neurodesk.ardc.edu.au
-            sudo mount -t cvmfs neurodesk.ardc.edu.au /cvmfs/neurodesk.ardc.edu.au
-          }
-          
-          # Verify
-          echo "CVMFS mounted:"
-          ls /cvmfs/neurodesk.ardc.edu.au/ | head -5
-
-      # -------------------------------------------------------------------------
-      # Docker image caching
-      # -------------------------------------------------------------------------
-      - name: Restore Docker image cache
-        uses: actions/cache@v5.0.1
-        id: docker-cache
-        with:
-          path: ~/docker-image-cache
-          key: docker-neurodesk-${{ needs.setup.outputs.neurodesk_image }}
-
-      - name: Load Neurodesk image
+      - name: Ensure Neurodesk image available
         run: |
           IMAGE="${{ needs.setup.outputs.neurodesk_image }}"
-          CACHE_FILE=~/docker-image-cache/neurodesk.tar
-          
-          if [ -f "$CACHE_FILE" ]; then
-            echo "Loading image from cache..."
-            docker load -i "$CACHE_FILE"
+          if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "✓ Image already exists locally"
           else
-            echo "Cache not found (unexpected). Pulling image..."
+            echo "Pulling $IMAGE..."
             docker pull "$IMAGE"
           fi
-          
-          echo "Image ready:"
-          docker images "$IMAGE"
 
       # -------------------------------------------------------------------------
       # Docker execution with CVMFS mounted
@@ -383,16 +295,14 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          docker run -d --name "$CONTAINER_NAME" \
+          sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
             --user=root \
             -v ${{ github.workspace }}:/home/jovyan/workspace \
-            -v /cvmfs:/cvmfs:ro \
             -v ${{ env.BASE_PATH }}/tmp:/overlay-storage \
             -v ${{ github.workspace }}/.cache/pip:/home/jovyan/.cache/pip \
             -w /home/jovyan/workspace/books \
-            -e NB_USER=jovyan \
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
@@ -403,31 +313,64 @@ jobs:
 
       - name: Wait for container readiness
         run: |
-          echo "Waiting for Neurodesktop to become ready..."
-          for i in {1..120}; do
+          echo "Waiting for Neurodesktop to become ready (up to 5 minutes)..."
+          for i in {1..300}; do
             if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "To access the server"; then
               echo "Container ready after ${i} seconds"
               exit 0
             fi
             sleep 1
           done
-          echo "::error::Container did not become ready within 120 seconds"
+          echo "::error::Container did not become ready within 5 minutes"
           echo "=== Container logs ==="
           docker logs "$CONTAINER_NAME"
           exit 1
 
-      - name: Execute notebook in container
-        timeout-minutes: 1500
+      - name: Verify CVMFS inside container
         run: |
-          docker exec "$CONTAINER_NAME" bash -c '
-            set -e
-            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+          echo "========== VERIFYING CVMFS IN CONTAINER ==========="
+          docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            echo "Checking CVMFS mount..."
+            if [ -d /cvmfs/neurodesk.ardc.edu.au ]; then
+              echo "✓ /cvmfs/neurodesk.ardc.edu.au accessible"
+              echo ""
+              echo "Contents:"
+              ls -la /cvmfs/neurodesk.ardc.edu.au/ || echo "Cannot list!"
+              echo ""
+              echo "Module system check:"
+              if [ -f /usr/share/lmod/lmod/init/bash ]; then
+                source /usr/share/lmod/lmod/init/bash
+                export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
+                echo "✓ LMOD initialized"
+                echo "✓ MODULEPATH=$MODULEPATH"
+                echo ""
+                echo "Available modules:"
+                module avail 2>&1 || echo "No modules found"
+              else
+                echo "✗ LMOD not found"
+              fi
+            else
+              echo "::error::/cvmfs/neurodesk.ardc.edu.au NOT accessible in container!"
+              echo "Container mounts:"
+              mount | grep cvmfs || echo "No CVMFS mounts visible"
+              exit 1
+            fi
+          '
+          echo "==================================================="
 
-            # Initialize the module system
-            if [ -f /usr/share/lmod/lmod/init/bash ]; then
-              source /usr/share/lmod/lmod/init/bash
-            elif [ -f /usr/share/module.sh ]; then
-              source /usr/share/module.sh
+      - name: Setup container environment (as root)
+        run: |
+          docker exec --user root "$CONTAINER_NAME" bash -c '
+            # Remap jovyan UID/GID to match runner user
+            if [ -n "$NB_UID" ] && [ "$NB_UID" != "$(id -u jovyan)" ]; then
+                echo "Remapping jovyan UID to $NB_UID..."
+                usermod -u $NB_UID jovyan
+                # Fix ownership of files that were owned by 1000
+                find /home/jovyan -user 1000 -exec chown -h $NB_UID {} \; 2>/dev/null || true
+            fi
+            if [ -n "$NB_GID" ] && [ "$NB_GID" != "$(id -g jovyan)" ]; then
+                echo "Remapping users group GID to $NB_GID..."
+                groupmod -g $NB_GID users
             fi
 
             # Create apptainer overlay for modules that require it
@@ -447,45 +390,91 @@ jobs:
             fi
 
             # Move apptainer working dir to secondary storage to save root disk space
-            mkdir -p /overlay-storage/var_lib_apptainer
-            chmod 777 /overlay-storage/var_lib_apptainer
+            mkdir -p /overlay-storage/var_lib_apptainer/mnt/session
+            chmod -R 777 /overlay-storage/var_lib_apptainer
             
             # Symlink /var/lib/apptainer if it doesnt exist or isnt a link yet
             if [ ! -L /var/lib/apptainer ]; then
                 rm -rf /var/lib/apptainer # Remove if it exists as a dir
                 ln -sf /overlay-storage/var_lib_apptainer /var/lib/apptainer
             fi
+            
+            # Fix pip cache permissions for jovyan
+            if [ -d /home/jovyan/.cache/pip ]; then
+                chown -R "$(id -u jovyan):$(id -g jovyan)" /home/jovyan/.cache/pip
+            fi
+            
+            echo "Root-level setup complete"
+          '
 
-            # Install dependencies (use pip --user to avoid /opt/conda permission issues)
-            pip install --user nbconvert nbclient ipykernel
+      - name: Execute notebook in container
+        timeout-minutes: 1500
+        run: |
+          NOTEBOOK_PATH="${{ matrix.notebooks }}"
+          NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
+          docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            set -e
+            
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+
+            # Initialize the module system
+            if [ -f /usr/share/lmod/lmod/init/bash ]; then
+              source /usr/share/lmod/lmod/init/bash
+            elif [ -f /usr/share/module.sh ]; then
+              source /usr/share/module.sh
+            fi
+
+            # Set MODULEPATH to neurodesk modules
+            export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
+            echo "MODULEPATH set to: $MODULEPATH"
+
+            # Install dependencies only if missing (use pip --user)
+            pip show nbconvert >/dev/null 2>&1 || pip install --user nbconvert nbclient ipykernel
 
             # Pre-execution verification
             echo "=== Container Environment ==="
             which jupyter && jupyter --version
             echo "Current directory: $(pwd)"
-            echo "Notebook to execute: ${{ matrix.notebooks }}"
+            echo "Notebook to execute: $NOTEBOOK_PATH"
+            echo "Notebook name: $NOTEBOOK"
 
-            echo "Executing notebook: ${{ matrix.notebooks }}"
+            echo "Executing notebook: $NOTEBOOK_PATH"
             
             # Execute the notebook in-place using nbconvert
             # --allow-errors: continue even if cells error (we detect errors later)
             # --inplace: overwrite the original notebook with outputs
             # Log is saved to mounted workspace for persistence
-            LOG_FILE="/home/jovyan/workspace/nbconvert-${NOTEBOOK}.log"
+            LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}.log"
+            
+            # CRITICAL: Modify the kernel.json to include MODULEPATH and LMOD_CMD
+            # IPython startup scripts are not reliable - kernel may not load them
+            # Modifying the kernelspec ensures the kernel process starts with correct environment
+            KERNEL_JSON="/opt/conda/share/jupyter/kernels/python3/kernel.json"
+            echo "Modifying kernel spec at $KERNEL_JSON"
+            cp "$KERNEL_JSON" "${KERNEL_JSON}.bak"
+            echo "import json" > /tmp/fix_kernel.py
+            echo "k = json.load(open(\"$KERNEL_JSON\"))" >> /tmp/fix_kernel.py
+            echo "k.setdefault(\"env\", {}).update({\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\"})" >> /tmp/fix_kernel.py
+            echo "json.dump(k, open(\"$KERNEL_JSON\", \"w\"), indent=2)" >> /tmp/fix_kernel.py
+            echo "print(\"Updated kernel.json\")" >> /tmp/fix_kernel.py
+            python3 /tmp/fix_kernel.py
+            cat "$KERNEL_JSON"
+            
+            # Run jupyter nbconvert
             jupyter nbconvert --to notebook --execute --inplace --allow-errors \
               --ExecutePreprocessor.timeout=3600 \
               --ExecutePreprocessor.kernel_name=python3 \
               --debug \
-              ${{ matrix.notebooks }} 2>&1 | tee "$LOG_FILE"
+              "/home/jovyan/workspace/books/$NOTEBOOK_PATH" 2>&1 | tee "$LOG_FILE"
             
             echo "Notebook execution complete"
             
             # Post-execution verification
             echo "=== Post-execution check ==="
-            if [ -f "${{ matrix.notebooks }}" ]; then
-              ls -la "${{ matrix.notebooks }}"
+            if [ -f "$NOTEBOOK_PATH" ]; then
+              ls -la "$NOTEBOOK_PATH"
             else
-              echo "::error::Notebook file not found after execution: ${{ matrix.notebooks }}"
+              echo "::error::Notebook file not found after execution: $NOTEBOOK_PATH"
               exit 1
             fi
           '
@@ -576,6 +565,15 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - name: Fix workspace permissions (for self-hosted runners)
+        if: always()
+        run: |
+          # Fix any root-owned files from previous Docker runs
+          sudo chown -R $USER:$USER ${{ github.workspace }} 2>/dev/null || true
+          # Fix git-annex read-only files (annex sets -r--r--r-- to protect data)
+          sudo chmod -R u+w ${{ github.workspace }}/.git/annex 2>/dev/null || true
+          find ${{ github.workspace }} -name '.git' -type d -exec sudo chmod -R u+w {}/annex \; 2>/dev/null || true
+
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Configure runner (Optimize Disk Space)
@@ -597,30 +595,21 @@ jobs:
           # Setup directories
           sudo mkdir -p $BASE_PATH/tmp
           sudo chown $USER $BASE_PATH/tmp
-          sudo mkdir -p $BASE_PATH/docker
           
-          # Configure Docker to use new data-root
-          echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
+          # Configure Docker data-root (only for GitHub-hosted runners)
+          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+            sudo mkdir -p $BASE_PATH/docker
+            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
+            sudo systemctl restart docker
+          fi
           
-          # Clean up existing space
-          docker system prune -af || true
-
-      - name: Restore Docker image cache
-        uses: actions/cache@v5.0.1
-        with:
-          path: ~/docker-image-cache
-          key: docker-neurodesk-${{ needs.setup.outputs.neurodesk_image }}
-
-      - name: Load Neurodesk image
+      - name: Ensure Neurodesk image available
         run: |
           IMAGE="${{ needs.setup.outputs.neurodesk_image }}"
-          CACHE_FILE=~/docker-image-cache/neurodesk.tar
-          if [ -f "$CACHE_FILE" ]; then
-            echo "Loading image from cache..."
-            docker load -i "$CACHE_FILE"
+          if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "✓ Image already exists locally"
           else
-            echo "::error::Docker image cache not found. This should not happen if run-notebooks succeeded."
+            echo "Pulling $IMAGE..."
             docker pull "$IMAGE"
           fi
 
@@ -710,7 +699,7 @@ jobs:
           # to ensure the environment (Lmod, Apptainer overlay) initializes
           # correctly without permission errors.
           # -----------------------------------------------------------------------
-          docker run -d --name "$CONTAINER_NAME" \
+          sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
             --user=root \
@@ -718,7 +707,6 @@ jobs:
             -v ${{ env.BASE_PATH }}/tmp:/overlay-storage \
             -v ${{ github.workspace }}/.cache/pip:/home/jovyan/.cache/pip \
             -w /home/jovyan/workspace/books \
-            -e NB_USER=jovyan \
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
@@ -728,22 +716,44 @@ jobs:
 
       - name: Wait for container readiness
         run: |
-          echo "Waiting for Neurodesktop to become ready..."
-          for i in {1..120}; do
+          echo "Waiting for Neurodesktop to become ready (up to 5 minutes)..."
+          for i in {1..300}; do
             if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "To access the server"; then
               echo "Container ready after ${i} seconds"
               exit 0
             fi
             sleep 1
           done
-          echo "::error::Container did not become ready within 120 seconds"
+          echo "::error::Container did not become ready within 5 minutes"
           echo "=== Container logs ==="
           docker logs "$CONTAINER_NAME"
           exit 1
 
+      - name: Setup container environment (as root)
+        run: |
+          docker exec --user root "$CONTAINER_NAME" bash -c '
+            # Remap jovyan UID/GID to match runner user
+            if [ -n "$NB_UID" ] && [ "$NB_UID" != "$(id -u jovyan)" ]; then
+                echo "Remapping jovyan UID to $NB_UID..."
+                usermod -u $NB_UID jovyan
+                find /home/jovyan -user 1000 -exec chown -h $NB_UID {} \; 2>/dev/null || true
+            fi
+            if [ -n "$NB_GID" ] && [ "$NB_GID" != "$(id -g jovyan)" ]; then
+                echo "Remapping users group GID to $NB_GID..."
+                groupmod -g $NB_GID users
+            fi
+            
+            # Fix pip cache permissions
+            if [ -d /home/jovyan/.cache/pip ]; then
+                chown -R "$(id -u jovyan):$(id -g jovyan)" /home/jovyan/.cache/pip
+            fi
+            
+            echo "Root-level setup complete"
+          '
+
       - name: Build Jupyter Book in container
         run: |
-          docker exec "$CONTAINER_NAME" bash -c '
+          docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
             set -e
             export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
 
@@ -759,9 +769,6 @@ jobs:
             
             # Build the book
             jupyter-book build .
-            
-            # Fix permissions of generated files so host user can read them
-            chown -R 1001:1001 _build
           '
 
       - name: Cleanup container
@@ -770,6 +777,20 @@ jobs:
           echo "Stopping and removing container: $CONTAINER_NAME"
           docker stop "$CONTAINER_NAME" 2>/dev/null || true
           docker rm "$CONTAINER_NAME" 2>/dev/null || true
+
+      - name: Remove large files to avoid GitHub size limits
+        run: |
+          # _sources contains copies of executed notebooks which can exceed GitHub's 100MB limit
+          echo "Removing _sources folder from build output..."
+          rm -rf books/_build/html/_sources
+          echo "✓ _sources folder removed"
+          
+          # Remove HTML files that exceed GitHub's 100MB limit (temporary fix)
+          echo "Removing oversized HTML files..."
+          rm -f books/_build/html/examples/diffusion_imaging/MRtrix_3.html
+          rm -f books/_build/html/examples/workflows/ipyniivue_ipywidgets.html
+          rm -f books/_build/html/examples/structural_imaging/FSL_course_bet.html
+          echo "✓ Oversized HTML files removed"
 
       - name: Verify build output
         run: |

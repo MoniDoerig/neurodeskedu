@@ -13,3 +13,6 @@ __pycache__/
 books/**/*.nii.gz
 books/**/*.nii
 books/**/ds004884/
+
+# Agent config
+.agent/
