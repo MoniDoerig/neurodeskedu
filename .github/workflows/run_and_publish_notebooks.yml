@@ -269,9 +269,9 @@ jobs:
     name: Run Notebook
     needs: [setup, select-notebooks]
     if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' }}
-    runs-on: ${{ needs.setup.outputs.runner }}
-    # runs-on:
-    #   group: arc-base
+    # runs-on: ${{ needs.setup.outputs.runner }}
+    runs-on:
+      group: arc-base
     timeout-minutes: 1500
 
     strategy:
@@ -295,33 +295,33 @@ jobs:
       - name: Set notebook environment variables
         run: echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
 
-      - name: Configure runner (Optimize Disk Space)
-        if: runner.os == 'Linux'
-        run: |
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-             echo "Optimizing GitHub-hosted runner..."
-             sudo swapoff -a && sudo rm -rf /mnt/*
-             BASE_PATH=/mnt
-          else
-             echo "Configuring self-hosted runner..."
-             # Be careful not to wipe /mnt on self-hosted if it's used
-             BASE_PATH=/storage
-          fi
+      # - name: Configure runner (Optimize Disk Space)
+      #   if: runner.os == 'Linux'
+      #   run: |
+      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+      #        echo "Optimizing GitHub-hosted runner..."
+      #        sudo swapoff -a && sudo rm -rf /mnt/*
+      #        BASE_PATH=/mnt
+      #     else
+      #        echo "Configuring self-hosted runner..."
+      #        # Be careful not to wipe /mnt on self-hosted if it's used
+      #        BASE_PATH=/storage
+      #     fi
           
-          echo "Using BASE_PATH=$BASE_PATH"
-          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+      #     echo "Using BASE_PATH=$BASE_PATH"
+      #     echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
           
-          # Setup directories
-          sudo mkdir -p $BASE_PATH/tmp
-          sudo chown $USER $BASE_PATH/tmp
+      #     # Setup directories
+      #     sudo mkdir -p $BASE_PATH/tmp
+      #     sudo chown $USER $BASE_PATH/tmp
           
-          # Configure Docker data-root (only for GitHub-hosted runners)
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-            sudo mkdir -p $BASE_PATH/docker
-            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
-            sudo systemctl restart docker
-            docker system prune -af || true
-          fi
+      #     # Configure Docker data-root (only for GitHub-hosted runners)
+      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+      #       sudo mkdir -p $BASE_PATH/docker
+      #       echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
+      #       sudo systemctl restart docker
+      #       docker system prune -af || true
+      #     fi
 
       # -------------------------------------------------------------------------
       # Ensure Neurodesk image available
@@ -820,32 +820,32 @@ jobs:
 
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Configure runner (Optimize Disk Space)
-        if: runner.os == 'Linux'
-        run: |
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-             echo "Optimizing GitHub-hosted runner..."
-             sudo swapoff -a && sudo rm -rf /mnt/*
-             BASE_PATH=/mnt
-          else
-             echo "Configuring self-hosted runner..."
-             # Be careful not to wipe /mnt on self-hosted if it's used
-             BASE_PATH=/storage
-          fi
+      # - name: Configure runner (Optimize Disk Space)
+      #   if: runner.os == 'Linux'
+      #   run: |
+      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+      #        echo "Optimizing GitHub-hosted runner..."
+      #        sudo swapoff -a && sudo rm -rf /mnt/*
+      #        BASE_PATH=/mnt
+      #     else
+      #        echo "Configuring self-hosted runner..."
+      #        # Be careful not to wipe /mnt on self-hosted if it's used
+      #        BASE_PATH=/storage
+      #     fi
           
-          echo "Using BASE_PATH=$BASE_PATH"
-          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+      #     echo "Using BASE_PATH=$BASE_PATH"
+      #     echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
           
-          # Setup directories
-          sudo mkdir -p $BASE_PATH/tmp
-          sudo chown $USER $BASE_PATH/tmp
+      #     # Setup directories
+      #     sudo mkdir -p $BASE_PATH/tmp
+      #     sudo chown $USER $BASE_PATH/tmp
           
-          # Configure Docker data-root (only for GitHub-hosted runners)
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-            sudo mkdir -p $BASE_PATH/docker
-            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
-            sudo systemctl restart docker
-          fi
+      #     # Configure Docker data-root (only for GitHub-hosted runners)
+      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+      #       sudo mkdir -p $BASE_PATH/docker
+      #       echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
+      #       sudo systemctl restart docker
+      #     fi
           
       - name: Ensure Neurodesk image available
         run: |
