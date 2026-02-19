@@ -38,13 +38,20 @@ def get_content_hash(data: bytes) -> str:
 
 def upload_to_hf(data: bytes, path_in_repo: str) -> str:
     """Upload data to Hugging Face and return the URL."""
+    url = f"{HF_BASE_URL}/{path_in_repo}"
+
     if DRY_RUN:
         print(f"  [DRY RUN] Would upload to: {path_in_repo}")
-        return f"{HF_BASE_URL}/{path_in_repo}"
+        return url
 
     try:
-        from huggingface_hub import upload_file
+        from huggingface_hub import upload_file, hf_hub_url, file_exists
         from io import BytesIO
+
+        # Check if file already exists (skip upload if so)
+        if file_exists(HF_REPO, path_in_repo, repo_type="dataset"):
+            print(f"  Already exists on HF: {path_in_repo} (skipping upload)")
+            return url
 
         print(f"  Uploading to HF: {path_in_repo} ({len(data):,} bytes)...")
 
@@ -56,7 +63,6 @@ def upload_to_hf(data: bytes, path_in_repo: str) -> str:
             commit_message=f"Add volume data: {path_in_repo}",
         )
 
-        url = f"{HF_BASE_URL}/{path_in_repo}"
         print(f"  Uploaded: {url}")
         return url
 
