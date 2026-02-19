@@ -145,6 +145,12 @@ def transform_notebook(notebook_path: str) -> dict:
                 print(f"    WARNING: Unknown encoding {encoding}, skipping")
                 continue
 
+            # Skip small buffers (not worth uploading to HF)
+            MIN_UPLOAD_SIZE = 1 * 1024 * 1024  # 1MB
+            if len(volume_bytes) < MIN_UPLOAD_SIZE:
+                print(f"    Skipping (below 1MB threshold: {len(volume_bytes):,} bytes)")
+                continue
+
             # Generate filename with content hash for deduplication
             content_hash = get_content_hash(volume_bytes)
             output_filename = f"{volume_name}_{content_hash}.nii.gz"
