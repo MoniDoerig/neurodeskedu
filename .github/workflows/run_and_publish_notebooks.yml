@@ -850,6 +850,10 @@ jobs:
     needs: [run-notebooks, setup]
     if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
+    # Serialize publish jobs to prevent race conditions on gh-pages
+    concurrency:
+      group: publish-pages
+      cancel-in-progress: false  # Queue instead of cancel
 
     steps:
       - name: Fix workspace permissions (for self-hosted runners)
