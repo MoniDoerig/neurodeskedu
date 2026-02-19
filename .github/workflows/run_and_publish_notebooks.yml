@@ -1133,6 +1133,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./books/_build/html
           keep_files: false  # Clean publish - removes old/broken notebooks
+          force_orphan: true  # Reset gh-pages history on each deploy to prevent size bloat
 
       - name: Report published website URL for successful PR runs
         if: ${{ github.event_name == 'pull_request' && success() }}
