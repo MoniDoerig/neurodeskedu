@@ -242,8 +242,12 @@ jobs:
             changed_notebooks=$(find books -name "*.ipynb" | sed 's|^books/||')
 
           elif [ -n "${{ inputs.notebook_selector }}" ]; then
-            echo "Mode: Running specific notebook: ${{ inputs.notebook_selector }}"
-            changed_notebooks="${{ inputs.notebook_selector }}"
+            # Normalize path: strip common prefixes to get path relative to books/
+            notebook_path="${{ inputs.notebook_selector }}"
+            notebook_path="${notebook_path#neurodeskedu/}"  # Strip neurodeskedu/
+            notebook_path="${notebook_path#books/}"         # Strip books/
+            echo "Mode: Running specific notebook: ${notebook_path}"
+            changed_notebooks="${notebook_path}"
 
           else
             echo "Mode: Running changed notebooks only"
