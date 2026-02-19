@@ -242,10 +242,27 @@ jobs:
             changed_notebooks=$(find books -name "*.ipynb" | sed 's|^books/||')
 
           elif [ -n "${{ inputs.notebook_selector }}" ]; then
-            # Normalize path: strip common prefixes to get path relative to books/
-            notebook_path="${{ inputs.notebook_selector }}"
-            notebook_path="${notebook_path#neurodeskedu/}"  # Strip neurodeskedu/
-            notebook_path="${notebook_path#books/}"         # Strip books/
+            # Normalize input: strip common prefixes
+            search_term="${{ inputs.notebook_selector }}"
+            search_term="${search_term#neurodeskedu/}"  # Strip neurodeskedu/
+            search_term="${search_term#books/}"         # Strip books/
+
+            # Search for matching files, ensure results are .ipynb
+            echo "Searching for: ${search_term}"
+            search_name=$(basename "$search_term")
+            mapfile -t found_notebooks < <(find books -type f -name "*${search_name}*" | grep '\.ipynb$' | sed 's|^books/||')
+
+            if [ ${#found_notebooks[@]} -eq 0 ]; then
+              echo "::error::No notebook found matching: ${search_term}"
+              exit 1
+            elif [ ${#found_notebooks[@]} -gt 1 ]; then
+              echo "::error::Multiple notebooks found matching '${search_term}':"
+              printf '  - %s\n' "${found_notebooks[@]}"
+              echo "Please provide a more specific path."
+              exit 1
+            fi
+
+            notebook_path="${found_notebooks[0]}"
             echo "Mode: Running specific notebook: ${notebook_path}"
             changed_notebooks="${notebook_path}"
 
