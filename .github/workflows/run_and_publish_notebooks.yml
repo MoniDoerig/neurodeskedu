@@ -57,7 +57,7 @@ on:
         type: boolean
         default: false
       notebook_selector:
-        description: 'Path relative to books/ (e.g. examples/workflows/nipype_short.ipynb)'
+        description: 'Path relative to books/ (e.g. examples/functional_imaging/intro_to_preprocessing.ipynb)'
         required: false
         type: string
       use_self_hosted:
