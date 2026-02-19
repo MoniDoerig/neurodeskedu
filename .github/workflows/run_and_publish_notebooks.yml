@@ -823,30 +823,32 @@ jobs:
       - name: Configure runner (Optimize Disk Space)
         if: runner.os == 'Linux'
         run: |
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+          # Detect self-hosted by filesystem, not by setup job output.
+          # publish-pages is hardcoded to ubuntu-22.04 but may land on a self-hosted
+          # runner that carries that label, so needs.setup.outputs.runner is unreliable here.
+          if [ -d "/storage" ]; then
+             echo "Configuring self-hosted runner..."
+             BASE_PATH=/storage
+          else
              echo "Optimizing GitHub-hosted runner..."
              sudo swapoff -a && sudo rm -rf /mnt/*
              BASE_PATH=/mnt
-          else
-             echo "Configuring self-hosted runner..."
-             # Be careful not to wipe /mnt on self-hosted if it's used
-             BASE_PATH=/storage
           fi
-          
+
           echo "Using BASE_PATH=$BASE_PATH"
           echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
-          
+
           # Setup directories
           sudo mkdir -p $BASE_PATH/tmp
           sudo chown $USER $BASE_PATH/tmp
-          
-          # Configure Docker data-root (only for GitHub-hosted runners)
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+
+          # Configure Docker data-root only on GitHub-hosted runners (/storage absent)
+          if [ "$BASE_PATH" != "/storage" ]; then
             sudo mkdir -p $BASE_PATH/docker
             echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
             sudo systemctl restart docker
           fi
-          
+
       - name: Ensure Neurodesk image available
         run: |
           IMAGE="${{ needs.setup.outputs.neurodesk_image }}"
