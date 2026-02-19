@@ -791,6 +791,28 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      - name: Publish large widget data to Hugging Face
+        if: success()
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+        run: |
+          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+
+          # Check if notebook has widget state (quick check)
+          if ! grep -q "application/vnd.jupyter.widget-state" "$NOTEBOOK_PATH" 2>/dev/null; then
+            echo "No widget state in $NOTEBOOK_PATH - skipping"
+            exit 0
+          fi
+
+          echo "Detected widget state - checking for embedded data..."
+
+          # Install huggingface_hub if needed
+          pip install --quiet huggingface_hub
+
+          # Publish large data to HF and update notebook with URLs
+          python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH"
+
       - name: Upload executed notebook artifact
         if: success()  # Only upload if notebook executed without errors
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
