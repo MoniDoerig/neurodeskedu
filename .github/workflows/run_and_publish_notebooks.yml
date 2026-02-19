@@ -269,7 +269,9 @@ jobs:
     name: Run Notebook
     needs: [setup, select-notebooks]
     if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' }}
-    runs-on: ${{ needs.setup.outputs.runner }}
+    #runs-on: ${{ needs.setup.outputs.runner }}
+    runs-on:
+      group: arc-base
     timeout-minutes: 1500
 
     strategy:
