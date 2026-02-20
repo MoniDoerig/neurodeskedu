@@ -1174,6 +1174,14 @@ jobs:
           rm -rf books/_build/html/_sources
           echo "✓ _sources folder removed"
 
+      - name: Deduplicate _esm in HTML files
+        run: |
+          echo "Deduplicating _esm JavaScript modules in HTML files..."
+          python3 .github/scripts/deduplicate_esm.py --dir books/_build/html
+          echo ""
+          echo "Large HTML files after deduplication:"
+          find books/_build/html -name "*.html" -size +5M -exec ls -lh {} \; || echo "No files over 5MB"
+
       - name: Verify build output
         run: |
           echo "========== VERIFYING BUILD OUTPUT =========="
