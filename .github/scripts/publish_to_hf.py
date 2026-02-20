@@ -2,12 +2,13 @@
 """
 Post-execution transform: Upload local files to Hugging Face and rewrite notebook paths to URLs.
 
-This script runs AFTER first notebook execution (two-pass workflow):
-1. First execution downloads data and generates outputs (with embedded widget data)
-2. This script uploads data files to Hugging Face
-3. Rewrites cell source: "path" -> "url" with HF URLs
-4. Clears all cell outputs (so second execution generates clean outputs)
-5. Second execution uses HF URLs, producing lean widget state
+Workflow:
+1. First execution downloads data and generates outputs
+2. This script scans working directory for niivue-compatible files
+3. Uploads files to Hugging Face
+4. Rewrites cell source: path -> url (handles both string literals and variable paths)
+5. Injects documentation cell with URL mapping
+6. Clears outputs for second execution
 
 Usage:
     python publish_to_hf.py <notebook.ipynb> [--working-dir <dir>] [--clear-outputs]
@@ -31,15 +32,59 @@ HF_BASE_URL = f"https://huggingface.co/datasets/{HF_REPO}/resolve/main"
 DRY_RUN = os.environ.get("DRY_RUN", "").lower() == "true"
 
 # File extensions that ipyniivue can load
-VOLUME_EXTENSIONS = {".nii.gz", ".nii", ".mgz", ".mgh"}
-MESH_EXTENSIONS = {".pial", ".white", ".inflated", ".sphere", ".surf", ".gii"}
-ALL_EXTENSIONS = VOLUME_EXTENSIONS | MESH_EXTENSIONS
+NIIVUE_EXTENSIONS = {
+    ".nii.gz", ".nii", ".mgz", ".mgh",  # Volumes
+    ".pial", ".white", ".inflated", ".sphere", ".surf", ".gii",  # Meshes
+    ".trk", ".tck", ".vtk",  # Tractography
+    ".HEAD", ".BRIK.gz",  # AFNI
+}
+
+# Additional compound extensions to check
+COMPOUND_EXTENSIONS = [
+    ".nii.gz", ".tt.gz", ".mz3", ".srf.gz", ".smp.gz",
+    ".dtseries.nii", ".dscalar.nii", ".BRIK.gz",
+]
 
 
 def get_file_hash(filepath: Path) -> str:
     """Generate a short hash of file content for deduplication."""
     with open(filepath, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()[:12]
+
+
+def is_niivue_file(filepath: Path) -> bool:
+    """Check if file has a niivue-compatible extension."""
+    name = filepath.name.lower()
+    # Check compound extensions first
+    for ext in COMPOUND_EXTENSIONS:
+        if name.endswith(ext.lower()):
+            return True
+    # Check simple extensions
+    return filepath.suffix.lower() in NIIVUE_EXTENSIONS
+
+
+def scan_data_files(directory: Path) -> dict[str, Path]:
+    """
+    Scan directory recursively for niivue-compatible data files.
+    Returns dict mapping filename -> full path.
+    Excludes common non-data directories.
+    """
+    # Directories to exclude
+    exclude_dirs = {
+        ".venv", "venv", ".env", "env",
+        "node_modules", ".git", "__pycache__",
+        ".cache", ".local", "site-packages",
+        "_build", ".ipynb_checkpoints",
+    }
+
+    files = {}
+    for filepath in directory.rglob("*"):
+        # Skip excluded directories
+        if any(excluded in filepath.parts for excluded in exclude_dirs):
+            continue
+        if filepath.is_file() and is_niivue_file(filepath):
+            files[filepath.name] = filepath
+    return files
 
 
 def upload_to_hf(filepath: Path, path_in_repo: str) -> str:
@@ -53,7 +98,6 @@ def upload_to_hf(filepath: Path, path_in_repo: str) -> str:
     try:
         from huggingface_hub import upload_file, file_exists
 
-        # Check if file already exists (skip upload if so)
         if file_exists(HF_REPO, path_in_repo, repo_type="dataset"):
             print(f"  Already exists: {path_in_repo}")
             return url
@@ -78,99 +122,73 @@ def upload_to_hf(filepath: Path, path_in_repo: str) -> str:
         raise
 
 
-def find_niivue_paths(cell_source: str) -> list[tuple[str, int, int]]:
-    """
-    Find ipyniivue path references in cell source.
-
-    Returns list of (path_string, start_pos, end_pos) tuples.
-    """
-    paths = []
-
-    # Pattern: "path": "./something.nii.gz" or 'path': './something.nii.gz'
-    # Also matches path with variables or f-strings, but we only transform literal strings
-    pattern = r'"path"\s*:\s*"([^"]+)"|\'path\'\s*:\s*\'([^\']+)\''
-
-    for match in re.finditer(pattern, cell_source):
-        path = match.group(1) or match.group(2)
-
-        # Check if it looks like a file path (not a URL, not a variable)
-        if path and not path.startswith(("http://", "https://", "{")):
-            # Check if it has a supported extension
-            path_lower = path.lower()
-            if any(path_lower.endswith(ext) for ext in ALL_EXTENSIONS):
-                paths.append((path, match.start(), match.end()))
-
-    return paths
-
-
-def transform_cell(cell_source: str, working_dir: Path, notebook_hf_prefix: str) -> tuple[str, list[dict]]:
+def transform_cell_paths(cell_source: str, url_mapping: dict[str, str]) -> tuple[str, int]:
     """
     Transform cell source, replacing local paths with HF URLs.
 
-    Returns (new_source, list of uploaded files info).
+    Handles:
+    - String literals: "path": "./data/file.nii.gz"
+    - Variable paths: "path": DATA_FOLDER / "file.nii.gz"
+    - Keyword args: path=DATA_FOLDER / "file.nii.gz"
+
+    Returns (new_source, count of replacements).
     """
-    paths = find_niivue_paths(cell_source)
-
-    if not paths:
-        return cell_source, []
-
-    uploaded = []
     new_source = cell_source
-    offset = 0  # Track position shifts from replacements
+    replacements = 0
 
-    for path_str, start, end in paths:
-        # Resolve the local file path
-        local_path = (working_dir / path_str).resolve()
+    for filename, hf_url in url_mapping.items():
+        # Escape special regex chars in filename
+        escaped_filename = re.escape(filename)
 
-        if not local_path.exists():
-            print(f"  WARNING: File not found: {path_str} (resolved to {local_path})")
-            continue
+        # Pattern 1: "path": "...filename" or 'path': '...filename'
+        # Matches string literal paths
+        pattern1 = rf'(["\']path["\']\s*:\s*)["\'][^"\']*{escaped_filename}["\']'
+        replacement1 = rf'\1"{hf_url}"'.replace("\\1", r"\1")
 
-        # Generate HF path with content hash for deduplication
-        file_hash = get_file_hash(local_path)
-        # Sanitize filename (replace spaces, special chars)
-        safe_name = re.sub(r'[^\w\-.]', '_', local_path.name)
-        hf_filename = f"{local_path.stem}_{file_hash}{local_path.suffix}"
-        if local_path.suffix == ".gz" and local_path.stem.endswith(".nii"):
-            # Handle .nii.gz properly
-            hf_filename = f"{local_path.stem[:-4]}_{file_hash}.nii.gz"
+        # Pattern 2: "path": VARIABLE / "filename" or "path": VARIABLE / 'filename'
+        # Matches variable-based paths
+        pattern2 = rf'(["\']path["\']\s*:\s*)[A-Za-z_][A-Za-z0-9_]*\s*/\s*["\']?{escaped_filename}["\']?'
 
-        hf_path = f"{notebook_hf_prefix}/{hf_filename}"
+        # Pattern 3: path=VARIABLE / "filename" (keyword argument)
+        pattern3 = rf'(path\s*=\s*)[A-Za-z_][A-Za-z0-9_]*\s*/\s*["\']?{escaped_filename}["\']?'
 
-        # Upload to HF
-        hf_url = upload_to_hf(local_path, hf_path)
+        for pattern in [pattern1, pattern2, pattern3]:
+            matches = list(re.finditer(pattern, new_source))
+            if matches:
+                # Replace "path" with "url" and set the URL
+                if "path" in pattern:
+                    new_source = re.sub(
+                        pattern,
+                        lambda m: m.group(1).replace("path", "url").replace("'", '"') + f'"{hf_url}"',
+                        new_source
+                    )
+                    replacements += len(matches)
 
-        uploaded.append({
-            "local_path": str(local_path),
-            "hf_path": hf_path,
-            "hf_url": hf_url,
-            "size_bytes": local_path.stat().st_size,
-        })
+    return new_source, replacements
 
-        # Replace "path": "..." with "url": "..."
-        # Find the exact match text to replace
-        original_text = cell_source[start:end]
-        # Determine quote style used
-        if original_text.startswith('"path"'):
-            new_text = f'"url": "{hf_url}"'
-        else:
-            new_text = f"'url': '{hf_url}'"
 
-        # Apply replacement with offset tracking
-        adj_start = start + offset
-        adj_end = end + offset
-        new_source = new_source[:adj_start] + new_text + new_source[adj_end:]
-        offset += len(new_text) - len(original_text)
+def create_hf_data_cell(url_mapping: dict[str, str]) -> dict:
+    """Create a documentation cell showing HF URL mapping."""
+    lines = [
+        "# Data uploaded to Hugging Face by CI",
+        "# ipyniivue widgets load from these URLs instead of local files.",
+        "HF_DATA = {"
+    ]
+    for filename, url in sorted(url_mapping.items()):
+        lines.append(f'    "{filename}": "{url}",')
+    lines.append("}")
 
-    return new_source, uploaded
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {"tags": ["hf-data-urls"]},
+        "outputs": [],
+        "source": "\n".join(lines)
+    }
 
 
 def clear_notebook_outputs(nb: dict) -> int:
-    """
-    Clear all cell outputs and widget state from notebook.
-
-    Returns number of cells cleared.
-    """
+    """Clear all cell outputs and widget state from notebook."""
     cleared = 0
 
     for cell in nb.get("cells", []):
@@ -178,10 +196,8 @@ def clear_notebook_outputs(nb: dict) -> int:
             if cell.get("outputs"):
                 cell["outputs"] = []
                 cleared += 1
-            # Reset execution count
             cell["execution_count"] = None
 
-    # Clear widget state from metadata
     if "widgets" in nb.get("metadata", {}):
         del nb["metadata"]["widgets"]
         print("  Cleared widget state from metadata")
@@ -189,12 +205,19 @@ def clear_notebook_outputs(nb: dict) -> int:
     return cleared
 
 
+def find_ipyniivue_import_index(nb: dict) -> int:
+    """Find the index of the cell that imports ipyniivue."""
+    for i, cell in enumerate(nb.get("cells", [])):
+        if cell.get("cell_type") == "code":
+            source = "".join(cell.get("source", []))
+            if "ipyniivue" in source and "import" in source:
+                return i
+    return 0
+
+
 def transform_notebook(notebook_path: str, working_dir: str = None, clear_outputs: bool = False) -> dict:
     """
-    Transform notebook: upload local files to HF and rewrite paths to URLs.
-
-    This modifies the notebook in place (for CI use).
-    If clear_outputs=True, also clears all cell outputs for re-execution.
+    Transform notebook: scan for data files, upload to HF, rewrite paths to URLs.
     """
     notebook_path = Path(notebook_path)
 
@@ -210,8 +233,7 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
     with open(notebook_path) as f:
         nb = json.load(f)
 
-    # Determine HF path prefix based on notebook location
-    # e.g., "books/examples/structural_imaging/FSL_course_bet.ipynb" -> "examples/structural_imaging/FSL_course_bet"
+    # Determine HF path prefix
     notebook_rel = str(notebook_path.with_suffix(""))
     if notebook_rel.startswith("books/"):
         notebook_rel = notebook_rel[6:]
@@ -219,44 +241,74 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
 
     print(f"HF prefix: {notebook_hf_prefix}")
 
-    all_uploaded = []
-    cells_modified = 0
+    # Scan for data files
+    print("\nScanning for niivue data files...")
+    data_files = scan_data_files(working_dir)
+    print(f"  Found {len(data_files)} files")
 
-    # Process each code cell
+    if not data_files:
+        print("  No data files found")
+        return {"transformed": False, "reason": "no_data_files"}
+
+    # Upload files and build URL mapping
+    print("\nUploading to Hugging Face...")
+    url_mapping = {}  # filename -> HF URL
+    total_size = 0
+
+    for filename, filepath in data_files.items():
+        file_hash = get_file_hash(filepath)
+
+        # Handle compound extensions properly
+        stem = filepath.stem
+        suffix = filepath.suffix
+        for compound in COMPOUND_EXTENSIONS:
+            if filename.lower().endswith(compound.lower()):
+                stem = filename[:-len(compound)]
+                suffix = compound
+                break
+
+        hf_filename = f"{stem}_{file_hash}{suffix}"
+        hf_path = f"{notebook_hf_prefix}/{hf_filename}"
+
+        hf_url = upload_to_hf(filepath, hf_path)
+        url_mapping[filename] = hf_url
+        total_size += filepath.stat().st_size
+
+    # Transform cells
+    print("\nTransforming notebook cells...")
+    cells_modified = 0
+    total_replacements = 0
+
     for i, cell in enumerate(nb.get("cells", [])):
         if cell.get("cell_type") != "code":
             continue
 
-        # Get cell source as string
         source = cell.get("source", [])
         if isinstance(source, list):
             source_str = "".join(source)
         else:
             source_str = source
 
-        # Skip cells without ipyniivue patterns
-        if "load_volumes" not in source_str and "load_meshes" not in source_str:
+        # Check if cell has ipyniivue usage
+        if not any(kw in source_str for kw in ["load_volumes", "load_meshes", "add_volume", "add_mesh", "ipyniivue"]):
             continue
 
-        print(f"\nCell {i}: Found ipyniivue usage")
+        new_source, replacements = transform_cell_paths(source_str, url_mapping)
 
-        # Transform the cell
-        new_source, uploaded = transform_cell(source_str, working_dir, notebook_hf_prefix)
-
-        if uploaded:
-            # Update cell source
+        if replacements > 0:
             cell["source"] = new_source
             cells_modified += 1
-            all_uploaded.extend(uploaded)
+            total_replacements += replacements
+            print(f"  Cell {i}: {replacements} path(s) transformed")
 
-            for u in uploaded:
-                print(f"  {Path(u['local_path']).name} -> {u['hf_url']}")
+    # Inject HF data documentation cell
+    if url_mapping:
+        hf_cell = create_hf_data_cell(url_mapping)
+        insert_index = find_ipyniivue_import_index(nb) + 1
+        nb["cells"].insert(insert_index, hf_cell)
+        print(f"\nInjected HF data cell at index {insert_index}")
 
-    if cells_modified == 0:
-        print("  No paths to transform")
-        return {"transformed": False, "reason": "no_paths"}
-
-    # Clear outputs if requested (for two-pass workflow)
+    # Clear outputs if requested
     outputs_cleared = 0
     if clear_outputs:
         print("\nClearing outputs for re-execution...")
@@ -268,18 +320,16 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
         json.dump(nb, f, indent=1)
 
     print(f"\nSummary:")
+    print(f"  Files uploaded: {len(url_mapping)}")
+    print(f"  Total data size: {total_size:,} bytes ({total_size/1024/1024:.2f} MB)")
     print(f"  Cells modified: {cells_modified}")
-    print(f"  Files uploaded: {len(all_uploaded)}")
-    total_size = sum(u["size_bytes"] for u in all_uploaded)
-    print(f"  Total data moved to HF: {total_size:,} bytes ({total_size/1024/1024:.2f} MB)")
-    if clear_outputs:
-        print(f"  Outputs cleared: {outputs_cleared} cells (ready for re-execution)")
+    print(f"  Path replacements: {total_replacements}")
 
     return {
-        "transformed": True,
+        "transformed": cells_modified > 0 or len(url_mapping) > 0,
         "cells_modified": cells_modified,
-        "files_uploaded": len(all_uploaded),
-        "uploaded_files": all_uploaded,
+        "files_uploaded": len(url_mapping),
+        "total_size": total_size,
         "outputs_cleared": outputs_cleared,
     }
 
@@ -299,7 +349,6 @@ def main():
         print(f"ERROR: Notebook not found: {args.notebook}")
         sys.exit(1)
 
-    # Check for HF token
     if not DRY_RUN and not os.environ.get("HF_TOKEN"):
         print("WARNING: HF_TOKEN not set. Uploads will fail.")
 
