@@ -316,33 +316,28 @@ jobs:
       - name: Set notebook environment variables
         run: echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
 
-      - name: Configure runner (Optimize Disk Space)
+      - name: Configure runner
         if: runner.os == 'Linux'
         run: |
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-             echo "Optimizing GitHub-hosted runner..."
-             sudo swapoff -a && sudo rm -rf /mnt/*
-             BASE_PATH=/mnt
+          if [ "${{ needs.setup.outputs.runner }}" == "self-hosted" ]; then
+            echo "Self-hosted runner - using defaults"
+            BASE_PATH=/storage
           else
-             echo "Configuring self-hosted runner..."
-             # Be careful not to wipe /mnt on self-hosted if it's used
-             BASE_PATH=/storage
-          fi
-          
-          echo "Using BASE_PATH=$BASE_PATH"
-          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
-          
-          # Setup directories
-          sudo mkdir -p $BASE_PATH/tmp
-          sudo chown $USER $BASE_PATH/tmp
-          
-          # Configure Docker data-root (only for GitHub-hosted runners)
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-            sudo mkdir -p $BASE_PATH/docker
-            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
+            echo "GitHub-hosted runner - optimizing disk space..."
+            sudo swapoff -a && sudo rm -rf /mnt/*
+            BASE_PATH=/mnt
+
+            # Remap Docker to /mnt for more space
+            sudo mkdir -p /mnt/docker
+            echo "{\"data-root\": \"/mnt/docker\"}" | sudo tee /etc/docker/daemon.json
             sudo systemctl restart docker
             docker system prune -af || true
           fi
+
+          # Setup tmp directory (needed for Docker volume mount)
+          sudo mkdir -p $BASE_PATH/tmp
+          sudo chown $USER $BASE_PATH/tmp
+          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
 
       # -------------------------------------------------------------------------
       # Ensure Neurodesk image available
