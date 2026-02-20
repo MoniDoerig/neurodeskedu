@@ -1197,6 +1197,52 @@ jobs:
           
           echo "============================================"
 
+      - name: Check and remove oversized HTML files
+        run: |
+          echo "Checking for oversized HTML files..."
+          OVERSIZED_FILES=()
+          WARNING_FILES=()
+
+          # Find files over 50MB for warnings
+          while IFS= read -r file; do
+            if [ -n "$file" ]; then
+              SIZE_MB=$(du -m "$file" | cut -f1)
+              if [ "$SIZE_MB" -ge 100 ]; then
+                # Over 100MB - must remove (GitHub hard limit)
+                OVERSIZED_FILES+=("$file ($SIZE_MB MB)")
+                echo "::error::Removing oversized file (>100MB): $file ($SIZE_MB MB)"
+                rm -f "$file"
+              else
+                # 50-100MB - warn but keep
+                WARNING_FILES+=("$file ($SIZE_MB MB)")
+                echo "::warning::Large file (>50MB): $file ($SIZE_MB MB)"
+              fi
+            fi
+          done < <(find books/_build/html -name "*.html" -size +50M 2>/dev/null)
+
+          echo ""
+          if [ ${#WARNING_FILES[@]} -gt 0 ]; then
+            echo "${#WARNING_FILES[@]} file(s) over 50MB (warning):"
+            for f in "${WARNING_FILES[@]}"; do
+              echo "  - $f"
+            done
+          fi
+
+          if [ ${#OVERSIZED_FILES[@]} -gt 0 ]; then
+            echo ""
+            echo "${#OVERSIZED_FILES[@]} file(s) over 100MB removed:"
+            for f in "${OVERSIZED_FILES[@]}"; do
+              echo "  - $f"
+            done
+            echo ""
+            echo "These notebooks need HF URL transform to reduce widget data size."
+            echo "Continuing with publish for remaining files..."
+          fi
+
+          if [ ${#WARNING_FILES[@]} -eq 0 ] && [ ${#OVERSIZED_FILES[@]} -eq 0 ]; then
+            echo "✓ No oversized files found"
+          fi
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
         if: (github.ref == 'refs/heads/main' && github.event_name != 'pull_request') || inputs.force_deploy_pages == true
