@@ -63,10 +63,12 @@ def is_niivue_file(filepath: Path) -> bool:
     return filepath.suffix.lower() in NIIVUE_EXTENSIONS
 
 
-def scan_data_files(directory: Path) -> dict[str, Path]:
+def scan_data_files(directory: Path) -> tuple[dict[str, Path], dict[str, list[Path]]]:
     """
     Scan directory recursively for niivue-compatible data files.
-    Returns dict mapping filename -> full path.
+    Returns:
+        - dict mapping filename -> full path (for unique files)
+        - dict mapping filename -> list of paths (for duplicates)
     Excludes common non-data directories.
     """
     # Directories to exclude
@@ -77,14 +79,25 @@ def scan_data_files(directory: Path) -> dict[str, Path]:
         "_build", ".ipynb_checkpoints",
     }
 
-    files = {}
+    # First pass: collect all files by name
+    all_files: dict[str, list[Path]] = {}
     for filepath in directory.rglob("*"):
         # Skip excluded directories
         if any(excluded in filepath.parts for excluded in exclude_dirs):
             continue
         if filepath.is_file() and is_niivue_file(filepath):
-            files[filepath.name] = filepath
-    return files
+            all_files.setdefault(filepath.name, []).append(filepath)
+
+    # Separate unique files from duplicates
+    unique_files = {}
+    duplicates = {}
+    for name, paths in all_files.items():
+        if len(paths) == 1:
+            unique_files[name] = paths[0]
+        else:
+            duplicates[name] = paths
+
+    return unique_files, duplicates
 
 
 def upload_to_hf(filepath: Path, path_in_repo: str) -> str:
@@ -167,29 +180,6 @@ def transform_cell_paths(cell_source: str, url_mapping: dict[str, str]) -> tuple
     return new_source, replacements
 
 
-def create_hf_data_cell(url_mapping: dict[str, str]) -> dict:
-    """Create a documentation cell showing HF URL mapping.
-
-    Tagged with 'remove-cell' so jupyter-book hides it from HTML output.
-    """
-    lines = [
-        "# Data uploaded to Hugging Face by CI",
-        "# ipyniivue widgets load from these URLs instead of local files.",
-        "HF_DATA = {"
-    ]
-    for filename, url in sorted(url_mapping.items()):
-        lines.append(f'    "{filename}": "{url}",')
-    lines.append("}")
-
-    return {
-        "cell_type": "code",
-        "execution_count": None,
-        "metadata": {"tags": ["remove-cell"]},  # Hide from HTML output
-        "outputs": [],
-        "source": "\n".join(lines)
-    }
-
-
 def clear_notebook_outputs(nb: dict) -> int:
     """Clear all cell outputs and widget state from notebook."""
     cleared = 0
@@ -208,30 +198,37 @@ def clear_notebook_outputs(nb: dict) -> int:
     return cleared
 
 
-def find_ipyniivue_import_index(nb: dict) -> int:
-    """Find the index of the cell that imports ipyniivue."""
-    for i, cell in enumerate(nb.get("cells", [])):
-        if cell.get("cell_type") == "code":
-            source = "".join(cell.get("source", []))
-            if "ipyniivue" in source and "import" in source:
-                return i
-    return 0
-
-
 def extract_referenced_files(nb: dict) -> set[str]:
     """
     Extract filenames referenced in ipyniivue calls from notebook cells.
     Returns set of filenames (not full paths).
+
+    Handles multiple patterns:
+    - Dict literal: "path": "./data/file.nii.gz"
+    - Dict with var: "path": DATA_FOLDER / "file.nii.gz"
+    - Kwarg with var: path=DATA_FOLDER / "file.nii.gz"
+    - Kwarg literal: path="file.mif"
+    - Var assignment: lh = surf_dir / "lh.pial"
+    - Fallback: any string containing niivue-compatible extension
     """
     referenced = set()
 
-    # Patterns to extract filenames from ipyniivue usage
-    # Pattern for string literals: "path": "./data/file.nii.gz" or 'path': 'file.nii.gz'
-    pattern_literal = r'["\']path["\']\s*:\s*["\']([^"\']+)["\']'
-    # Pattern for variable paths: "path": DATA_FOLDER / "file.nii.gz"
-    pattern_variable = r'["\']path["\']\s*:\s*[A-Za-z_][A-Za-z0-9_]*\s*/\s*["\']([^"\']+)["\']'
-    # Pattern for keyword args: path=FOLDER / "file.nii.gz"
-    pattern_kwarg = r'path\s*=\s*[A-Za-z_][A-Za-z0-9_]*\s*/\s*["\']([^"\']+)["\']'
+    # Build regex for niivue extensions (for fallback pattern)
+    extensions = [
+        r"\.nii\.gz", r"\.nii", r"\.mgz", r"\.mgh",
+        r"\.pial", r"\.white", r"\.inflated", r"\.sphere", r"\.surf", r"\.gii",
+        r"\.trk", r"\.tck", r"\.vtk", r"\.mz3",
+        r"\.HEAD", r"\.BRIK\.gz",
+        r"\.tt\.gz", r"\.srf\.gz", r"\.smp\.gz",
+        r"\.dtseries\.nii", r"\.dscalar\.nii",
+        r"\.mif",
+    ]
+    ext_pattern = "|".join(extensions)
+
+    # Fallback pattern: any quoted string with a niivue-compatible extension
+    # This catches all patterns including path=str(var), var assignments, etc.
+    # Require at least one word character before the extension to avoid matching just ".mif"
+    pattern_any_niivue_string = rf'["\']([^"\']*\w(?:{ext_pattern}))["\']'
 
     for cell in nb.get("cells", []):
         if cell.get("cell_type") != "code":
@@ -244,16 +241,16 @@ def extract_referenced_files(nb: dict) -> set[str]:
             source_str = source
 
         # Only look in cells with ipyniivue usage
-        if not any(kw in source_str for kw in ["load_volumes", "load_meshes", "add_volume", "add_mesh", "NiiVue"]):
+        if not any(kw in source_str for kw in ["load_volumes", "load_meshes", "add_volume", "add_mesh", "NiiVue", "ipyniivue", "Mesh", "Volume"]):
             continue
 
-        for pattern in [pattern_literal, pattern_variable, pattern_kwarg]:
-            for match in re.finditer(pattern, source_str):
-                path_or_filename = match.group(1)
-                # Extract just the filename from the path
-                filename = Path(path_or_filename).name
-                if is_niivue_file(Path(filename)):
-                    referenced.add(filename)
+        # Use fallback pattern to catch ALL niivue-compatible filenames
+        for match in re.finditer(pattern_any_niivue_string, source_str, re.IGNORECASE):
+            path_or_filename = match.group(1)
+            # Extract just the filename from the path
+            filename = Path(path_or_filename).name
+            if filename:  # Skip empty filenames
+                referenced.add(filename)
 
     return referenced
 
@@ -296,11 +293,26 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
 
     # Scan working directory for all niivue files
     print("\nScanning for niivue data files...")
-    all_data_files = scan_data_files(working_dir)
-    print(f"  Found {len(all_data_files)} files in directory")
+    unique_files, duplicates = scan_data_files(working_dir)
+    print(f"  Found {len(unique_files)} unique files, {len(duplicates)} with duplicates")
+
+    # Check for duplicates in referenced files - FAIL if found
+    referenced_duplicates = {name: paths for name, paths in duplicates.items() if name in referenced_files}
+    if referenced_duplicates:
+        print("\n" + "=" * 60)
+        print("ERROR: Duplicate filenames found for referenced files!")
+        print("Cannot determine which file the notebook is using.")
+        print("Manual code review required.")
+        print("=" * 60)
+        for name, paths in referenced_duplicates.items():
+            print(f"\n  {name}:")
+            for p in paths:
+                print(f"    - {p}")
+        print()
+        sys.exit(1)
 
     # Filter to only files that are actually referenced
-    data_files = {name: path for name, path in all_data_files.items() if name in referenced_files}
+    data_files = {name: path for name, path in unique_files.items() if name in referenced_files}
     print(f"  {len(data_files)} files match references")
 
     # Warn about missing files
@@ -362,13 +374,6 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
             cells_modified += 1
             total_replacements += replacements
             print(f"  Cell {i}: {replacements} path(s) transformed")
-
-    # Inject HF data cell (hidden from HTML with remove-cell tag)
-    if url_mapping:
-        hf_cell = create_hf_data_cell(url_mapping)
-        insert_index = find_ipyniivue_import_index(nb) + 1
-        nb["cells"].insert(insert_index, hf_cell)
-        print(f"\nInjected HF data cell at index {insert_index} (hidden from HTML)")
 
     # Clear outputs if requested
     outputs_cleared = 0
