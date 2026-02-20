@@ -24,6 +24,22 @@ from notebook_metadata import extract_authors_from_first_cell
 # Helpers
 # ---------------------------------------------------------------------------
 
+def build_notebook_page_url(notebook_key: str, site_base_url: str) -> str:
+    """Build the public website URL for a notebook key in books/."""
+    normalized = notebook_key.replace("\\", "/").strip()
+    if normalized.startswith("books/"):
+        relative = normalized[len("books/"):]
+    else:
+        relative = normalized.lstrip("./")
+
+    if "." in relative:
+        page_rel = relative.rsplit(".", 1)[0] + ".html"
+    else:
+        page_rel = relative + ".html"
+
+    return f"{site_base_url.rstrip('/')}/{page_rel.lstrip('/')}"
+
+
 def compute_source_checksum(notebook_path: str) -> str:
     """MD5 of concatenated source cells only (ignoring outputs/metadata)."""
     with open(notebook_path, "r", encoding="utf-8") as fh:
@@ -115,7 +131,8 @@ def delete_draft(api_url, dep_id, token):
 # ---------------------------------------------------------------------------
 
 def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
-                     output_mapping_path, zenodo_token, api_url):
+                     output_mapping_path, zenodo_token, api_url,
+                     site_base_url):
     """Publish or version a notebook on Zenodo.
 
     Returns the updated mapping entry dict, or None if skipped.
@@ -137,6 +154,7 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
 
     notebook_name = os.path.basename(notebook_path).rsplit(".", 1)[0]
     notebook_filename = os.path.basename(notebook_path)
+    notebook_page_url = build_notebook_page_url(notebook_key, site_base_url)
     authors = extract_authors_from_first_cell(notebook_path)
     creators = [{"name": name} for name in authors] if authors else [{"name": "Neurodesk Project"}]
 
@@ -157,7 +175,9 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
             "upload_type": "lesson",
             "description": (
                 f"Executed Jupyter notebook from the Neurodesk education "
-                f"platform. Source: {notebook_key}"
+                f"platform.\n\n"
+                f"Original website: {notebook_page_url}\n"
+                f"Source notebook path: {notebook_key}"
             ),
             "creators": creators,
             "license": "MIT",
@@ -255,6 +275,7 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
         # Update mapping
         mapping[notebook_key] = {
             "doi_url": doi_url,
+            "website_url": notebook_page_url,
             "concept_recid": concept_recid,
             "record_id": record_id,
             "checksum": checksum,
@@ -295,6 +316,8 @@ def main():
                         help="Zenodo API token")
     parser.add_argument("--api-url", default="https://zenodo.org",
                         help="Zenodo API base URL (default: https://zenodo.org)")
+    parser.add_argument("--site-base-url", default="https://neurodesk.org/edu",
+                        help="Public base URL for published notebook pages")
     args = parser.parse_args()
 
     try:
@@ -305,6 +328,7 @@ def main():
             output_mapping_path=args.output_mapping,
             zenodo_token=args.zenodo_token,
             api_url=args.api_url,
+            site_base_url=args.site_base_url,
         )
         if result is None:
             sys.exit(2)  # Unchanged

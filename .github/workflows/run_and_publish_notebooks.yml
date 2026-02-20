@@ -866,7 +866,8 @@ jobs:
               --notebook-key "$canonical" \
               --doi-mapping doi-mapping.json \
               --output-mapping doi-mapping.json \
-              --zenodo-token "$ZENODO_TOKEN"
+              --zenodo-token "$ZENODO_TOKEN" \
+              --site-base-url "https://neurodesk.org/edu"
             rc=$?
             set -e
 
