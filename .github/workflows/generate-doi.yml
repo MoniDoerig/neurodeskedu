@@ -45,15 +45,15 @@ jobs:
             run: |
               python -m pip install --upgrade pip
               pip install requests pyyaml>=6.0.2 tqdm
-          - name : Publish singularity container files in nectar cloud to Zenodo
+          - name: Publish notebook to Zenodo
             id: publish_doi
             shell: bash
             run: |
               curl --output ".github/scripts/publish-doi.py" "https://raw.githubusercontent.com/Neurodesk/neurocommand/refs/heads/main/.github/workflows/publish-doi.py"
-              echo "Upload notebook to Zenodo"      
-              BUILDDATE=`date +%Y%m%d`
+              echo "Upload notebook to Zenodo"
+              BUILDDATE=$(date +%Y%m%d)
               echo "BUILDDATE: $BUILDDATE"
-              NOTEBOOK_NAME=$(echo "${{ matrix.notebooks }}" | cut -d'/' -f3 | cut -d'.' -f1)
+              NOTEBOOK_NAME=$(echo "${{ matrix.notebooks }}" | cut -d'/' -f4 | cut -d'.' -f1)
               echo "NOTEBOOK_NAME=$NOTEBOOK_NAME" >> $GITHUB_ENV
               NOTEBOOK_BUILDDATE="${NOTEBOOK_NAME}_${BUILDDATE}"
               sed -i "s/^        license = get_license(args.container_name, args.gh_token)/        license = 'mit'/" .github/scripts/publish-doi.py
@@ -65,98 +65,75 @@ jobs:
               then
                 echo "DOI_URL: $DOI_URL"
               else
-                echo "Failed to publish ${app} to Zenodo"
+                echo "Failed to publish to Zenodo"
                 exit 1
               fi
-              echo "${DOI_URL}" >> ${NOTEBOOK_NAME}.txt
-          - name: Upload updated notebook
+              # Write notebook_path|doi_url to artifact for the mapping job
+              echo "${{ matrix.notebooks }}|${DOI_URL}" > "${NOTEBOOK_NAME}-doi.txt"
+          - name: Upload DOI artifact
             uses: actions/upload-artifact@v4
             with:
-              name: ${{ env.NOTEBOOK_NAME }}
-              path: ${{ env.NOTEBOOK_NAME }}.txt
+              name: doi-${{ env.NOTEBOOK_NAME }}
+              path: ${{ env.NOTEBOOK_NAME }}-doi.txt
 
-
-    add-doi-button:
+    update-doi-mapping:
       needs: [get-updated-notebooks, publish-doi]
       runs-on: ubuntu-22.04
-      strategy:
-          fail-fast: false
-          matrix:
-            notebooks: ${{ fromJSON(needs.get-updated-notebooks.outputs.updated_notebooks_list) }}
-      outputs:
-          notebook_name: ${{ steps.get_notebook_name.outputs.NOTEBOOK_NAME }}
       steps:
-          - name: Checkout gh-pages branch
-            uses: actions/checkout@v4
-            with:
-                ref: gh-pages
-                fetch-depth: 0
-          - name: Get notebook name
-            id: get_notebook_name
-            run: |
-              NOTEBOOK_NAME=$(echo "${{ matrix.notebooks }}" | cut -d'/' -f3 | cut -d'.' -f1)
-              echo "NOTEBOOK_NAME=$NOTEBOOK_NAME" >> $GITHUB_ENV
-              echo "NOTEBOOK_NAME=${NOTEBOOK_NAME}" >> $GITHUB_OUTPUT
-          - name: Download all updated notebooks
-            uses: actions/download-artifact@v4
-            with:
-              name: ${{ env.NOTEBOOK_NAME }}
-              path: notebook-doi
-          - name: Install node
-            uses: actions/setup-node@v4
-            with:
-              node-version: '20.x'
-          - name: Install dependencies
-            run: |
-              npm install jsdom
-          - name: Update rendered notebooks with DOI
-            run: |
-              echo "Update rendered notebooks with DOI"
-              curl --output "add-doi-button.js" "https://raw.githubusercontent.com/iishiishii/example-notebooks/refs/heads/main/.github/scripts/add-doi-button.js"
-              echo "NOTEBOOK_NAME: $NOTEBOOK_NAME"
-              NOTEBOOK_HTML="${NOTEBOOK_NAME}.html"
-              echo "NOTEBOOK_HTML: $NOTEBOOK_HTML"
-              NOTEBOOK_PARENT=$(echo "${{ matrix.notebooks }}" | cut -d'/' -f2)
-              echo "NOTEBOOK_PARENT: $NOTEBOOK_PARENT"
-              HTML_PATH="${NOTEBOOK_PARENT}/${NOTEBOOK_NAME}.html"
-              echo "HTML_PATH: $HTML_PATH"
-              echo "HTML_PATH=${HTML_PATH}" >> $GITHUB_ENV
-              DOI_URL=$(cat notebook-doi/${NOTEBOOK_NAME}.txt)
-              echo "DOI_URL: $DOI_URL"
-              node add-doi-button.js "${DOI_URL}" "${HTML_PATH}"
-          - name: Upload updated notebook
-            uses: actions/upload-artifact@v4
-            with:
-              name: updated-notebook-${{ env.NOTEBOOK_NAME }}
-              path: ${{ github.workspace }}/*${{ env.HTML_PATH }}
-
-    publish-pages:
-      needs: add-doi-button
-      runs-on: ubuntu-22.04
-      steps:
-        - name: Checkout gh-pages branch
+        - name: Checkout main branch
           uses: actions/checkout@v4
           with:
-            ref: gh-pages
-            fetch-depth: 0
+            ref: main
+            fetch-depth: 1
 
-        - name: Download all updated notebooks
+        - name: Download all DOI artifacts
           uses: actions/download-artifact@v4
           with:
-            path: updated-notebooks
+            pattern: doi-*
+            path: doi-artifacts
             merge-multiple: true
-        - name: Display structure of downloaded files
-          run: ls -R
-        - name: Move updated notebooks to correct locations
-          run: |
-            cd updated-notebooks
-            find . -type f -name '*.html' -exec cp --parents {} .. \;
 
-        - name: Push to GitHub Pages
-          uses: peaceiris/actions-gh-pages@v4.0.0
-          with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            publish_dir: ./
-            publish_branch: gh-pages
-            keep_files: true
-            cname: neurodesk.org
+        - name: Update doi-mapping.json
+          run: |
+            echo "Updating doi-mapping.json with new DOI entries..."
+
+            # Read existing mapping (or start fresh)
+            if [ -f doi-mapping.json ]; then
+              MAPPING=$(cat doi-mapping.json)
+            else
+              MAPPING="{}"
+            fi
+
+            # Process each artifact file
+            for f in doi-artifacts/*-doi.txt; do
+              [ -f "$f" ] || continue
+              LINE=$(cat "$f")
+              NOTEBOOK_PATH=$(echo "$LINE" | cut -d'|' -f1)
+              DOI_URL=$(echo "$LINE" | cut -d'|' -f2)
+              TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+              echo "  Adding: $NOTEBOOK_PATH -> $DOI_URL"
+
+              MAPPING=$(echo "$MAPPING" | python3 -c "
+            import json, sys
+            m = json.load(sys.stdin)
+            m['$NOTEBOOK_PATH'] = {'doi_url': '$DOI_URL', 'updated_at': '$TIMESTAMP'}
+            json.dump(m, sys.stdout, indent=2)
+            ")
+            done
+
+            echo "$MAPPING" > doi-mapping.json
+            echo "Final doi-mapping.json:"
+            cat doi-mapping.json
+
+        - name: Commit doi-mapping.json to main
+          run: |
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add doi-mapping.json
+            if git diff --cached --quiet; then
+              echo "No changes to doi-mapping.json"
+            else
+              git commit -m "Update doi-mapping.json with new DOI entries"
+              git push
+            fi
