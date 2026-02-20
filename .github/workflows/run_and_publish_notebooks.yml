@@ -749,6 +749,13 @@ jobs:
             fi
           '
 
+      - name: Deduplicate widget _esm (reduce notebook size)
+        if: env.NEEDS_SECOND_PASS == 'true'
+        run: |
+          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+          echo "Deduplicating _esm fields in $NOTEBOOK_PATH..."
+          python3 .github/scripts/deduplicate_esm.py "$NOTEBOOK_PATH"
+
       - name: Cleanup container
         if: always()
         run: |
