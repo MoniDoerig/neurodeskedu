@@ -800,11 +800,104 @@ jobs:
           retention-days: 1
 
   # ---------------------------------------------------------------------------
+  # PUBLISH DOIs: Publish new/updated notebooks to Zenodo
+  # ---------------------------------------------------------------------------
+  publish-dois:
+    name: Publish DOIs to Zenodo
+    needs: [run-notebooks]
+    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: main
+
+      - name: Download all executed notebook artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          pattern: executed-*
+          path: executed-artifacts
+
+      - name: Publish each notebook to Zenodo
+        env:
+          ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
+        run: |
+          echo "========== PUBLISHING DOIs TO ZENODO =========="
+          published=0
+          skipped=0
+          failed=0
+
+          for nb_file in $(find executed-artifacts -name "*.ipynb" -type f); do
+            nb_name=$(basename "$nb_file")
+            echo ""
+            echo "--- Processing: $nb_name ---"
+
+            # Find the canonical key (books/...) by locating it in the repo
+            canonical=$(find books -name "$nb_name" -type f | head -1)
+            if [ -z "$canonical" ]; then
+              echo "  Warning: no matching file in books/ for $nb_name, skipping"
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            echo "  Canonical key: $canonical"
+            echo "  Executed file: $nb_file"
+
+            set +e
+            python3 .github/scripts/publish-zenodo.py \
+              --notebook-path "$nb_file" \
+              --notebook-key "$canonical" \
+              --doi-mapping doi-mapping.json \
+              --output-mapping doi-mapping.json \
+              --zenodo-token "$ZENODO_TOKEN"
+            rc=$?
+            set -e
+
+            if [ $rc -eq 0 ]; then
+              echo "  Published successfully"
+              published=$((published + 1))
+            elif [ $rc -eq 2 ]; then
+              echo "  Skipped (unchanged)"
+              skipped=$((skipped + 1))
+            else
+              echo "  ::warning::Failed to publish DOI for $nb_name (exit code $rc)"
+              failed=$((failed + 1))
+            fi
+          done
+
+          echo ""
+          echo "========== DOI PUBLISHING SUMMARY =========="
+          echo "Published: $published"
+          echo "Skipped:   $skipped"
+          echo "Failed:    $failed"
+          echo "============================================="
+
+      - name: Commit doi-mapping.json to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add doi-mapping.json
+          if git diff --cached --quiet; then
+            echo "No changes to doi-mapping.json"
+          else
+            git commit -m "Update doi-mapping.json with new DOI entries"
+            git push
+          fi
+
+      - name: Upload updated doi-mapping artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: doi-mapping-updated
+          path: doi-mapping.json
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
   # PUBLISH: Build complete book and deploy to GitHub Pages
   # ---------------------------------------------------------------------------
   publish-pages:
     name: Build & Publish to GitHub Pages
-    needs: [run-notebooks, setup]
+    needs: [run-notebooks, setup, publish-dois]
     if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
 
@@ -993,6 +1086,22 @@ jobs:
           find books -name "*.ipynb" -type f -mmin -5 -exec ls -lh {} \; 2>/dev/null | head -10 || true
           
           echo "================================================"
+
+      - name: Download updated doi-mapping (from publish-dois job)
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: doi-mapping-updated
+          path: doi-mapping-artifact
+
+      - name: Use updated doi-mapping if available
+        run: |
+          if [ -f "doi-mapping-artifact/doi-mapping.json" ]; then
+            echo "Using updated doi-mapping.json from publish-dois job"
+            cp doi-mapping-artifact/doi-mapping.json doi-mapping.json
+          else
+            echo "No updated doi-mapping artifact found, using existing doi-mapping.json"
+          fi
 
       - name: Set container name
         run: echo "CONTAINER_NAME=neurodesktop-publish-${{ github.run_id }}" >> $GITHUB_ENV
