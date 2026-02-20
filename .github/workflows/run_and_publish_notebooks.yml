@@ -307,20 +307,36 @@ jobs:
              # Be careful not to wipe /mnt on self-hosted if it's used
              BASE_PATH=/storage
           fi
-          
+
           echo "Using BASE_PATH=$BASE_PATH"
           echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
-          
+
           # Setup directories
           sudo mkdir -p $BASE_PATH/tmp
           sudo chown $USER $BASE_PATH/tmp
-          
+
           # Configure Docker data-root (only for GitHub-hosted runners)
           if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
             sudo mkdir -p $BASE_PATH/docker
             echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
             sudo systemctl restart docker
             docker system prune -af || true
+          else
+            # Clean up stale Docker daemon.json from previous runs that may
+            # have incorrectly configured data-root for a GitHub-hosted runner
+            if [ -f /etc/docker/daemon.json ]; then
+              DATA_ROOT=$(python3 -c "import json; print(json.load(open('/etc/docker/daemon.json')).get('data-root',''))" 2>/dev/null || true)
+              if [ -n "$DATA_ROOT" ] && [ ! -d "$DATA_ROOT" ]; then
+                echo "Stale Docker data-root '$DATA_ROOT' does not exist, removing daemon.json"
+                sudo rm -f /etc/docker/daemon.json
+                sudo systemctl restart docker
+                # Wait for Docker to be ready after restart
+                for _ in $(seq 1 12); do
+                  docker info >/dev/null 2>&1 && break
+                  sleep 5
+                done
+              fi
+            fi
           fi
 
       # -------------------------------------------------------------------------
