@@ -1227,51 +1227,82 @@ jobs:
           rm -f books/_build/html/examples/structural_imaging/FSL_course_bet.html
           echo "✓ Oversized HTML files removed"
 
-      - name: Inject DOI buttons from doi-mapping.json
+      - name: Inject DOI buttons and author metadata
         run: |
-          if [ ! -f doi-mapping.json ]; then
-            echo "No doi-mapping.json found, skipping DOI injection"
-            exit 0
+          if [ -f doi-mapping.json ]; then
+            ENTRY_COUNT=$(python3 -c "import json; print(len(json.load(open('doi-mapping.json'))))")
+          else
+            ENTRY_COUNT=0
+            echo "No doi-mapping.json found, DOI links will be skipped"
           fi
+          echo "DOI mapping entries available: $ENTRY_COUNT"
 
-          # Check if mapping is empty
-          ENTRY_COUNT=$(python3 -c "import json; print(len(json.load(open('doi-mapping.json'))))")
-          if [ "$ENTRY_COUNT" = "0" ]; then
-            echo "doi-mapping.json is empty, skipping DOI injection"
-            exit 0
-          fi
-
-          echo "Installing jsdom for DOI button injection..."
+          echo "Installing jsdom for DOI/author metadata injection..."
           npm install --no-save jsdom
 
-          echo "Injecting DOI buttons for $ENTRY_COUNT notebook(s)..."
+          echo "Injecting metadata into built notebook pages..."
           python3 << 'PYEOF'
+          import glob
           import json
-          import subprocess
           import os
+          import subprocess
+          import sys
 
-          with open("doi-mapping.json") as f:
-              mapping = json.load(f)
+          sys.path.insert(0, os.path.join(os.getcwd(), ".github", "scripts"))
+          from notebook_metadata import extract_authors_from_first_cell
 
-          for notebook_path, entry in mapping.items():
-              doi_url = entry["doi_url"]
-              # Convert: books/examples/functional_imaging/intro.ipynb -> examples/functional_imaging/intro.html
+          mapping = {}
+          if os.path.isfile("doi-mapping.json"):
+              with open("doi-mapping.json", encoding="utf-8") as f:
+                  mapping = json.load(f)
+
+          notebook_paths = sorted(
+              path for path in glob.glob("books/**/*.ipynb", recursive=True)
+              if "/_build/" not in path and not path.startswith("books/_build/")
+          )
+
+          injected = 0
+          skipped_missing_html = 0
+          skipped_no_metadata = 0
+
+          for notebook_path in notebook_paths:
               html_rel = notebook_path.replace("books/", "", 1).rsplit(".", 1)[0] + ".html"
               html_path = os.path.join("books/_build/html", html_rel)
 
               if not os.path.isfile(html_path):
-                  print(f"  Skipping {notebook_path}: HTML not found at {html_path}")
+                  skipped_missing_html += 1
                   continue
 
-              print(f"  Injecting DOI for {html_rel}")
+              doi_url = (mapping.get(notebook_path) or {}).get("doi_url", "")
+              authors = extract_authors_from_first_cell(notebook_path)
+              if not doi_url and not authors:
+                  skipped_no_metadata += 1
+                  continue
+
               result = subprocess.run(
-                  ["node", ".github/scripts/add-doi-button.js", doi_url, html_path],
+                  [
+                      "node",
+                      ".github/scripts/add-doi-button.js",
+                      doi_url,
+                      html_path,
+                      json.dumps(authors),
+                  ],
                   capture_output=True, text=True
               )
               if result.returncode != 0:
-                  print(f"    Warning: script failed: {result.stderr.strip()}")
-              else:
-                  print(f"    {result.stdout.strip()}")
+                  print(f"Warning: metadata injection failed for {html_rel}: {result.stderr.strip()}")
+                  continue
+
+              if result.stdout.strip():
+                  print(result.stdout.strip())
+              injected += 1
+
+          print("")
+          print("Notebook metadata injection summary:")
+          print(f"  HTML files updated: {injected}")
+          print(f"  Skipped (HTML missing): {skipped_missing_html}")
+          print(f"  Skipped (no DOI and no author metadata): {skipped_no_metadata}")
+          print(f"  DOI mapping entries available: {len(mapping)}")
           PYEOF
 
       - name: Verify build output

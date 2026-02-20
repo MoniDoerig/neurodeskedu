@@ -17,6 +17,8 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
+from notebook_metadata import extract_authors_from_first_cell
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -135,6 +137,13 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
 
     notebook_name = os.path.basename(notebook_path).rsplit(".", 1)[0]
     notebook_filename = os.path.basename(notebook_path)
+    authors = extract_authors_from_first_cell(notebook_path)
+    creators = [{"name": name} for name in authors] if authors else [{"name": "Neurodesk Project"}]
+
+    if authors:
+        print(f"Using notebook author metadata: {', '.join(authors)}")
+    else:
+        print("No author metadata found in first cell, using fallback creator: Neurodesk Project")
 
     # Read notebook bytes for upload
     with open(notebook_path, "rb") as fh:
@@ -150,7 +159,7 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
                 f"Executed Jupyter notebook from the Neurodesk education "
                 f"platform. Source: {notebook_key}"
             ),
-            "creators": [{"name": "Neurodesk Project"}],
+            "creators": creators,
             "license": "MIT",
             "keywords": ["neurodesk", "neuroimaging", "jupyter", "notebook"],
         }
@@ -249,6 +258,7 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
             "concept_recid": concept_recid,
             "record_id": record_id,
             "checksum": checksum,
+            "authors": authors,
             "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
 
