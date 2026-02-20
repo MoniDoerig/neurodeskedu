@@ -44,10 +44,10 @@ function injectDoiLink(doi, htmlFilePath) {
     link.className = 'btn btn-sm nav-link pst-navbar-icon theme-switch-button';
 
     container.prepend(link);
-
-    fs.writeFileSync(htmlFilePath, dom.serialize());
     console.log(`DOI link added to ${htmlFilePath}`);
   }
+
+  fs.writeFileSync(htmlFilePath, dom.serialize());
 }
 
 // --- CLI Entry Point ---
