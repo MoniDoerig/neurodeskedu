@@ -94,4 +94,4 @@ Then hit return and fMRIPrep should now be merrily working away on your data :)
 
 3. If running on a HPC, make sure to set the processor and memory limits, if not your job will get killed because it hogs all the resources.
 
-4. When viewing the fMRIprep output HTML files do NOT view them in a browser inside Neurodesktop using the RDP protocol. The animations break the rdp compression. If you want to view these files inside a linux desktop, choose the VNC protocol. Even better: View the report inside jupyterlab opening them via the jupyterlab filebrowser.
+4. When viewing the fMRIprep output HTML files do NOT view them in a browser inside Neurodesktop using the RDP protocol. The animations break the rdp compression and it will not be possible to scroll anymore. If you want to view these files inside a linux desktop, choose the VNC protocol. Even better: View the report inside jupyterlab opening them via the jupyterlab filebrowser.
