@@ -168,7 +168,10 @@ def transform_cell_paths(cell_source: str, url_mapping: dict[str, str]) -> tuple
 
 
 def create_hf_data_cell(url_mapping: dict[str, str]) -> dict:
-    """Create a documentation cell showing HF URL mapping."""
+    """Create a documentation cell showing HF URL mapping.
+
+    Tagged with 'remove-cell' so jupyter-book hides it from HTML output.
+    """
     lines = [
         "# Data uploaded to Hugging Face by CI",
         "# ipyniivue widgets load from these URLs instead of local files.",
@@ -181,7 +184,7 @@ def create_hf_data_cell(url_mapping: dict[str, str]) -> dict:
     return {
         "cell_type": "code",
         "execution_count": None,
-        "metadata": {"tags": ["hf-data-urls"]},
+        "metadata": {"tags": ["remove-cell"]},  # Hide from HTML output
         "outputs": [],
         "source": "\n".join(lines)
     }
@@ -215,9 +218,50 @@ def find_ipyniivue_import_index(nb: dict) -> int:
     return 0
 
 
+def extract_referenced_files(nb: dict) -> set[str]:
+    """
+    Extract filenames referenced in ipyniivue calls from notebook cells.
+    Returns set of filenames (not full paths).
+    """
+    referenced = set()
+
+    # Patterns to extract filenames from ipyniivue usage
+    # Pattern for string literals: "path": "./data/file.nii.gz" or 'path': 'file.nii.gz'
+    pattern_literal = r'["\']path["\']\s*:\s*["\']([^"\']+)["\']'
+    # Pattern for variable paths: "path": DATA_FOLDER / "file.nii.gz"
+    pattern_variable = r'["\']path["\']\s*:\s*[A-Za-z_][A-Za-z0-9_]*\s*/\s*["\']([^"\']+)["\']'
+    # Pattern for keyword args: path=FOLDER / "file.nii.gz"
+    pattern_kwarg = r'path\s*=\s*[A-Za-z_][A-Za-z0-9_]*\s*/\s*["\']([^"\']+)["\']'
+
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+
+        source = cell.get("source", [])
+        if isinstance(source, list):
+            source_str = "".join(source)
+        else:
+            source_str = source
+
+        # Only look in cells with ipyniivue usage
+        if not any(kw in source_str for kw in ["load_volumes", "load_meshes", "add_volume", "add_mesh", "NiiVue"]):
+            continue
+
+        for pattern in [pattern_literal, pattern_variable, pattern_kwarg]:
+            for match in re.finditer(pattern, source_str):
+                path_or_filename = match.group(1)
+                # Extract just the filename from the path
+                filename = Path(path_or_filename).name
+                if is_niivue_file(Path(filename)):
+                    referenced.add(filename)
+
+    return referenced
+
+
 def transform_notebook(notebook_path: str, working_dir: str = None, clear_outputs: bool = False) -> dict:
     """
-    Transform notebook: scan for data files, upload to HF, rewrite paths to URLs.
+    Transform notebook: find referenced files, upload to HF, rewrite paths to URLs.
+    Only uploads files that are actually used in ipyniivue calls.
     """
     notebook_path = Path(notebook_path)
 
@@ -241,16 +285,34 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
 
     print(f"HF prefix: {notebook_hf_prefix}")
 
-    # Scan for data files
+    # First: extract filenames actually referenced in ipyniivue calls
+    print("\nExtracting referenced files from notebook...")
+    referenced_files = extract_referenced_files(nb)
+    print(f"  Found {len(referenced_files)} referenced files: {sorted(referenced_files)}")
+
+    if not referenced_files:
+        print("  No ipyniivue file references found")
+        return {"transformed": False, "reason": "no_references"}
+
+    # Scan working directory for all niivue files
     print("\nScanning for niivue data files...")
-    data_files = scan_data_files(working_dir)
-    print(f"  Found {len(data_files)} files")
+    all_data_files = scan_data_files(working_dir)
+    print(f"  Found {len(all_data_files)} files in directory")
+
+    # Filter to only files that are actually referenced
+    data_files = {name: path for name, path in all_data_files.items() if name in referenced_files}
+    print(f"  {len(data_files)} files match references")
+
+    # Warn about missing files
+    missing = referenced_files - set(data_files.keys())
+    if missing:
+        print(f"  WARNING: {len(missing)} referenced files not found: {sorted(missing)}")
 
     if not data_files:
-        print("  No data files found")
-        return {"transformed": False, "reason": "no_data_files"}
+        print("  No matching data files found")
+        return {"transformed": False, "reason": "no_matching_files"}
 
-    # Upload files and build URL mapping
+    # Upload only the referenced files
     print("\nUploading to Hugging Face...")
     url_mapping = {}  # filename -> HF URL
     total_size = 0
@@ -301,12 +363,12 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
             total_replacements += replacements
             print(f"  Cell {i}: {replacements} path(s) transformed")
 
-    # Inject HF data documentation cell
+    # Inject HF data cell (hidden from HTML with remove-cell tag)
     if url_mapping:
         hf_cell = create_hf_data_cell(url_mapping)
         insert_index = find_ipyniivue_import_index(nb) + 1
         nb["cells"].insert(insert_index, hf_cell)
-        print(f"\nInjected HF data cell at index {insert_index}")
+        print(f"\nInjected HF data cell at index {insert_index} (hidden from HTML)")
 
     # Clear outputs if requested
     outputs_cleared = 0
