@@ -844,6 +844,7 @@ jobs:
           published=0
           skipped=0
           failed=0
+          failed_items=()
 
           publish_content() {
             local source_file="$1"
@@ -869,6 +870,7 @@ jobs:
             else
               echo "  ::warning::Failed to publish DOI for ${canonical_key} (exit code $rc)"
               failed=$((failed + 1))
+              failed_items+=("${canonical_key}")
             fi
           }
 
@@ -910,6 +912,13 @@ jobs:
           echo "Skipped:   $skipped"
           echo "Failed:    $failed"
           echo "============================================="
+
+          if [ $failed -gt 0 ]; then
+            echo ""
+            echo "::error::DOI publishing failed for ${failed} item(s):"
+            printf ' - %s\n' "${failed_items[@]}"
+            exit 1
+          fi
 
       - name: Commit doi-mapping.json to main
         run: |
