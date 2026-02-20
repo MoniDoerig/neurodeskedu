@@ -864,15 +864,6 @@ jobs:
               print(f"::warning::Could not check notebook for errors: {e}")
           EOF
 
-      - name: Upload nbconvert log artifact
-        if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-        with:
-          name: nbconvert-log-${{ env.NOTEBOOK }}
-          path: nbconvert-${{ env.NOTEBOOK }}.log
-          if-no-files-found: warn
-          retention-days: 7
-
       - name: Upload executed notebook artifact
         if: success()  # Only upload if notebook executed without errors
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
