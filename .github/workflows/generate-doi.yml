@@ -20,14 +20,17 @@ jobs:
               run: |
                 # Get the list of new or updated notebooks by comparing the checksum of notebooks from github and zenodo
                 echo "Comparing checksum notebooks from GH repo and zenodo..."
-                export UPDATED_NOTEBOOKS=$(python .github/scripts/get-updated-notebooks.py --zenodo_token ${{ secrets.ZENODO_TOKEN }})
+                UPDATED_NOTEBOOKS=$(python .github/scripts/get-updated-notebooks.py --zenodo_token ${{ secrets.ZENODO_TOKEN }}) || true
+                if [ -z "$UPDATED_NOTEBOOKS" ]; then
+                  UPDATED_NOTEBOOKS="[]"
+                fi
                 echo "updated_notebooks_list" $UPDATED_NOTEBOOKS
                 echo "updated_notebooks_list=${UPDATED_NOTEBOOKS}" >> $GITHUB_OUTPUT
 
     publish-doi:
       needs: get-updated-notebooks
       runs-on: ubuntu-22.04
-      if: ${{ needs.get-updated-notebooks.outputs.updated_notebooks_list != '[]' }}
+      if: ${{ needs.get-updated-notebooks.outputs.updated_notebooks_list != '[]' && needs.get-updated-notebooks.outputs.updated_notebooks_list != '' }}
       strategy:
           fail-fast: false
           matrix:
