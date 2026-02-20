@@ -57,7 +57,7 @@ on:
         type: boolean
         default: false
       notebook_selector:
-        description: 'Path relative to books/ (e.g. examples/workflows/nipype_short.ipynb)'
+        description: 'Path relative to books/ (e.g. examples/functional_imaging/intro_to_preprocessing.ipynb)'
         required: false
         type: string
       use_self_hosted:
@@ -269,9 +269,9 @@ jobs:
     name: Run Notebook
     needs: [setup, select-notebooks]
     if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' }}
-    #runs-on: ${{ needs.setup.outputs.runner }}
-    runs-on:
-      group: arc-base
+    runs-on: ${{ needs.setup.outputs.runner }}
+    # runs-on:
+    #   group: arc-base
     timeout-minutes: 1500
 
     strategy:
@@ -295,33 +295,49 @@ jobs:
       - name: Set notebook environment variables
         run: echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
 
-      # - name: Configure runner (Optimize Disk Space)
-      #   if: runner.os == 'Linux'
-      #   run: |
-      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-      #        echo "Optimizing GitHub-hosted runner..."
-      #        sudo swapoff -a && sudo rm -rf /mnt/*
-      #        BASE_PATH=/mnt
-      #     else
-      #        echo "Configuring self-hosted runner..."
-      #        # Be careful not to wipe /mnt on self-hosted if it's used
-      #        BASE_PATH=/storage
-      #     fi
-          
-      #     echo "Using BASE_PATH=$BASE_PATH"
-      #     echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
-          
-      #     # Setup directories
-      #     sudo mkdir -p $BASE_PATH/tmp
-      #     sudo chown $USER $BASE_PATH/tmp
-          
-      #     # Configure Docker data-root (only for GitHub-hosted runners)
-      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-      #       sudo mkdir -p $BASE_PATH/docker
-      #       echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
-      #       sudo systemctl restart docker
-      #       docker system prune -af || true
-      #     fi
+      - name: Configure runner (Optimize Disk Space)
+        if: runner.os == 'Linux'
+        run: |
+          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+             echo "Optimizing GitHub-hosted runner..."
+             sudo swapoff -a && sudo rm -rf /mnt/*
+             BASE_PATH=/mnt
+          else
+             echo "Configuring self-hosted runner..."
+             # Be careful not to wipe /mnt on self-hosted if it's used
+             BASE_PATH=/storage
+          fi
+
+          echo "Using BASE_PATH=$BASE_PATH"
+          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+
+          # Setup directories
+          sudo mkdir -p $BASE_PATH/tmp
+          sudo chown $USER $BASE_PATH/tmp
+
+          # Configure Docker data-root (only for GitHub-hosted runners)
+          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+            sudo mkdir -p $BASE_PATH/docker
+            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
+            sudo systemctl restart docker
+            docker system prune -af || true
+          else
+            # Clean up stale Docker daemon.json from previous runs that may
+            # have incorrectly configured data-root for a GitHub-hosted runner
+            if [ -f /etc/docker/daemon.json ]; then
+              DATA_ROOT=$(python3 -c "import json; print(json.load(open('/etc/docker/daemon.json')).get('data-root',''))" 2>/dev/null || true)
+              if [ -n "$DATA_ROOT" ] && [ ! -d "$DATA_ROOT" ]; then
+                echo "Stale Docker data-root '$DATA_ROOT' does not exist, removing daemon.json"
+                sudo rm -f /etc/docker/daemon.json
+                sudo systemctl restart docker
+                # Wait for Docker to be ready after restart
+                for _ in $(seq 1 12); do
+                  docker info >/dev/null 2>&1 && break
+                  sleep 5
+                done
+              fi
+            fi
+          fi
 
       # -------------------------------------------------------------------------
       # Ensure Neurodesk image available
@@ -800,11 +816,105 @@ jobs:
           retention-days: 1
 
   # ---------------------------------------------------------------------------
+  # PUBLISH DOIs: Publish new/updated notebooks to Zenodo
+  # ---------------------------------------------------------------------------
+  publish-dois:
+    name: Publish DOIs to Zenodo
+    needs: [run-notebooks]
+    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: main
+
+      - name: Download all executed notebook artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          pattern: executed-*
+          path: executed-artifacts
+
+      - name: Publish each notebook to Zenodo
+        env:
+          ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
+        run: |
+          echo "========== PUBLISHING DOIs TO ZENODO =========="
+          published=0
+          skipped=0
+          failed=0
+
+          for nb_file in $(find executed-artifacts -name "*.ipynb" -type f); do
+            nb_name=$(basename "$nb_file")
+            echo ""
+            echo "--- Processing: $nb_name ---"
+
+            # Find the canonical key (books/...) by locating it in the repo
+            canonical=$(find books -name "$nb_name" -type f | head -1)
+            if [ -z "$canonical" ]; then
+              echo "  Warning: no matching file in books/ for $nb_name, skipping"
+              skipped=$((skipped + 1))
+              continue
+            fi
+
+            echo "  Canonical key: $canonical"
+            echo "  Executed file: $nb_file"
+
+            set +e
+            python3 .github/scripts/publish-zenodo.py \
+              --notebook-path "$nb_file" \
+              --notebook-key "$canonical" \
+              --doi-mapping doi-mapping.json \
+              --output-mapping doi-mapping.json \
+              --zenodo-token "$ZENODO_TOKEN" \
+              --site-base-url "https://neurodesk.org/edu"
+            rc=$?
+            set -e
+
+            if [ $rc -eq 0 ]; then
+              echo "  Published successfully"
+              published=$((published + 1))
+            elif [ $rc -eq 2 ]; then
+              echo "  Skipped (unchanged)"
+              skipped=$((skipped + 1))
+            else
+              echo "  ::warning::Failed to publish DOI for $nb_name (exit code $rc)"
+              failed=$((failed + 1))
+            fi
+          done
+
+          echo ""
+          echo "========== DOI PUBLISHING SUMMARY =========="
+          echo "Published: $published"
+          echo "Skipped:   $skipped"
+          echo "Failed:    $failed"
+          echo "============================================="
+
+      - name: Commit doi-mapping.json to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add doi-mapping.json
+          if git diff --cached --quiet; then
+            echo "No changes to doi-mapping.json"
+          else
+            git commit -m "Update doi-mapping.json with new DOI entries"
+            git push
+          fi
+
+      - name: Upload updated doi-mapping artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: doi-mapping-updated
+          path: doi-mapping.json
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
   # PUBLISH: Build complete book and deploy to GitHub Pages
   # ---------------------------------------------------------------------------
   publish-pages:
     name: Build & Publish to GitHub Pages
-    needs: [run-notebooks, setup]
+    needs: [run-notebooks, setup, publish-dois]
     if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
 
@@ -823,30 +933,32 @@ jobs:
       - name: Configure runner (Optimize Disk Space)
         if: runner.os == 'Linux'
         run: |
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+          # Detect self-hosted by filesystem, not by setup job output.
+          # publish-pages is hardcoded to ubuntu-22.04 but may land on a self-hosted
+          # runner that carries that label, so needs.setup.outputs.runner is unreliable here.
+          if [ -d "/storage" ]; then
+             echo "Configuring self-hosted runner..."
+             BASE_PATH=/storage
+          else
              echo "Optimizing GitHub-hosted runner..."
              sudo swapoff -a && sudo rm -rf /mnt/*
              BASE_PATH=/mnt
-          else
-             echo "Configuring self-hosted runner..."
-             # Be careful not to wipe /mnt on self-hosted if it's used
-             BASE_PATH=/storage
           fi
-          
+
           echo "Using BASE_PATH=$BASE_PATH"
           echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
-          
+
           # Setup directories
           sudo mkdir -p $BASE_PATH/tmp
           sudo chown $USER $BASE_PATH/tmp
-          
-          # Configure Docker data-root (only for GitHub-hosted runners)
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+
+          # Configure Docker data-root only on GitHub-hosted runners (/storage absent)
+          if [ "$BASE_PATH" != "/storage" ]; then
             sudo mkdir -p $BASE_PATH/docker
             echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
             sudo systemctl restart docker
           fi
-          
+
       - name: Ensure Neurodesk image available
         run: |
           IMAGE="${{ needs.setup.outputs.neurodesk_image }}"
@@ -992,6 +1104,22 @@ jobs:
           
           echo "================================================"
 
+      - name: Download updated doi-mapping (from publish-dois job)
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: doi-mapping-updated
+          path: doi-mapping-artifact
+
+      - name: Use updated doi-mapping if available
+        run: |
+          if [ -f "doi-mapping-artifact/doi-mapping.json" ]; then
+            echo "Using updated doi-mapping.json from publish-dois job"
+            cp doi-mapping-artifact/doi-mapping.json doi-mapping.json
+          else
+            echo "No updated doi-mapping artifact found, using existing doi-mapping.json"
+          fi
+
       - name: Set container name
         run: echo "CONTAINER_NAME=neurodesktop-publish-${{ github.run_id }}" >> $GITHUB_ENV
 
@@ -1100,6 +1228,84 @@ jobs:
           rm -f books/_build/html/examples/structural_imaging/FSL_course_bet.html
           echo "✓ Oversized HTML files removed"
 
+      - name: Inject DOI buttons and author metadata
+        run: |
+          if [ -f doi-mapping.json ]; then
+            ENTRY_COUNT=$(python3 -c "import json; print(len(json.load(open('doi-mapping.json'))))")
+          else
+            ENTRY_COUNT=0
+            echo "No doi-mapping.json found, DOI links will be skipped"
+          fi
+          echo "DOI mapping entries available: $ENTRY_COUNT"
+
+          echo "Installing jsdom for DOI/author metadata injection..."
+          npm install --no-save jsdom
+
+          echo "Injecting metadata into built notebook pages..."
+          python3 << 'PYEOF'
+          import glob
+          import json
+          import os
+          import subprocess
+          import sys
+
+          sys.path.insert(0, os.path.join(os.getcwd(), ".github", "scripts"))
+          from notebook_metadata import extract_authors_from_first_cell
+
+          mapping = {}
+          if os.path.isfile("doi-mapping.json"):
+              with open("doi-mapping.json", encoding="utf-8") as f:
+                  mapping = json.load(f)
+
+          notebook_paths = sorted(
+              path for path in glob.glob("books/**/*.ipynb", recursive=True)
+              if "/_build/" not in path and not path.startswith("books/_build/")
+          )
+
+          injected = 0
+          skipped_missing_html = 0
+          skipped_no_metadata = 0
+
+          for notebook_path in notebook_paths:
+              html_rel = notebook_path.replace("books/", "", 1).rsplit(".", 1)[0] + ".html"
+              html_path = os.path.join("books/_build/html", html_rel)
+
+              if not os.path.isfile(html_path):
+                  skipped_missing_html += 1
+                  continue
+
+              doi_url = (mapping.get(notebook_path) or {}).get("doi_url", "")
+              authors = extract_authors_from_first_cell(notebook_path)
+              if not doi_url and not authors:
+                  skipped_no_metadata += 1
+                  continue
+
+              result = subprocess.run(
+                  [
+                      "node",
+                      ".github/scripts/add-doi-button.js",
+                      doi_url,
+                      html_path,
+                      json.dumps(authors),
+                  ],
+                  capture_output=True, text=True
+              )
+              if result.returncode != 0:
+                  print(f"Warning: metadata injection failed for {html_rel}: {result.stderr.strip()}")
+                  continue
+
+              if result.stdout.strip():
+                  print(result.stdout.strip())
+              injected += 1
+
+          print("")
+          print("Notebook metadata injection summary:")
+          print(f"  HTML files updated: {injected}")
+          print(f"  Skipped (HTML missing): {skipped_missing_html}")
+          print(f"  Skipped (no DOI and no author metadata): {skipped_no_metadata}")
+          print(f"  DOI mapping entries available: {len(mapping)}")
+          PYEOF
+
       - name: Verify build output
         run: |
           echo "========== VERIFYING BUILD OUTPUT =========="
@@ -1131,6 +1337,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./books/_build/html
           keep_files: false  # Clean publish - removes old/broken notebooks
+          force_orphan: true  # Reset gh-pages history on each deploy to prevent size bloat
 
       - name: Report published website URL for successful PR runs
         if: ${{ github.event_name == 'pull_request' && success() }}
