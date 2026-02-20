@@ -821,13 +821,11 @@ jobs:
   publish-dois:
     name: Publish DOIs to Zenodo
     needs: [run-notebooks]
-    if: ${{ (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped') && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    if: ${{ (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          ref: main
 
       - name: Download all executed notebook artifacts
         continue-on-error: true
@@ -921,6 +919,7 @@ jobs:
           fi
 
       - name: Commit doi-mapping.json to main
+        if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
