@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Publish a Jupyter notebook to Zenodo, with versioning support.
+"""Publish educational content to Zenodo with versioning support.
+
+Supported content types:
+- Jupyter notebooks (.ipynb)
+- Tutorial markdown files (.md)
 
 Exit codes:
     0 - Published successfully (new deposition or new version)
     1 - Error
-    2 - Skipped (notebook unchanged, checksum matches)
+    2 - Skipped (content unchanged, checksum matches)
 """
 
 import argparse
@@ -17,18 +21,28 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
-from notebook_metadata import extract_authors_from_first_cell
+from notebook_metadata import extract_authors_from_content
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def build_notebook_page_url(notebook_key: str, site_base_url: str) -> str:
-    """Build the public website URL for a notebook key in books/."""
-    normalized = notebook_key.replace("\\", "/").strip()
+def detect_content_type(content_path: str) -> str:
+    """Return a stable content type label from path extension."""
+    lowered = content_path.lower()
+    if lowered.endswith(".ipynb"):
+        return "notebook"
+    if lowered.endswith(".md"):
+        return "tutorial"
+    return "content"
+
+
+def build_content_page_url(content_key: str, site_base_url: str) -> str:
+    """Build the public website URL for a content key in books/."""
+    normalized = content_key.replace("\\", "/").strip()
     if normalized.startswith("books/"):
-        relative = normalized[len("books/"):]
+        relative = normalized[len("books/") :]
     else:
         relative = normalized.lstrip("./")
 
@@ -40,18 +54,65 @@ def build_notebook_page_url(notebook_key: str, site_base_url: str) -> str:
     return f"{site_base_url.rstrip('/')}/{page_rel.lstrip('/')}"
 
 
-def compute_source_checksum(notebook_path: str) -> str:
-    """MD5 of concatenated source cells only (ignoring outputs/metadata)."""
-    with open(notebook_path, "r", encoding="utf-8") as fh:
-        nb = json.load(fh)
-    sources = []
-    for cell in nb.get("cells", []):
-        src = cell.get("source", [])
-        if isinstance(src, list):
-            sources.append("".join(src))
-        else:
-            sources.append(str(src))
-    return hashlib.md5("\n".join(sources).encode("utf-8")).hexdigest()
+def compute_content_checksum(content_path: str) -> str:
+    """Compute a stable checksum per content type.
+
+    For notebooks, checksum includes only source cells so output-only changes do not
+    trigger DOI updates. For markdown/tutorial files, checksum includes full text.
+    """
+    content_type = detect_content_type(content_path)
+
+    if content_type == "notebook":
+        with open(content_path, "r", encoding="utf-8") as fh:
+            notebook = json.load(fh)
+
+        sources = []
+        for cell in notebook.get("cells", []):
+            source = cell.get("source", [])
+            if isinstance(source, list):
+                sources.append("".join(source))
+            else:
+                sources.append(str(source))
+
+        payload = "\n".join(sources)
+    else:
+        with open(content_path, "r", encoding="utf-8") as fh:
+            payload = fh.read().replace("\r\n", "\n")
+
+    return hashlib.md5(payload.encode("utf-8")).hexdigest()
+
+
+def build_zenodo_metadata(content_name: str, content_type: str,
+                          content_key: str, page_url: str,
+                          creators: list[dict]) -> dict:
+    """Build Zenodo deposition metadata payload."""
+    if content_type == "notebook":
+        title = f"Neurodesk Notebook: {content_name}"
+        summary = "Executed Jupyter notebook from the Neurodesk education platform."
+        keywords = ["neurodesk", "neuroimaging", "jupyter", "notebook"]
+    elif content_type == "tutorial":
+        title = f"Neurodesk Tutorial: {content_name}"
+        summary = "Tutorial page from the Neurodesk education platform."
+        keywords = ["neurodesk", "neuroimaging", "tutorial", "education"]
+    else:
+        title = f"Neurodesk Content: {content_name}"
+        summary = "Educational content from the Neurodesk platform."
+        keywords = ["neurodesk", "neuroimaging", "education"]
+
+    return {
+        "metadata": {
+            "title": title,
+            "upload_type": "lesson",
+            "description": (
+                f"{summary}\n\n"
+                f"Original website: {page_url}\n"
+                f"Source path: {content_key}"
+            ),
+            "creators": creators,
+            "license": "MIT",
+            "keywords": keywords,
+        }
+    }
 
 
 def api_request(url, *, method="GET", data=None, files=None, token=None,
@@ -130,60 +191,52 @@ def delete_draft(api_url, dep_id, token):
 # Core publish logic
 # ---------------------------------------------------------------------------
 
-def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
-                     output_mapping_path, zenodo_token, api_url,
-                     site_base_url):
-    """Publish or version a notebook on Zenodo.
+def publish_content(content_path, content_key, doi_mapping_path,
+                    output_mapping_path, zenodo_token, api_url,
+                    site_base_url):
+    """Publish or version a content file on Zenodo.
 
     Returns the updated mapping entry dict, or None if skipped.
     """
     # Load existing mapping
     if os.path.isfile(doi_mapping_path):
-        with open(doi_mapping_path, "r") as fh:
+        with open(doi_mapping_path, "r", encoding="utf-8") as fh:
             mapping = json.load(fh)
     else:
         mapping = {}
 
-    # Compute checksum of source cells
-    checksum = compute_source_checksum(notebook_path)
-    existing = mapping.get(notebook_key)
+    # Compute checksum and short-circuit unchanged content
+    checksum = compute_content_checksum(content_path)
+    existing = mapping.get(content_key)
 
     if existing and existing.get("checksum") == checksum:
-        print(f"Checksum unchanged for {notebook_key}, skipping.")
+        print(f"Checksum unchanged for {content_key}, skipping.")
         return None  # exit code 2
 
-    notebook_name = os.path.basename(notebook_path).rsplit(".", 1)[0]
-    notebook_filename = os.path.basename(notebook_path)
-    notebook_page_url = build_notebook_page_url(notebook_key, site_base_url)
-    authors = extract_authors_from_first_cell(notebook_path)
+    content_name = os.path.basename(content_path).rsplit(".", 1)[0]
+    content_filename = os.path.basename(content_path)
+    content_type = detect_content_type(content_path)
+    page_url = build_content_page_url(content_key, site_base_url)
+
+    authors = extract_authors_from_content(content_path)
     creators = [{"name": name} for name in authors] if authors else [{"name": "Neurodesk Project"}]
 
     if authors:
-        print(f"Using notebook author metadata: {', '.join(authors)}")
+        print(f"Using {content_type} author metadata: {', '.join(authors)}")
     else:
-        print("No author metadata found in first cell, using fallback creator: Neurodesk Project")
+        print(f"No author metadata found for {content_key}, using fallback creator: Neurodesk Project")
 
-    # Read notebook bytes for upload
-    with open(notebook_path, "rb") as fh:
-        nb_bytes = fh.read()
+    # Read content bytes for upload
+    with open(content_path, "rb") as fh:
+        content_bytes = fh.read()
 
-    # Metadata for the deposition
-    title = f"Neurodesk Notebook: {notebook_name}"
-    metadata = {
-        "metadata": {
-            "title": title,
-            "upload_type": "lesson",
-            "description": (
-                f"Executed Jupyter notebook from the Neurodesk education "
-                f"platform.\n\n"
-                f"Original website: {notebook_page_url}\n"
-                f"Source notebook path: {notebook_key}"
-            ),
-            "creators": creators,
-            "license": "MIT",
-            "keywords": ["neurodesk", "neuroimaging", "jupyter", "notebook"],
-        }
-    }
+    metadata = build_zenodo_metadata(
+        content_name=content_name,
+        content_type=content_type,
+        content_key=content_key,
+        page_url=page_url,
+        creators=creators,
+    )
 
     draft_id = None
 
@@ -205,14 +258,14 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
             print(f"  New version draft: {draft_id}")
 
             # Delete old files from the new draft
-            for f in draft.get("files", []):
+            for file_entry in draft.get("files", []):
                 api_request(
-                    f"{api_url}/api/deposit/depositions/{draft_id}/files/{f['id']}",
+                    f"{api_url}/api/deposit/depositions/{draft_id}/files/{file_entry['id']}",
                     method="DELETE", token=zenodo_token,
                 )
         else:
             # --- Brand new deposition ---
-            print(f"Creating new deposition for {notebook_key}...")
+            print(f"Creating new deposition for {content_key}...")
             draft = api_request(
                 f"{api_url}/api/deposit/depositions",
                 method="POST",
@@ -222,27 +275,27 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
             draft_id = draft["id"]
             print(f"  New deposition draft: {draft_id}")
 
-        # Upload notebook file
+        # Upload content file
         bucket_url = None
         # Prefer bucket API (newer) over files API
         if "links" in draft and "bucket" in draft["links"]:
             bucket_url = draft["links"]["bucket"]
 
         if bucket_url:
-            print(f"  Uploading {notebook_filename} via bucket API...")
+            print(f"  Uploading {content_filename} via bucket API...")
             api_request(
-                f"{bucket_url}/{notebook_filename}",
+                f"{bucket_url}/{content_filename}",
                 method="PUT",
-                data=nb_bytes,
+                data=content_bytes,
                 headers={"Content-Type": "application/octet-stream"},
                 token=zenodo_token,
             )
         else:
-            print(f"  Uploading {notebook_filename} via files API...")
+            print(f"  Uploading {content_filename} via files API...")
             api_request(
                 f"{api_url}/api/deposit/depositions/{draft_id}/files",
                 method="POST",
-                files=(notebook_filename, nb_bytes, "application/octet-stream"),
+                files=(content_filename, content_bytes, "application/octet-stream"),
                 token=zenodo_token,
             )
 
@@ -267,27 +320,32 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
         concept_doi = published.get("conceptdoi", "")
         concept_recid = str(published.get("conceptrecid", ""))
         record_id = str(published["id"])
-        doi_url = f"https://doi.org/{concept_doi}" if concept_doi else published.get("links", {}).get("conceptdoi", "")
+        doi_url = (
+            f"https://doi.org/{concept_doi}"
+            if concept_doi
+            else published.get("links", {}).get("conceptdoi", "")
+        )
 
         print(f"  Published! DOI: {doi_url}")
         print(f"  concept_recid={concept_recid}, record_id={record_id}")
 
         # Update mapping
-        mapping[notebook_key] = {
+        mapping[content_key] = {
             "doi_url": doi_url,
-            "website_url": notebook_page_url,
+            "website_url": page_url,
             "concept_recid": concept_recid,
             "record_id": record_id,
+            "content_type": content_type,
             "checksum": checksum,
             "authors": authors,
             "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
 
-        with open(output_mapping_path, "w") as fh:
+        with open(output_mapping_path, "w", encoding="utf-8") as fh:
             json.dump(mapping, fh, indent=2)
             fh.write("\n")
 
-        return mapping[notebook_key]
+        return mapping[content_key]
 
     except Exception:
         # Try to clean up the draft on failure
@@ -302,12 +360,12 @@ def publish_notebook(notebook_path, notebook_key, doi_mapping_path,
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Publish a Jupyter notebook to Zenodo with versioning."
+        description="Publish notebooks/tutorial markdown files to Zenodo with versioning."
     )
-    parser.add_argument("--notebook-path", required=True,
-                        help="Path to the executed notebook file")
-    parser.add_argument("--notebook-key", required=True,
-                        help="Canonical key in doi-mapping.json (e.g. books/examples/...)")
+    parser.add_argument("--notebook-path", "--content-path", dest="content_path", required=True,
+                        help="Path to content file (.ipynb or .md)")
+    parser.add_argument("--notebook-key", "--content-key", dest="content_key", required=True,
+                        help="Canonical key in doi-mapping.json (e.g. books/examples/...) ")
     parser.add_argument("--doi-mapping", required=True,
                         help="Path to doi-mapping.json input")
     parser.add_argument("--output-mapping", required=True,
@@ -317,13 +375,13 @@ def main():
     parser.add_argument("--api-url", default="https://zenodo.org",
                         help="Zenodo API base URL (default: https://zenodo.org)")
     parser.add_argument("--site-base-url", default="https://neurodesk.org/edu",
-                        help="Public base URL for published notebook pages")
+                        help="Public base URL for published notebook/tutorial pages")
     args = parser.parse_args()
 
     try:
-        result = publish_notebook(
-            notebook_path=args.notebook_path,
-            notebook_key=args.notebook_key,
+        result = publish_content(
+            content_path=args.content_path,
+            content_key=args.content_key,
             doi_mapping_path=args.doi_mapping,
             output_mapping_path=args.output_mapping,
             zenodo_token=args.zenodo_token,

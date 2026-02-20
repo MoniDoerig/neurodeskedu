@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Helpers to extract metadata from the first notebook cell."""
+"""Helpers to extract author metadata from notebooks and markdown files."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ _STOP_LINE_RE = re.compile(
     r"^(date|title|license|doi|institution|affiliation|contact|email|version)\b",
     re.IGNORECASE,
 )
+_FRONT_MATTER_RE = re.compile(r"(?s)\A---\n(.*?)\n---\n")
 
 
 def _strip_markdown(text: str) -> str:
@@ -22,6 +23,7 @@ def _strip_markdown(text: str) -> str:
     cleaned = re.sub(r"</?[^>]+>", " ", cleaned)
     cleaned = cleaned.replace("&nbsp;", " ")
     cleaned = cleaned.replace("**", "").replace("__", "").replace("`", "")
+    cleaned = cleaned.replace("*", "").replace("_", "")
     cleaned = re.sub(r"^\s*[-+>#]+\s*", "", cleaned)
     cleaned = re.sub(r"\s+", " ", cleaned)
     return cleaned.strip()
@@ -117,3 +119,92 @@ def extract_authors_from_first_cell(notebook_path: str) -> List[str]:
     with open(notebook_path, "r", encoding="utf-8") as fh:
         notebook_obj = json.load(fh)
     return extract_authors_from_notebook(notebook_obj)
+
+
+def _extract_front_matter(markdown_text: str) -> str:
+    """Return YAML front matter content without delimiters."""
+    match = _FRONT_MATTER_RE.match(markdown_text)
+    return match.group(1) if match else ""
+
+
+def _extract_authors_from_front_matter(front_matter: str) -> List[str]:
+    """Extract author/authors from markdown front matter."""
+    if not front_matter:
+        return []
+
+    lines = front_matter.splitlines()
+    for idx, line in enumerate(lines):
+        match = re.match(r"^\s*authors?\s*:\s*(.*)$", line, flags=re.IGNORECASE)
+        if not match:
+            continue
+
+        inline_value = match.group(1).strip()
+        if inline_value and inline_value not in ("|", ">"):
+            if inline_value.startswith("[") and inline_value.endswith("]"):
+                inline_value = inline_value[1:-1]
+            return _split_authors(inline_value)
+
+        collected: List[str] = []
+        for next_line in lines[idx + 1 :]:
+            if re.match(r"^\s*[A-Za-z0-9_-]+\s*:", next_line):
+                break
+            list_match = re.match(r"^\s*-\s*(.+)\s*$", next_line)
+            if list_match:
+                collected.append(list_match.group(1).strip())
+                continue
+            if next_line.strip():
+                collected.append(next_line.strip())
+                continue
+            if collected:
+                break
+
+        if collected:
+            return _split_authors(" & ".join(collected))
+        return []
+
+    return []
+
+
+def _extract_authors_from_markdown_body(markdown_text: str) -> List[str]:
+    """Extract author names from common markdown body patterns."""
+    for line in markdown_text.splitlines()[:120]:
+        cleaned = _strip_markdown(line)
+        if not cleaned:
+            continue
+
+        author_match = re.match(r"^authors?\s*:\s*(.+)$", cleaned, flags=re.IGNORECASE)
+        if author_match:
+            return _split_authors(author_match.group(1).strip())
+
+        created_match = re.search(
+            r"\bthis tutorial was created by\s+(.+?)(?:[.!]|$)",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+        if created_match:
+            return _split_authors(created_match.group(1).strip())
+
+    return []
+
+
+def extract_authors_from_markdown(markdown_path: str) -> List[str]:
+    """Load a markdown file and return author names from front matter/body."""
+    with open(markdown_path, "r", encoding="utf-8") as fh:
+        markdown_text = fh.read()
+
+    front_matter = _extract_front_matter(markdown_text)
+    authors = _extract_authors_from_front_matter(front_matter)
+    if authors:
+        return authors
+
+    return _extract_authors_from_markdown_body(markdown_text)
+
+
+def extract_authors_from_content(content_path: str) -> List[str]:
+    """Dispatch author extraction based on file extension."""
+    lowered = content_path.lower()
+    if lowered.endswith(".ipynb"):
+        return extract_authors_from_first_cell(content_path)
+    if lowered.endswith(".md"):
+        return extract_authors_from_markdown(content_path)
+    return []

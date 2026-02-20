@@ -821,7 +821,7 @@ jobs:
   publish-dois:
     name: Publish DOIs to Zenodo
     needs: [run-notebooks]
-    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    if: ${{ (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped') && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -830,12 +830,13 @@ jobs:
           ref: main
 
       - name: Download all executed notebook artifacts
+        continue-on-error: true
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           pattern: executed-*
           path: executed-artifacts
 
-      - name: Publish each notebook to Zenodo
+      - name: Publish notebooks and tutorials to Zenodo
         env:
           ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
         run: |
@@ -844,26 +845,14 @@ jobs:
           skipped=0
           failed=0
 
-          for nb_file in $(find executed-artifacts -name "*.ipynb" -type f); do
-            nb_name=$(basename "$nb_file")
-            echo ""
-            echo "--- Processing: $nb_name ---"
-
-            # Find the canonical key (books/...) by locating it in the repo
-            canonical=$(find books -name "$nb_name" -type f | head -1)
-            if [ -z "$canonical" ]; then
-              echo "  Warning: no matching file in books/ for $nb_name, skipping"
-              skipped=$((skipped + 1))
-              continue
-            fi
-
-            echo "  Canonical key: $canonical"
-            echo "  Executed file: $nb_file"
-
+          publish_content() {
+            local source_file="$1"
+            local canonical_key="$2"
+            local label="$3"
             set +e
             python3 .github/scripts/publish-zenodo.py \
-              --notebook-path "$nb_file" \
-              --notebook-key "$canonical" \
+              --notebook-path "$source_file" \
+              --notebook-key "$canonical_key" \
               --doi-mapping doi-mapping.json \
               --output-mapping doi-mapping.json \
               --zenodo-token "$ZENODO_TOKEN" \
@@ -872,16 +861,48 @@ jobs:
             set -e
 
             if [ $rc -eq 0 ]; then
-              echo "  Published successfully"
+              echo "  Published successfully (${label})"
               published=$((published + 1))
             elif [ $rc -eq 2 ]; then
-              echo "  Skipped (unchanged)"
+              echo "  Skipped unchanged (${label})"
               skipped=$((skipped + 1))
             else
-              echo "  ::warning::Failed to publish DOI for $nb_name (exit code $rc)"
+              echo "  ::warning::Failed to publish DOI for ${canonical_key} (exit code $rc)"
               failed=$((failed + 1))
             fi
-          done
+          }
+
+          echo "Processing executed notebook artifacts..."
+          if [ -d "executed-artifacts" ]; then
+            while IFS= read -r nb_file; do
+              nb_name=$(basename "$nb_file")
+              echo ""
+              echo "--- Notebook: $nb_name ---"
+
+              # Find the canonical key (books/...) by locating it in the repo
+              canonical=$(find books -name "$nb_name" -type f | head -1)
+              if [ -z "$canonical" ]; then
+                echo "  Warning: no matching file in books/ for $nb_name, skipping"
+                skipped=$((skipped + 1))
+                continue
+              fi
+
+              echo "  Canonical key: $canonical"
+              echo "  Executed file: $nb_file"
+              publish_content "$nb_file" "$canonical" "notebook"
+            done < <(find executed-artifacts -name "*.ipynb" -type f)
+          else
+            echo "No executed-artifacts directory found. Skipping notebook DOI publishing."
+          fi
+
+          echo ""
+          echo "Processing tutorials (markdown pages)..."
+          while IFS= read -r tutorial_file; do
+            echo ""
+            echo "--- Tutorial: $(basename "$tutorial_file") ---"
+            echo "  Canonical key: $tutorial_file"
+            publish_content "$tutorial_file" "$tutorial_file" "tutorial"
+          done < <(find books/tutorials -name "*.md" -type f ! -name "intro.md")
 
           echo ""
           echo "========== DOI PUBLISHING SUMMARY =========="
@@ -1241,7 +1262,7 @@ jobs:
           echo "Installing jsdom for DOI/author metadata injection..."
           npm install --no-save jsdom
 
-          echo "Injecting metadata into built notebook pages..."
+          echo "Injecting metadata into built content pages..."
           python3 << 'PYEOF'
           import glob
           import json
@@ -1250,32 +1271,38 @@ jobs:
           import sys
 
           sys.path.insert(0, os.path.join(os.getcwd(), ".github", "scripts"))
-          from notebook_metadata import extract_authors_from_first_cell
+          from notebook_metadata import extract_authors_from_content
 
           mapping = {}
           if os.path.isfile("doi-mapping.json"):
               with open("doi-mapping.json", encoding="utf-8") as f:
                   mapping = json.load(f)
 
-          notebook_paths = sorted(
+          notebook_paths = [
               path for path in glob.glob("books/**/*.ipynb", recursive=True)
               if "/_build/" not in path and not path.startswith("books/_build/")
-          )
+          ]
+          tutorial_paths = [
+              path for path in glob.glob("books/tutorials/**/*.md", recursive=True)
+              if "/_build/" not in path and not path.startswith("books/_build/")
+          ]
+          mapped_paths = [path for path in mapping.keys() if path.startswith("books/")]
+          content_paths = sorted(set(notebook_paths + tutorial_paths + mapped_paths))
 
           injected = 0
           skipped_missing_html = 0
           skipped_no_metadata = 0
 
-          for notebook_path in notebook_paths:
-              html_rel = notebook_path.replace("books/", "", 1).rsplit(".", 1)[0] + ".html"
+          for content_path in content_paths:
+              html_rel = content_path.replace("books/", "", 1).rsplit(".", 1)[0] + ".html"
               html_path = os.path.join("books/_build/html", html_rel)
 
               if not os.path.isfile(html_path):
                   skipped_missing_html += 1
                   continue
 
-              doi_url = (mapping.get(notebook_path) or {}).get("doi_url", "")
-              authors = extract_authors_from_first_cell(notebook_path)
+              doi_url = (mapping.get(content_path) or {}).get("doi_url", "")
+              authors = extract_authors_from_content(content_path) if os.path.isfile(content_path) else []
               if not doi_url and not authors:
                   skipped_no_metadata += 1
                   continue
@@ -1299,7 +1326,7 @@ jobs:
               injected += 1
 
           print("")
-          print("Notebook metadata injection summary:")
+          print("Content metadata injection summary:")
           print(f"  HTML files updated: {injected}")
           print(f"  Skipped (HTML missing): {skipped_missing_html}")
           print(f"  Skipped (no DOI and no author metadata): {skipped_no_metadata}")
