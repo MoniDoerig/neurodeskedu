@@ -41,7 +41,7 @@ def get_notebook_from_zenodo(zenodo_token):
         "access_token": zenodo_token,
         "status": "published",
         "page": 1,
-        "size": 100,
+        "size": 25,
     }
     url = "https://sandbox.zenodo.org/api/deposit/depositions"
     response = requests.get(url, params=params)
@@ -55,7 +55,7 @@ def get_notebook_from_zenodo(zenodo_token):
             "access_token": zenodo_token,
             "status": "published",
             "page": page,
-            "size": 100,
+            "size": 25,
         }
         response=requests.get(url, params=params)
 
