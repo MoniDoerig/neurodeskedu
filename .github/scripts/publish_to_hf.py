@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """
-Pre-execution transform: Upload local files to Hugging Face and rewrite notebook paths to URLs.
+Post-execution transform: Upload local files to Hugging Face and rewrite notebook paths to URLs.
 
-This script runs BEFORE notebook execution to:
-1. Scan notebook cells for ipyniivue load_volumes() calls with local paths
-2. Upload referenced files to Hugging Face
-3. Rewrite cell source: "path" -> "url" with HF URLs
-4. Save modified notebook for execution
-
-This way ipyniivue fetches from HF URLs during execution, avoiding embedded data.
+This script runs AFTER first notebook execution (two-pass workflow):
+1. First execution downloads data and generates outputs (with embedded widget data)
+2. This script uploads data files to Hugging Face
+3. Rewrites cell source: "path" -> "url" with HF URLs
+4. Clears all cell outputs (so second execution generates clean outputs)
+5. Second execution uses HF URLs, producing lean widget state
 
 Usage:
-    python publish_to_hf.py <notebook.ipynb> [--working-dir <dir>]
+    python publish_to_hf.py <notebook.ipynb> [--working-dir <dir>] [--clear-outputs]
 
 Environment variables:
     HF_TOKEN: Hugging Face token with write access
@@ -166,11 +165,36 @@ def transform_cell(cell_source: str, working_dir: Path, notebook_hf_prefix: str)
     return new_source, uploaded
 
 
-def transform_notebook(notebook_path: str, working_dir: str = None) -> dict:
+def clear_notebook_outputs(nb: dict) -> int:
+    """
+    Clear all cell outputs and widget state from notebook.
+
+    Returns number of cells cleared.
+    """
+    cleared = 0
+
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") == "code":
+            if cell.get("outputs"):
+                cell["outputs"] = []
+                cleared += 1
+            # Reset execution count
+            cell["execution_count"] = None
+
+    # Clear widget state from metadata
+    if "widgets" in nb.get("metadata", {}):
+        del nb["metadata"]["widgets"]
+        print("  Cleared widget state from metadata")
+
+    return cleared
+
+
+def transform_notebook(notebook_path: str, working_dir: str = None, clear_outputs: bool = False) -> dict:
     """
     Transform notebook: upload local files to HF and rewrite paths to URLs.
 
     This modifies the notebook in place (for CI use).
+    If clear_outputs=True, also clears all cell outputs for re-execution.
     """
     notebook_path = Path(notebook_path)
 
@@ -232,6 +256,13 @@ def transform_notebook(notebook_path: str, working_dir: str = None) -> dict:
         print("  No paths to transform")
         return {"transformed": False, "reason": "no_paths"}
 
+    # Clear outputs if requested (for two-pass workflow)
+    outputs_cleared = 0
+    if clear_outputs:
+        print("\nClearing outputs for re-execution...")
+        outputs_cleared = clear_notebook_outputs(nb)
+        print(f"  Cleared outputs from {outputs_cleared} cells")
+
     # Save modified notebook
     with open(notebook_path, "w") as f:
         json.dump(nb, f, indent=1)
@@ -241,12 +272,15 @@ def transform_notebook(notebook_path: str, working_dir: str = None) -> dict:
     print(f"  Files uploaded: {len(all_uploaded)}")
     total_size = sum(u["size_bytes"] for u in all_uploaded)
     print(f"  Total data moved to HF: {total_size:,} bytes ({total_size/1024/1024:.2f} MB)")
+    if clear_outputs:
+        print(f"  Outputs cleared: {outputs_cleared} cells (ready for re-execution)")
 
     return {
         "transformed": True,
         "cells_modified": cells_modified,
         "files_uploaded": len(all_uploaded),
         "uploaded_files": all_uploaded,
+        "outputs_cleared": outputs_cleared,
     }
 
 
@@ -256,6 +290,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("notebook", help="Path to notebook file")
     parser.add_argument("--working-dir", "-w", help="Working directory for resolving paths")
+    parser.add_argument("--clear-outputs", "-c", action="store_true",
+                        help="Clear all cell outputs after transform (for two-pass workflow)")
 
     args = parser.parse_args()
 
@@ -267,10 +303,12 @@ def main():
     if not DRY_RUN and not os.environ.get("HF_TOKEN"):
         print("WARNING: HF_TOKEN not set. Uploads will fail.")
 
-    result = transform_notebook(args.notebook, args.working_dir)
+    result = transform_notebook(args.notebook, args.working_dir, clear_outputs=args.clear_outputs)
 
     if result["transformed"]:
         print(f"\nSuccess! Notebook transformed for HF URLs.")
+        if args.clear_outputs:
+            print("Outputs cleared - ready for second execution pass.")
     else:
         print(f"\nNo transformation needed: {result.get('reason', 'unknown')}")
 
