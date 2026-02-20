@@ -1,1 +1,186 @@
-{}
+{
+  "books/examples/template.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443589",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/workflows/AA_Neurodesk_demo_tour.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443646",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/AFNI_preprocessing_only.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443612",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/AFNI_preprocessing_plus_glm.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443598",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/AFNI_preprocessing_plus_glm_group.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443630",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/AFNI_processing_task_based.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443586",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/diffusion_imaging/DIPY_1.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443604",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/diffusion_imaging/DIPY_2.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443642",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/diffusion_imaging/Diffusion_TBSS_Demo.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443606",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/structural_imaging/FSL_course_bet.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443626",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/FSL_preproc_glm.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443638",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/FSLnets_course_practical.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443658",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/workflows/MRIQC.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443601",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/diffusion_imaging/MRtrix_1.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443632",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/diffusion_imaging/MRtrix_2.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443618",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/diffusion_imaging/MRtrix_3.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443648",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/workflows/Magic_commands.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443584",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/NiWrap.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443670",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/workflows/PyBIDS.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443624",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/workflows/RISE_slideshow.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443628",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/structural_imaging/SYNcro.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443634",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/quantitative_imaging/aslprep.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443652",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/workflows/bids_conversion.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443660",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/structural_imaging/brain_extraction_different_tools.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443608",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/deepretinotopy.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443602",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/electrophysiology/eeg_with_mne.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443650",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/fMRI_tutorial_in_R_magic.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443664",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/first_and_second_level_spm.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443582",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/functional_imaging/fmriprep.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443662",
+    "updated_at": "2026-02-20T19:41:56Z"
+  },
+  "books/examples/structural_imaging/freesurfer.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443654",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/structural_imaging/freesurfer-recon-all-clinical.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443672",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/functional_imaging/fsl_all_levels_flanker_nipype.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443666",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/functional_imaging/intro_to_preprocessing.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443610",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/workflows/ipyniivue_ipywidgets.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443616",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/spectroscopy/lcmodel.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443590",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/functional_imaging/mri_vol2surf.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443640",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/diffusion_imaging/mrtrix3tissue.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443614",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/workflows/nextflow_neurodesk.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443596",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/workflows/nipype_full.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443622",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/workflows/nipype_short.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443594",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/spectroscopy/osprey.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443668",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/workflows/papermill-slurm-submission-example.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443656",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/functional_imaging/process_five_echo_dataset.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443644",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/workflows/pydra_preproc_ants.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443637",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/quantitative_imaging/qsmxt.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443620",
+    "updated_at": "2026-02-20T19:41:57Z"
+  },
+  "books/examples/structural_imaging/sct_toolbox.ipynb": {
+    "doi_url": "https://doi.org/10.5072/zenodo.443592",
+    "updated_at": "2026-02-20T19:41:57Z"
+  }
+}
