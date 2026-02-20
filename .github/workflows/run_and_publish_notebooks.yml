@@ -206,7 +206,7 @@ jobs:
           PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
         run: |
           mkdir -p ${{ github.workspace }}/.cache/pip
-          pip install "jupyter-book<2.0.0" ghp-import
+          pip install "jupyter-book<2.0.0" ghp-import huggingface_hub
 
   # ---------------------------------------------------------------------------
   # SELECT NOTEBOOKS: Determine which notebooks to run (changed or manually selected)
@@ -572,6 +572,25 @@ jobs:
             echo "Root-level setup complete"
           '
 
+      - name: Transform notebook paths to HF URLs (pre-execution)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+        run: |
+          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+          WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
+
+          # Check if notebook uses ipyniivue (quick check)
+          if ! grep -qE "load_volumes|load_meshes" "$NOTEBOOK_PATH" 2>/dev/null; then
+            echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
+            exit 0
+          fi
+
+          echo "Found ipyniivue usage - transforming local paths to HF URLs..."
+
+          # Transform paths to URLs (uploads files to HF, rewrites notebook)
+          python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR"
+
       - name: Execute notebook in container
         timeout-minutes: 1500
         run: |
@@ -806,28 +825,6 @@ jobs:
           path: nbconvert-${{ env.NOTEBOOK }}.log
           if-no-files-found: warn
           retention-days: 7
-
-      - name: Publish large widget data to Hugging Face
-        if: success()
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_REPO: neurodeskorg/neurodeskedu
-        run: |
-          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
-
-          # Check if notebook has widget state (quick check)
-          if ! grep -q "application/vnd.jupyter.widget-state" "$NOTEBOOK_PATH" 2>/dev/null; then
-            echo "No widget state in $NOTEBOOK_PATH - skipping"
-            exit 0
-          fi
-
-          echo "Detected widget state - checking for embedded data..."
-
-          # Install huggingface_hub if needed
-          pip install --quiet huggingface_hub
-
-          # Publish large data to HF and update notebook with URLs
-          python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH"
 
       - name: Upload executed notebook artifact
         if: success()  # Only upload if notebook executed without errors
