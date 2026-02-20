@@ -168,11 +168,19 @@ def transform_notebook(notebook_path: str) -> dict:
                 "model_id": model_id,
             })
 
-            # Set URL in widget state
+            # Set URL in widget state (ipyniivue requires only one of: path, url, data)
             model_state["url"] = hf_url
+
+            # Clear competing fields - ipyniivue will use url instead
+            # (ipyniivue requires only one of: path, url, data)
+            for field in ["path", "data", "img", "buffer_src"]:
+                if field in model_state and model_state[field]:
+                    print(f"    Clearing {field}")
+                    model_state[field] = None
+
             print(f"    Set URL: {hf_url}")
 
-        # Clear the buffers (remove embedded data)
+        # Clear the buffers (remove embedded binary data)
         original_buffer_size = sum(len(json.dumps(b)) for b in model["buffers"])
         model["buffers"] = []
         models_transformed += 1
