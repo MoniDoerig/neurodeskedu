@@ -821,11 +821,17 @@ jobs:
   publish-dois:
     name: Publish DOIs to Zenodo
     needs: [run-notebooks]
-    if: ${{ (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped') && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') }}
+    if: ${{ always() && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Print DOI job gating context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "run-notebooks result=${{ needs.run-notebooks.result }}"
 
       - name: Download all executed notebook artifacts
         continue-on-error: true
