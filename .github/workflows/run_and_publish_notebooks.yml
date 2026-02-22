@@ -206,7 +206,7 @@ jobs:
           PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
         run: |
           mkdir -p ${{ github.workspace }}/.cache/pip
-          pip install "jupyter-book<2.0.0" ghp-import
+          pip install "jupyter-book<2.0.0" ghp-import huggingface_hub
 
   # ---------------------------------------------------------------------------
   # SELECT NOTEBOOKS: Determine which notebooks to run (changed or manually selected)
@@ -242,8 +242,29 @@ jobs:
             changed_notebooks=$(find books -name "*.ipynb" | sed 's|^books/||')
 
           elif [ -n "${{ inputs.notebook_selector }}" ]; then
-            echo "Mode: Running specific notebook: ${{ inputs.notebook_selector }}"
-            changed_notebooks="${{ inputs.notebook_selector }}"
+            # Normalize input: strip common prefixes
+            search_term="${{ inputs.notebook_selector }}"
+            search_term="${search_term#neurodeskedu/}"  # Strip neurodeskedu/
+            search_term="${search_term#books/}"         # Strip books/
+
+            # Search for matching files, ensure results are .ipynb
+            echo "Searching for: ${search_term}"
+            search_name=$(basename "$search_term")
+            mapfile -t found_notebooks < <(find books -type f -name "*${search_name}*" | grep '\.ipynb$' | sed 's|^books/||')
+
+            if [ ${#found_notebooks[@]} -eq 0 ]; then
+              echo "::error::No notebook found matching: ${search_term}"
+              exit 1
+            elif [ ${#found_notebooks[@]} -gt 1 ]; then
+              echo "::error::Multiple notebooks found matching '${search_term}':"
+              printf '  - %s\n' "${found_notebooks[@]}"
+              echo "Please provide a more specific path."
+              exit 1
+            fi
+
+            notebook_path="${found_notebooks[0]}"
+            echo "Mode: Running specific notebook: ${notebook_path}"
+            changed_notebooks="${notebook_path}"
 
           else
             echo "Mode: Running changed notebooks only"
@@ -295,13 +316,12 @@ jobs:
       - name: Set notebook environment variables
         run: echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
 
-      - name: Configure runner (Optimize Disk Space)
+      - name: Configure runner
         if: runner.os == 'Linux'
         run: |
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-             echo "Optimizing GitHub-hosted runner..."
-             sudo swapoff -a && sudo rm -rf /mnt/*
-             BASE_PATH=/mnt
+          if [ "${{ needs.setup.outputs.runner }}" == "self-hosted" ]; then
+            echo "Self-hosted runner - using defaults"
+            BASE_PATH=/storage
           else
              echo "Configuring self-hosted runner..."
              # Be careful not to wipe /mnt on self-hosted if it's used
@@ -338,6 +358,11 @@ jobs:
               fi
             fi
           fi
+
+          # Setup tmp directory (needed for Docker volume mount)
+          sudo mkdir -p $BASE_PATH/tmp
+          sudo chown $USER $BASE_PATH/tmp
+          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
 
       # -------------------------------------------------------------------------
       # Ensure Neurodesk image available
@@ -683,6 +708,72 @@ jobs:
             exit "$EXEC_RC"
           fi
 
+      # Two-pass workflow for ipyniivue notebooks:
+      # 1. First execution (above) downloads data and generates outputs
+      # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
+      # 3. Second execution generates clean outputs with HF URLs
+      - name: Transform notebook paths to HF URLs (post-execution)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+        run: |
+          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+          WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
+
+          # Check if notebook uses ipyniivue
+          if ! grep -qE "load_volumes|load_meshes" "$NOTEBOOK_PATH" 2>/dev/null; then
+            echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
+            echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "Found ipyniivue usage - transforming local paths to HF URLs..."
+          echo "NEEDS_SECOND_PASS=true" >> $GITHUB_ENV
+
+          # Transform paths to URLs, upload to HF, clear outputs for re-execution
+          python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs
+
+      - name: Second execution pass (HF URLs)
+        if: env.NEEDS_SECOND_PASS == 'true'
+        run: |
+          NOTEBOOK_PATH="${{ matrix.notebooks }}"
+          NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
+
+          echo "=== Second execution pass with HF URLs ==="
+          echo "Data files cached from first pass - should be fast"
+
+          docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            set -eo pipefail
+
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+
+            # Initialize the module system
+            if [ -f /usr/share/lmod/lmod/init/bash ]; then
+              source /usr/share/lmod/lmod/init/bash
+            elif [ -f /usr/share/module.sh ]; then
+              source /usr/share/module.sh
+            fi
+
+            export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
+
+            echo "Re-executing notebook with HF URLs: $NOTEBOOK_PATH"
+
+            EXEC_TIMEOUT=86400
+            LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}-pass2.log"
+
+            if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
+              --ExecutePreprocessor.timeout="${EXEC_TIMEOUT}" \
+              --ExecutePreprocessor.kernel_name=python3 \
+              "/home/jovyan/workspace/books/$NOTEBOOK_PATH" 2>&1 | tee "$LOG_FILE"; then
+              echo "Second pass execution complete"
+            else
+              NBEXEC_RC=$?
+              echo "::error::Second pass nbconvert failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
+              tail -n 50 "$LOG_FILE" || true
+              exit "${NBEXEC_RC}"
+            fi
+          '
+
       - name: Cleanup container
         if: always()
         run: |
@@ -797,15 +888,6 @@ jobs:
           except Exception as e:
               print(f"::warning::Could not check notebook for errors: {e}")
           EOF
-
-      - name: Upload nbconvert log artifact
-        if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-        with:
-          name: nbconvert-log-${{ env.NOTEBOOK }}
-          path: nbconvert-${{ env.NOTEBOOK }}.log
-          if-no-files-found: warn
-          retention-days: 7
 
       - name: Upload executed notebook artifact
         if: success()  # Only upload if notebook executed without errors
@@ -952,6 +1034,10 @@ jobs:
     needs: [run-notebooks, setup, publish-dois]
     if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
+    # Serialize publish jobs to prevent race conditions on gh-pages
+    concurrency:
+      group: publish-pages
+      cancel-in-progress: false  # Queue instead of cancel
 
     steps:
       - name: Fix workspace permissions (for self-hosted runners)
@@ -986,13 +1072,6 @@ jobs:
           # Setup directories
           sudo mkdir -p $BASE_PATH/tmp
           sudo chown $USER $BASE_PATH/tmp
-
-          # Configure Docker data-root only on GitHub-hosted runners (/storage absent)
-          if [ "$BASE_PATH" != "/storage" ]; then
-            sudo mkdir -p $BASE_PATH/docker
-            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
-            sudo systemctl restart docker
-          fi
 
       - name: Ensure Neurodesk image available
         run: |
@@ -1256,13 +1335,14 @@ jobs:
           echo "Removing _sources folder from build output..."
           rm -rf books/_build/html/_sources
           echo "✓ _sources folder removed"
-          
-          # Remove HTML files that exceed GitHub's 100MB limit (temporary fix)
-          echo "Removing oversized HTML files..."
-          rm -f books/_build/html/examples/diffusion_imaging/MRtrix_3.html
-          rm -f books/_build/html/examples/workflows/ipyniivue_ipywidgets.html
-          rm -f books/_build/html/examples/structural_imaging/FSL_course_bet.html
-          echo "✓ Oversized HTML files removed"
+
+      - name: Deduplicate _esm in HTML files
+        run: |
+          echo "Deduplicating _esm JavaScript modules in HTML files..."
+          python3 .github/scripts/deduplicate_esm.py --dir books/_build/html
+          echo ""
+          echo "Large HTML files after deduplication:"
+          find books/_build/html -name "*.html" -size +5M -exec ls -lh {} \; || echo "No files over 5MB"
 
       - name: Inject DOI buttons and author metadata
         run: |
@@ -1372,9 +1452,55 @@ jobs:
           
           echo "============================================"
 
+      - name: Check and remove oversized HTML files
+        run: |
+          echo "Checking for oversized HTML files..."
+          OVERSIZED_FILES=()
+          WARNING_FILES=()
+
+          # Find files over 50MB for warnings
+          while IFS= read -r file; do
+            if [ -n "$file" ]; then
+              SIZE_MB=$(du -m "$file" | cut -f1)
+              if [ "$SIZE_MB" -ge 100 ]; then
+                # Over 100MB - must remove (GitHub hard limit)
+                OVERSIZED_FILES+=("$file ($SIZE_MB MB)")
+                echo "::error::Removing oversized file (>100MB): $file ($SIZE_MB MB)"
+                rm -f "$file"
+              else
+                # 50-100MB - warn but keep
+                WARNING_FILES+=("$file ($SIZE_MB MB)")
+                echo "::warning::Large file (>50MB): $file ($SIZE_MB MB)"
+              fi
+            fi
+          done < <(find books/_build/html -name "*.html" -size +50M 2>/dev/null)
+
+          echo ""
+          if [ ${#WARNING_FILES[@]} -gt 0 ]; then
+            echo "${#WARNING_FILES[@]} file(s) over 50MB (warning):"
+            for f in "${WARNING_FILES[@]}"; do
+              echo "  - $f"
+            done
+          fi
+
+          if [ ${#OVERSIZED_FILES[@]} -gt 0 ]; then
+            echo ""
+            echo "${#OVERSIZED_FILES[@]} file(s) over 100MB removed:"
+            for f in "${OVERSIZED_FILES[@]}"; do
+              echo "  - $f"
+            done
+            echo ""
+            echo "These notebooks need HF URL transform to reduce widget data size."
+            echo "Continuing with publish for remaining files..."
+          fi
+
+          if [ ${#WARNING_FILES[@]} -eq 0 ] && [ ${#OVERSIZED_FILES[@]} -eq 0 ]; then
+            echo "✓ No oversized files found"
+          fi
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: (github.ref == 'refs/heads/main' && github.event_name != 'pull_request') || inputs.force_deploy_pages == true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./books/_build/html
