@@ -323,15 +323,40 @@ jobs:
             echo "Self-hosted runner - using defaults"
             BASE_PATH=/storage
           else
-            echo "GitHub-hosted runner - optimizing disk space..."
-            sudo swapoff -a && sudo rm -rf /mnt/*
-            BASE_PATH=/mnt
+             echo "Configuring self-hosted runner..."
+             # Be careful not to wipe /mnt on self-hosted if it's used
+             BASE_PATH=/storage
+          fi
 
-            # Remap Docker to /mnt for more space
-            sudo mkdir -p /mnt/docker
-            echo "{\"data-root\": \"/mnt/docker\"}" | sudo tee /etc/docker/daemon.json
+          echo "Using BASE_PATH=$BASE_PATH"
+          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+
+          # Setup directories
+          sudo mkdir -p $BASE_PATH/tmp
+          sudo chown $USER $BASE_PATH/tmp
+
+          # Configure Docker data-root (only for GitHub-hosted runners)
+          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+            sudo mkdir -p $BASE_PATH/docker
+            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
             sudo systemctl restart docker
             docker system prune -af || true
+          else
+            # Clean up stale Docker daemon.json from previous runs that may
+            # have incorrectly configured data-root for a GitHub-hosted runner
+            if [ -f /etc/docker/daemon.json ]; then
+              DATA_ROOT=$(python3 -c "import json; print(json.load(open('/etc/docker/daemon.json')).get('data-root',''))" 2>/dev/null || true)
+              if [ -n "$DATA_ROOT" ] && [ ! -d "$DATA_ROOT" ]; then
+                echo "Stale Docker data-root '$DATA_ROOT' does not exist, removing daemon.json"
+                sudo rm -f /etc/docker/daemon.json
+                sudo systemctl restart docker
+                # Wait for Docker to be ready after restart
+                for _ in $(seq 1 12); do
+                  docker info >/dev/null 2>&1 && break
+                  sleep 5
+                done
+              fi
+            fi
           fi
 
           # Setup tmp directory (needed for Docker volume mount)
@@ -873,11 +898,140 @@ jobs:
           retention-days: 1
 
   # ---------------------------------------------------------------------------
+  # PUBLISH DOIs: Publish new/updated notebooks to Zenodo
+  # ---------------------------------------------------------------------------
+  publish-dois:
+    name: Publish DOIs to Zenodo
+    needs: [run-notebooks]
+    if: ${{ always() && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Print DOI job gating context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "run-notebooks result=${{ needs.run-notebooks.result }}"
+
+      - name: Download all executed notebook artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          pattern: executed-*
+          path: executed-artifacts
+
+      - name: Publish notebooks and tutorials to Zenodo
+        env:
+          ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
+        run: |
+          echo "========== PUBLISHING DOIs TO ZENODO =========="
+          published=0
+          skipped=0
+          failed=0
+          failed_items=()
+
+          publish_content() {
+            local source_file="$1"
+            local canonical_key="$2"
+            local label="$3"
+            set +e
+            python3 .github/scripts/publish-zenodo.py \
+              --notebook-path "$source_file" \
+              --notebook-key "$canonical_key" \
+              --doi-mapping doi-mapping.json \
+              --output-mapping doi-mapping.json \
+              --zenodo-token "$ZENODO_TOKEN" \
+              --site-base-url "https://neurodesk.org/edu"
+            rc=$?
+            set -e
+
+            if [ $rc -eq 0 ]; then
+              echo "  Published successfully (${label})"
+              published=$((published + 1))
+            elif [ $rc -eq 2 ]; then
+              echo "  Skipped unchanged (${label})"
+              skipped=$((skipped + 1))
+            else
+              echo "  ::warning::Failed to publish DOI for ${canonical_key} (exit code $rc)"
+              failed=$((failed + 1))
+              failed_items+=("${canonical_key}")
+            fi
+          }
+
+          echo "Processing executed notebook artifacts..."
+          if [ -d "executed-artifacts" ]; then
+            while IFS= read -r nb_file; do
+              nb_name=$(basename "$nb_file")
+              echo ""
+              echo "--- Notebook: $nb_name ---"
+
+              # Find the canonical key (books/...) by locating it in the repo
+              canonical=$(find books -name "$nb_name" -type f | head -1)
+              if [ -z "$canonical" ]; then
+                echo "  Warning: no matching file in books/ for $nb_name, skipping"
+                skipped=$((skipped + 1))
+                continue
+              fi
+
+              echo "  Canonical key: $canonical"
+              echo "  Executed file: $nb_file"
+              publish_content "$nb_file" "$canonical" "notebook"
+            done < <(find executed-artifacts -name "*.ipynb" -type f)
+          else
+            echo "No executed-artifacts directory found. Skipping notebook DOI publishing."
+          fi
+
+          echo ""
+          echo "Processing tutorials (markdown pages)..."
+          while IFS= read -r tutorial_file; do
+            echo ""
+            echo "--- Tutorial: $(basename "$tutorial_file") ---"
+            echo "  Canonical key: $tutorial_file"
+            publish_content "$tutorial_file" "$tutorial_file" "tutorial"
+          done < <(find books/tutorials -name "*.md" -type f ! -name "intro.md")
+
+          echo ""
+          echo "========== DOI PUBLISHING SUMMARY =========="
+          echo "Published: $published"
+          echo "Skipped:   $skipped"
+          echo "Failed:    $failed"
+          echo "============================================="
+
+          if [ $failed -gt 0 ]; then
+            echo ""
+            echo "::error::DOI publishing failed for ${failed} item(s):"
+            printf ' - %s\n' "${failed_items[@]}"
+            exit 1
+          fi
+
+      - name: Commit doi-mapping.json to main
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add doi-mapping.json
+          if git diff --cached --quiet; then
+            echo "No changes to doi-mapping.json"
+          else
+            git commit -m "Update doi-mapping.json with new DOI entries"
+            git push
+          fi
+
+      - name: Upload updated doi-mapping artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: doi-mapping-updated
+          path: doi-mapping.json
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
   # PUBLISH: Build complete book and deploy to GitHub Pages
   # ---------------------------------------------------------------------------
   publish-pages:
     name: Build & Publish to GitHub Pages
-    needs: [run-notebooks, setup]
+    needs: [run-notebooks, setup, publish-dois]
     if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
     # Serialize publish jobs to prevent race conditions on gh-pages
@@ -1002,6 +1156,7 @@ jobs:
             pip-book-
 
       - name: Download all executed notebook artifacts
+        continue-on-error: true
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           pattern: executed-*
@@ -1012,13 +1167,13 @@ jobs:
           echo "========== MERGING EXECUTED NOTEBOOKS =========="
           
           echo "=== Step 1: Check artifact directory ==="
-          if [ -d "loaded-artifacts" ]; then
-            echo "loaded-artifacts directory exists"
-            ls -la loaded-artifacts/
-          else
-            echo "::error::loaded-artifacts directory not found!"
-            exit 1
+          if [ ! -d "loaded-artifacts" ]; then
+            echo "::warning::loaded-artifacts directory not found. No executed notebooks to merge."
+            echo "Skipping notebook merge step."
+            exit 0
           fi
+          echo "loaded-artifacts directory exists"
+          ls -la loaded-artifacts/
           
           echo ""
           echo "=== Step 2: Find notebook files ==="
@@ -1063,6 +1218,22 @@ jobs:
           find books -name "*.ipynb" -type f -mmin -5 -exec ls -lh {} \; 2>/dev/null | head -10 || true
           
           echo "================================================"
+
+      - name: Download updated doi-mapping (from publish-dois job)
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: doi-mapping-updated
+          path: doi-mapping-artifact
+
+      - name: Use updated doi-mapping if available
+        run: |
+          if [ -f "doi-mapping-artifact/doi-mapping.json" ]; then
+            echo "Using updated doi-mapping.json from publish-dois job"
+            cp doi-mapping-artifact/doi-mapping.json doi-mapping.json
+          else
+            echo "No updated doi-mapping artifact found, using existing doi-mapping.json"
+          fi
 
       - name: Set container name
         run: echo "CONTAINER_NAME=neurodesktop-publish-${{ github.run_id }}" >> $GITHUB_ENV
@@ -1172,6 +1343,90 @@ jobs:
           echo ""
           echo "Large HTML files after deduplication:"
           find books/_build/html -name "*.html" -size +5M -exec ls -lh {} \; || echo "No files over 5MB"
+
+      - name: Inject DOI buttons and author metadata
+        run: |
+          if [ -f doi-mapping.json ]; then
+            ENTRY_COUNT=$(python3 -c "import json; print(len(json.load(open('doi-mapping.json'))))")
+          else
+            ENTRY_COUNT=0
+            echo "No doi-mapping.json found, DOI links will be skipped"
+          fi
+          echo "DOI mapping entries available: $ENTRY_COUNT"
+
+          echo "Installing jsdom for DOI/author metadata injection..."
+          npm install --no-save jsdom
+
+          echo "Injecting metadata into built content pages..."
+          python3 << 'PYEOF'
+          import glob
+          import json
+          import os
+          import subprocess
+          import sys
+
+          sys.path.insert(0, os.path.join(os.getcwd(), ".github", "scripts"))
+          from notebook_metadata import extract_authors_from_content
+
+          mapping = {}
+          if os.path.isfile("doi-mapping.json"):
+              with open("doi-mapping.json", encoding="utf-8") as f:
+                  mapping = json.load(f)
+
+          notebook_paths = [
+              path for path in glob.glob("books/**/*.ipynb", recursive=True)
+              if "/_build/" not in path and not path.startswith("books/_build/")
+          ]
+          tutorial_paths = [
+              path for path in glob.glob("books/tutorials/**/*.md", recursive=True)
+              if "/_build/" not in path and not path.startswith("books/_build/")
+          ]
+          mapped_paths = [path for path in mapping.keys() if path.startswith("books/")]
+          content_paths = sorted(set(notebook_paths + tutorial_paths + mapped_paths))
+
+          injected = 0
+          skipped_missing_html = 0
+          skipped_no_metadata = 0
+
+          for content_path in content_paths:
+              html_rel = content_path.replace("books/", "", 1).rsplit(".", 1)[0] + ".html"
+              html_path = os.path.join("books/_build/html", html_rel)
+
+              if not os.path.isfile(html_path):
+                  skipped_missing_html += 1
+                  continue
+
+              doi_url = (mapping.get(content_path) or {}).get("doi_url", "")
+              authors = extract_authors_from_content(content_path) if os.path.isfile(content_path) else []
+              if not doi_url and not authors:
+                  skipped_no_metadata += 1
+                  continue
+
+              result = subprocess.run(
+                  [
+                      "node",
+                      ".github/scripts/add-doi-button.js",
+                      doi_url,
+                      html_path,
+                      json.dumps(authors),
+                  ],
+                  capture_output=True, text=True
+              )
+              if result.returncode != 0:
+                  print(f"Warning: metadata injection failed for {html_rel}: {result.stderr.strip()}")
+                  continue
+
+              if result.stdout.strip():
+                  print(result.stdout.strip())
+              injected += 1
+
+          print("")
+          print("Content metadata injection summary:")
+          print(f"  HTML files updated: {injected}")
+          print(f"  Skipped (HTML missing): {skipped_missing_html}")
+          print(f"  Skipped (no DOI and no author metadata): {skipped_no_metadata}")
+          print(f"  DOI mapping entries available: {len(mapping)}")
+          PYEOF
 
       - name: Verify build output
         run: |
