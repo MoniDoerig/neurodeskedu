@@ -34,8 +34,6 @@ html:
   use_repository_button: true
   use_download_button: true
   use_edit_page_button: true
-  analytics:
-    google_analytics_id: G-4Z9774J59Y
 
 sphinx:
   config:
@@ -43,6 +41,8 @@ sphinx:
     nb_merge_streams: true
     mathjax_path: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
     html_theme_options:
+      analytics:
+        google_analytics_id: "G-4Z9774J59Y"
       repository_url: https://github.com/neurodesk/neurodeskedu
       path_to_docs: books
       repository_branch: main
