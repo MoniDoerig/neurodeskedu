@@ -118,89 +118,6 @@ jobs:
           fi
           echo "Using image: $(grep neurodesk_image $GITHUB_OUTPUT | cut -d= -f2)"
 
-      - name: Determine Neurodesk image from latest successful build (DISABLED)
-        if: false  # Disabled - using hardcoded version above
-        id: get_image_dynamic
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          python3 <<'PY'
-          import json
-          import os
-          import urllib.request
-
-          IMAGE_REPO = "ghcr.io/neurodesk/neurodesktop/neurodesktop"
-          API_BASE = "https://api.github.com"
-          PACKAGE_ENDPOINTS = [
-              "/orgs/neurodesk/packages/container/neurodesktop%2Fneurodesktop%2Fneurodesktop/versions?per_page=100",
-              "/orgs/neurodesk/packages/container/neurodesktop%2Fneurodesktop/versions?per_page=100",
-              "/orgs/neurodesk/packages/container/neurodesktop/versions?per_page=100",
-          ]
-
-          def fetch_versions(endpoint, use_auth):
-              headers = {
-                  "Accept": "application/vnd.github+json",
-                  "User-Agent": "neurodeskedu-run_and_publish_notebooks",
-              }
-              token = os.environ.get("GITHUB_TOKEN", "").strip()
-              if use_auth and token:
-                  headers["Authorization"] = f"Bearer {token}"
-
-              req = urllib.request.Request(f"{API_BASE}{endpoint}", headers=headers)
-              with urllib.request.urlopen(req, timeout=30) as response:
-                  return json.load(response)
-
-          latest_tag = None
-          errors = []
-
-          for endpoint in PACKAGE_ENDPOINTS:
-              for use_auth in (True, False):
-                  try:
-                      payload = fetch_versions(endpoint, use_auth=use_auth)
-                  except Exception as exc:
-                      auth_mode = "auth" if use_auth else "anon"
-                      errors.append(f"{endpoint} [{auth_mode}]: {exc}")
-                      continue
-
-                  if not isinstance(payload, list):
-                      auth_mode = "auth" if use_auth else "anon"
-                      errors.append(f"{endpoint} [{auth_mode}]: unexpected payload type {type(payload).__name__}")
-                      continue
-
-                  for version in payload:
-                      tags = (
-                          ((version or {}).get("metadata") or {})
-                          .get("container", {})
-                          .get("tags", [])
-                      )
-                      # Prefer immutable tags over the mutable :latest tag.
-                      candidate_tags = [tag for tag in tags if tag and tag != "latest"]
-                      if candidate_tags:
-                          latest_tag = candidate_tags[0]
-                          break
-
-                  if latest_tag:
-                      break
-
-              if latest_tag:
-                  break
-
-          if not latest_tag:
-              latest_tag = "latest"
-              print(
-                  "::warning::Failed to resolve latest build tag from GHCR package metadata; "
-                  "falling back to mutable tag ':latest'."
-              )
-              if errors:
-                  print("::warning::Lookup errors: " + " | ".join(errors))
-
-          image = f"{IMAGE_REPO}:{latest_tag}"
-          print(f"Using Neurodesk image: {image}")
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-              fh.write(f"neurodesk_image={image}\n")
-          PY
-          fi
-
 
       # --- Pip Cache Warmer ---
       - name: Cache Conda/Python dependencies
@@ -278,6 +195,27 @@ jobs:
             echo "Mode: Running changed notebooks only"
             echo "Changed files: ${{ steps.find_changed.outputs.all_changed_files }}"
             changed_notebooks=$(echo "${{ steps.find_changed.outputs.all_changed_files }}")
+          fi
+
+          # Filter out notebooks from skip list
+          if [ -f ".github/skip-notebooks.txt" ]; then
+            echo "Filtering notebooks using skip list..."
+            skip_list=$(grep -v '^#' .github/skip-notebooks.txt | grep -v '^$' || true)
+            filtered_notebooks=""
+            for nb in $changed_notebooks; do
+              skip=false
+              for skip_nb in $skip_list; do
+                if [ "$nb" = "$skip_nb" ]; then
+                  echo "  Skipping: $nb (in skip list)"
+                  skip=true
+                  break
+                fi
+              done
+              if [ "$skip" = false ]; then
+                filtered_notebooks="$filtered_notebooks $nb"
+              fi
+            done
+            changed_notebooks=$(echo "$filtered_notebooks" | xargs)
           fi
 
           # Build JSON array for matrix strategy
