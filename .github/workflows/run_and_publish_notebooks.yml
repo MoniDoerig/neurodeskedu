@@ -65,6 +65,11 @@ on:
         required: false
         type: boolean
         default: false
+      use_notebook_cache:
+        description: 'Skip notebook execution and use cached executed notebooks from HuggingFace'
+        required: false
+        type: boolean
+        default: false
 
 # =============================================================================
 # CONCURRENCY (disabled to allow multiple runs)
@@ -235,7 +240,7 @@ jobs:
   run-notebooks:
     name: Run Notebook
     needs: [setup, select-notebooks]
-    if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' }}
+    if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' && inputs.use_notebook_cache != true }}
     runs-on: ${{ needs.setup.outputs.runner }}
     # runs-on:
     #   group: arc-base
@@ -843,6 +848,57 @@ jobs:
           path: books/${{ matrix.notebooks }}
           retention-days: 1
 
+      - name: Upload executed notebook to HuggingFace
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+          NOTEBOOK_PATH: books/${{ matrix.notebooks }}
+          HF_PATH: books/${{ matrix.notebooks }}
+        run: |
+          pip install -q huggingface_hub
+
+          python3 << 'PYEOF'
+          import hashlib
+          import os
+          from huggingface_hub import hf_hub_download, file_exists, upload_file
+
+          notebook_path = os.environ["NOTEBOOK_PATH"]
+          hf_path = os.environ["HF_PATH"]
+          hf_repo = os.environ["HF_REPO"]
+
+          # Hash local file
+          with open(notebook_path, "rb") as f:
+              local_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+
+          # Compare with remote if exists
+          should_upload = True
+          if file_exists(hf_repo, hf_path, repo_type="dataset"):
+              try:
+                  remote_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset")
+                  with open(remote_file, "rb") as f:
+                      remote_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+
+                  if local_hash == remote_hash:
+                      print(f"Notebook unchanged (hash: {local_hash}), skipping upload")
+                      should_upload = False
+                  else:
+                      print(f"Notebook changed (local: {local_hash}, remote: {remote_hash})")
+              except Exception as e:
+                  print(f"Could not compare with remote: {e}")
+
+          if should_upload:
+              print(f"Uploading: {notebook_path} -> {hf_path}")
+              upload_file(
+                  path_or_fileobj=notebook_path,
+                  path_in_repo=hf_path,
+                  repo_id=hf_repo,
+                  repo_type="dataset",
+                  commit_message=f"Update executed notebook: {hf_path}",
+              )
+              print("Upload complete")
+          PYEOF
+
   # ---------------------------------------------------------------------------
   # PUBLISH DOIs: Publish new/updated notebooks to Zenodo
   # ---------------------------------------------------------------------------
@@ -1102,11 +1158,68 @@ jobs:
             pip-book-
 
       - name: Download all executed notebook artifacts
+        if: ${{ inputs.use_notebook_cache != true }}
         continue-on-error: true
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           pattern: executed-*
           path: loaded-artifacts
+
+      - name: Download cached notebooks from HuggingFace
+        if: ${{ inputs.use_notebook_cache == true }}
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+        run: |
+          echo "========== CACHE MODE: Downloading notebooks from HuggingFace =========="
+          pip install -q huggingface_hub
+
+          python3 << 'PYEOF'
+          import os
+          import shutil
+          from pathlib import Path
+          from huggingface_hub import list_repo_files, hf_hub_download
+
+          hf_repo = os.environ["HF_REPO"]
+
+          # Get list of notebooks in the git repo
+          git_notebooks = list(Path("books").rglob("*.ipynb"))
+          print(f"Found {len(git_notebooks)} notebooks in git repo")
+
+          # Check which ones exist on HuggingFace
+          hf_files = set(list_repo_files(hf_repo, repo_type="dataset"))
+
+          os.makedirs("loaded-artifacts", exist_ok=True)
+          downloaded = 0
+          missing = []
+
+          for nb_path in git_notebooks:
+              hf_path = str(nb_path)  # books/examples/... matches HF path
+              nb_name = nb_path.stem
+
+              if hf_path not in hf_files:
+                  missing.append(str(nb_path))
+                  continue
+
+              # Download to artifact structure: loaded-artifacts/executed-{name}/{name}.ipynb
+              artifact_dir = Path(f"loaded-artifacts/executed-{nb_name}")
+              artifact_dir.mkdir(parents=True, exist_ok=True)
+
+              local_file = artifact_dir / nb_path.name
+              print(f"  Downloading: {hf_path}")
+
+              cached_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset")
+              shutil.copy(cached_file, local_file)
+              downloaded += 1
+
+          print(f"\nDownloaded {downloaded} notebooks from HuggingFace")
+          if missing:
+              print(f"Missing from HF (will use source): {len(missing)} notebooks")
+              for m in missing[:10]:
+                  print(f"  - {m}")
+              if len(missing) > 10:
+                  print(f"  ... and {len(missing) - 10} more")
+          PYEOF
 
       - name: Merge executed notebooks into books directory
         run: |

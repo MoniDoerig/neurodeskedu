@@ -274,11 +274,12 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
     with open(notebook_path) as f:
         nb = json.load(f)
 
-    # Determine HF path prefix
+    # Determine HF path prefix for data files
+    # Data goes under data/examples/modality/notebook_name/
     notebook_rel = str(notebook_path.with_suffix(""))
     if notebook_rel.startswith("books/"):
         notebook_rel = notebook_rel[6:]
-    notebook_hf_prefix = notebook_rel
+    notebook_hf_prefix = f"data/{notebook_rel}"
 
     print(f"HF prefix: {notebook_hf_prefix}")
 
