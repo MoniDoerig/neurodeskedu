@@ -1,6 +1,3 @@
 # Notebooks to skip in CI execution
 # One notebook path per line (relative to books/ directory)
 # Lines starting with # are comments
-
-# FreeSurfer recon-all takes 6-12+ hours - not feasible for CI
-examples/structural_imaging/freesurfer.ipynb
