@@ -43,7 +43,7 @@ on:
   workflow_dispatch:
     inputs:
       image_override:
-        description: 'Override the Docker image (e.g. ghcr.io/neurodesk/neurodesktop/neurodesktop:2024-01-01)'
+        description: 'Override the Docker image (e.g. ghcr.io/neurodesk/neurodesktop/neurodesktop:2025-12-20)'
         required: false
         type: string
       force_execution:
@@ -119,7 +119,7 @@ jobs:
           if [ -n "${{ inputs.image_override }}" ]; then
             echo "neurodesk_image=${{ inputs.image_override }}" >> $GITHUB_OUTPUT
           else
-            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:2025-12-20" >> $GITHUB_OUTPUT
+            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:2026-01-24" >> $GITHUB_OUTPUT
           fi
           echo "Using image: $(grep neurodesk_image $GITHUB_OUTPUT | cut -d= -f2)"
 
