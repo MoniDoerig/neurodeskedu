@@ -136,7 +136,7 @@ jobs:
           PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
         run: |
           mkdir -p ${{ github.workspace }}/.cache/pip
-          pip install "jupyter-book<2.0.0" ghp-import huggingface_hub
+          pip install "jupyter-book<2.0.0" ghp-import "huggingface_hub>=0.32.0"
 
   # ---------------------------------------------------------------------------
   # SELECT NOTEBOOKS: Determine which notebooks to run (changed or manually selected)
@@ -856,7 +856,7 @@ jobs:
           NOTEBOOK_PATH: books/${{ matrix.notebooks }}
           HF_PATH: books/${{ matrix.notebooks }}
         run: |
-          pip install -q huggingface_hub
+          pip install -q "huggingface_hub>=0.32.0"
 
           python3 << 'PYEOF'
           import hashlib
@@ -1172,7 +1172,7 @@ jobs:
           HF_REPO: neurodeskorg/neurodeskedu
         run: |
           echo "========== CACHE MODE: Downloading notebooks from HuggingFace =========="
-          pip install -q huggingface_hub
+          pip install -q "huggingface_hub>=0.32.0"
 
           python3 << 'PYEOF'
           import os

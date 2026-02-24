@@ -34,6 +34,7 @@ DRY_RUN = os.environ.get("DRY_RUN", "").lower() == "true"
 # File extensions that ipyniivue can load
 NIIVUE_EXTENSIONS = {
     ".nii.gz", ".nii", ".mgz", ".mgh",  # Volumes
+    ".mif",  # MRtrix format
     ".pial", ".white", ".inflated", ".sphere", ".surf", ".gii",  # Meshes
     ".trk", ".tck", ".vtk",  # Tractography
     ".HEAD", ".BRIK.gz",  # AFNI
@@ -128,7 +129,7 @@ def upload_to_hf(filepath: Path, path_in_repo: str) -> str:
         return url
 
     except ImportError:
-        print("ERROR: huggingface_hub not installed. Run: pip install huggingface_hub")
+        print("ERROR: huggingface_hub not installed. Run: pip install 'huggingface_hub>=0.32.0'")
         sys.exit(1)
     except Exception as e:
         print(f"ERROR uploading {filepath}: {e}")
