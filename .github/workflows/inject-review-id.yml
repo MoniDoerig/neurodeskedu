@@ -1,0 +1,120 @@
+# Receive a dispatch from the reviews repo and write the UUID into the
+# notebook/page metadata, then open a PR.
+#
+# This handles the MANUAL scenario: an editor opens a review issue
+# directly in the reviews repo. The reviews repo dispatches here so
+# the UUID gets written into the notebook metadata.
+
+name: Inject review ID into notebook
+
+on:
+  repository_dispatch:
+    types: [inject-review-id]
+
+jobs:
+  inject:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Write nd_review_id into file metadata
+        env:
+          REVIEW_ID: ${{ github.event.client_payload.review_id }}
+          SOURCE_PATH: ${{ github.event.client_payload.source_path }}
+        run: |
+          python - <<'PYEOF'
+          import json, os, re, sys
+
+          review_id = os.environ['REVIEW_ID']
+          source_path = os.environ['SOURCE_PATH']
+          file_path = f"books/{source_path}"
+
+          if not os.path.exists(file_path):
+              print(f"::error::File not found: {file_path}")
+              sys.exit(1)
+
+          if file_path.endswith('.ipynb'):
+              with open(file_path, encoding='utf-8') as f:
+                  nb = json.load(f)
+              if nb.get('metadata', {}).get('nd_review_id'):
+                  print("File already has nd_review_id, skipping.")
+                  sys.exit(0)
+              nb.setdefault('metadata', {})['nd_review_id'] = review_id
+              with open(file_path, 'w', encoding='utf-8') as f:
+                  json.dump(nb, f, indent=1, ensure_ascii=False)
+                  f.write('\n')
+              print(f"Injected nd_review_id={review_id} into {file_path}")
+
+          elif file_path.endswith('.md'):
+              with open(file_path, encoding='utf-8') as f:
+                  content = f.read()
+
+              yfm = re.match(r'^(---\s*\n)(.*?)(\n---)', content, re.DOTALL)
+              if yfm:
+                  if 'nd_review_id' in yfm.group(2):
+                      print("File already has nd_review_id, skipping.")
+                      sys.exit(0)
+                  new_fm = yfm.group(2).rstrip() + f"\nnd_review_id: {review_id}"
+                  content = yfm.group(1) + new_fm + yfm.group(3) + content[yfm.end():]
+              else:
+                  content = f"---\nnd_review_id: {review_id}\n---\n\n{content}"
+
+              with open(file_path, 'w', encoding='utf-8') as f:
+                  f.write(content)
+              print(f"Injected nd_review_id={review_id} into {file_path}")
+          else:
+              print(f"::error::Unsupported file type: {file_path}")
+              sys.exit(1)
+          PYEOF
+
+      - name: Create PR with the metadata change
+        env:
+          REVIEW_ID: ${{ github.event.client_payload.review_id }}
+          SOURCE_PATH: ${{ github.event.client_payload.source_path }}
+          ISSUE_NUMBER: ${{ github.event.client_payload.issue_number }}
+          REVIEWS_REPO: ${{ github.event.client_payload.reviews_repo }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="review/inject-${REVIEW_ID:0:8}"
+
+          # Check if branch already exists on remote (duplicate dispatch)
+          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+            echo "Branch $BRANCH already exists on remote — skipping (likely duplicate dispatch)."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+          git add "books/$SOURCE_PATH"
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit (file may already have the review ID)."
+            exit 0
+          fi
+
+          git commit -m "Add nd_review_id to $SOURCE_PATH
+
+          Review ID: $REVIEW_ID
+          Review issue: $REVIEWS_REPO#$ISSUE_NUMBER"
+
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --title "Add review ID to $SOURCE_PATH" \
+            --body "Adds \`nd_review_id: $REVIEW_ID\` to the metadata of \`books/$SOURCE_PATH\`.
+
+          Linked review issue: https://github.com/$REVIEWS_REPO/issues/$ISSUE_NUMBER
+
+          _This PR was created automatically by the review system._" \
+            --base main \
+            --head "$BRANCH"
