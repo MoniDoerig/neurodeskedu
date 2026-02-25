@@ -101,6 +101,49 @@ def scan_data_files(directory: Path) -> tuple[dict[str, Path], dict[str, list[Pa
     return unique_files, duplicates
 
 
+def ensure_gitattributes(extensions: set[str]) -> None:
+    """Ensure neuroimaging extensions are tracked via LFS/Xet in the HF repo's .gitattributes."""
+    if DRY_RUN:
+        return
+
+    try:
+        from huggingface_hub import hf_hub_download, CommitOperationAdd, HfApi
+
+        # Download current .gitattributes
+        try:
+            ga_path = hf_hub_download(HF_REPO, ".gitattributes", repo_type="dataset")
+            current = open(ga_path).read()
+        except Exception:
+            current = ""
+
+        # Find extensions not yet covered by wildcard patterns
+        missing = []
+        for ext in sorted(extensions):
+            # Check for wildcard pattern like "*.tck filter=lfs ..."
+            pattern = f"*{ext} filter=lfs"
+            if pattern not in current:
+                missing.append(ext)
+
+        if not missing:
+            return
+
+        print(f"  Adding LFS patterns to .gitattributes: {missing}")
+        new_lines = "\n".join(
+            f"*{ext} filter=lfs diff=lfs merge=lfs -text" for ext in missing
+        )
+        updated = current.rstrip() + "\n" + new_lines + "\n"
+
+        api = HfApi()
+        api.create_commit(
+            repo_id=HF_REPO,
+            repo_type="dataset",
+            operations=[CommitOperationAdd(path_in_repo=".gitattributes", path_or_fileobj=updated.encode())],
+            commit_message=f"Add LFS patterns for neuroimaging extensions: {', '.join(missing)}",
+        )
+    except Exception as e:
+        print(f"  WARNING: Could not update .gitattributes: {e}")
+
+
 def upload_to_hf(filepath: Path, path_in_repo: str) -> str:
     """Upload file to Hugging Face and return the URL."""
     url = f"{HF_BASE_URL}/{path_in_repo}"
@@ -328,6 +371,17 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
 
     # Upload only the referenced files
     print("\nUploading to Hugging Face...")
+
+    # Ensure .gitattributes has LFS patterns for all our file extensions
+    data_extensions = {filepath.suffix.lower() for filepath in data_files.values()}
+    # Also add compound extensions
+    for name in data_files:
+        name_lower = name.lower()
+        for ext in COMPOUND_EXTENSIONS:
+            if name_lower.endswith(ext.lower()):
+                data_extensions.add(ext.lower())
+    ensure_gitattributes(data_extensions)
+
     url_mapping = {}  # filename -> HF URL
     total_size = 0
 

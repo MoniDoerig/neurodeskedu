@@ -96,7 +96,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Select runner
+      - name: Select runner 
         id: select_runner
         run: |
           # For workflow_dispatch, use the use_self_hosted input
@@ -680,6 +680,9 @@ jobs:
 
           echo "Found ipyniivue usage - transforming local paths to HF URLs..."
           echo "NEEDS_SECOND_PASS=true" >> $GITHUB_ENV
+
+          # Ensure huggingface_hub with Xet support is installed on the runner
+          pip install -q "huggingface_hub>=0.32.0"
 
           # Transform paths to URLs, upload to HF, clear outputs for re-execution
           python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs
