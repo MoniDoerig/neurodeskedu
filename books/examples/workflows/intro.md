@@ -6,7 +6,5 @@ title: "Workflows"
 
 Example notebooks demonstrating common preprocessing and workflow tools.
 
-```{toctree}
-:titlesonly:
-:maxdepth: 1
+```{tableofcontents}
 ```

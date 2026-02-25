@@ -34,15 +34,18 @@ html:
   use_repository_button: true
   use_download_button: true
   use_edit_page_button: true
-  analytics:
-    google_analytics_id: G-4Z9774J59Y
 
 sphinx:
   config:
     nb_code_prompt_hide: "outputs"
     nb_merge_streams: true
     mathjax_path: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+    html_static_path: ["_static"]
+    html_js_files: ["review-badge.js"]
+    html_css_files: ["review-badge.css"]
     html_theme_options:
+      analytics:
+        google_analytics_id: "G-4Z9774J59Y"
       repository_url: https://github.com/neurodesk/neurodeskedu
       path_to_docs: books
       repository_branch: main
@@ -69,6 +72,7 @@ sphinx:
             url: "https://edu.neurodesk.org"
   local_extensions:
     multiple_jupyterhub: _ext
+    nd_review_meta: _ext
 
 parse:
   myst_enable_extensions:

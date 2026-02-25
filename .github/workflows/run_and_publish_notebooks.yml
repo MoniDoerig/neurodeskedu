@@ -43,7 +43,7 @@ on:
   workflow_dispatch:
     inputs:
       image_override:
-        description: 'Override the Docker image (e.g. ghcr.io/neurodesk/neurodesktop/neurodesktop:2024-01-01)'
+        description: 'Override the Docker image (e.g. ghcr.io/neurodesk/neurodesktop/neurodesktop:2025-12-20)'
         required: false
         type: string
       force_execution:
@@ -62,6 +62,11 @@ on:
         type: string
       use_self_hosted:
         description: 'Use self-hosted runner (check for self-hosted, default: GitHub-hosted)'
+        required: false
+        type: boolean
+        default: false
+      use_notebook_cache:
+        description: 'Skip notebook execution and use cached executed notebooks from HuggingFace'
         required: false
         type: boolean
         default: false
@@ -91,7 +96,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Select runner
+      - name: Select runner 
         id: select_runner
         run: |
           # For workflow_dispatch, use the use_self_hosted input
@@ -108,90 +113,15 @@ jobs:
             echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
           fi
 
-      - name: Determine Neurodesk image from latest successful build
+      - name: Determine Neurodesk image
         id: get_image
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           if [ -n "${{ inputs.image_override }}" ]; then
             echo "neurodesk_image=${{ inputs.image_override }}" >> $GITHUB_OUTPUT
           else
-            python3 <<'PY'
-          import json
-          import os
-          import urllib.request
-
-          IMAGE_REPO = "ghcr.io/neurodesk/neurodesktop/neurodesktop"
-          API_BASE = "https://api.github.com"
-          PACKAGE_ENDPOINTS = [
-              "/orgs/neurodesk/packages/container/neurodesktop%2Fneurodesktop%2Fneurodesktop/versions?per_page=100",
-              "/orgs/neurodesk/packages/container/neurodesktop%2Fneurodesktop/versions?per_page=100",
-              "/orgs/neurodesk/packages/container/neurodesktop/versions?per_page=100",
-          ]
-
-          def fetch_versions(endpoint, use_auth):
-              headers = {
-                  "Accept": "application/vnd.github+json",
-                  "User-Agent": "neurodeskedu-run_and_publish_notebooks",
-              }
-              token = os.environ.get("GITHUB_TOKEN", "").strip()
-              if use_auth and token:
-                  headers["Authorization"] = f"Bearer {token}"
-
-              req = urllib.request.Request(f"{API_BASE}{endpoint}", headers=headers)
-              with urllib.request.urlopen(req, timeout=30) as response:
-                  return json.load(response)
-
-          latest_tag = None
-          errors = []
-
-          for endpoint in PACKAGE_ENDPOINTS:
-              for use_auth in (True, False):
-                  try:
-                      payload = fetch_versions(endpoint, use_auth=use_auth)
-                  except Exception as exc:
-                      auth_mode = "auth" if use_auth else "anon"
-                      errors.append(f"{endpoint} [{auth_mode}]: {exc}")
-                      continue
-
-                  if not isinstance(payload, list):
-                      auth_mode = "auth" if use_auth else "anon"
-                      errors.append(f"{endpoint} [{auth_mode}]: unexpected payload type {type(payload).__name__}")
-                      continue
-
-                  for version in payload:
-                      tags = (
-                          ((version or {}).get("metadata") or {})
-                          .get("container", {})
-                          .get("tags", [])
-                      )
-                      # Prefer immutable tags over the mutable :latest tag.
-                      candidate_tags = [tag for tag in tags if tag and tag != "latest"]
-                      if candidate_tags:
-                          latest_tag = candidate_tags[0]
-                          break
-
-                  if latest_tag:
-                      break
-
-              if latest_tag:
-                  break
-
-          if not latest_tag:
-              latest_tag = "latest"
-              print(
-                  "::warning::Failed to resolve latest build tag from GHCR package metadata; "
-                  "falling back to mutable tag ':latest'."
-              )
-              if errors:
-                  print("::warning::Lookup errors: " + " | ".join(errors))
-
-          image = f"{IMAGE_REPO}:{latest_tag}"
-          print(f"Using Neurodesk image: {image}")
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-              fh.write(f"neurodesk_image={image}\n")
-          PY
+            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:2026-02-24" >> $GITHUB_OUTPUT
           fi
+          echo "Using image: $(grep neurodesk_image $GITHUB_OUTPUT | cut -d= -f2)"
 
 
       # --- Pip Cache Warmer ---
@@ -206,7 +136,7 @@ jobs:
           PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
         run: |
           mkdir -p ${{ github.workspace }}/.cache/pip
-          pip install "jupyter-book<2.0.0" ghp-import
+          pip install "jupyter-book<2.0.0" ghp-import "huggingface_hub>=0.32.0"
 
   # ---------------------------------------------------------------------------
   # SELECT NOTEBOOKS: Determine which notebooks to run (changed or manually selected)
@@ -242,13 +172,55 @@ jobs:
             changed_notebooks=$(find books -name "*.ipynb" | sed 's|^books/||')
 
           elif [ -n "${{ inputs.notebook_selector }}" ]; then
-            echo "Mode: Running specific notebook: ${{ inputs.notebook_selector }}"
-            changed_notebooks="${{ inputs.notebook_selector }}"
+            # Normalize input: strip common prefixes
+            search_term="${{ inputs.notebook_selector }}"
+            search_term="${search_term#neurodeskedu/}"  # Strip neurodeskedu/
+            search_term="${search_term#books/}"         # Strip books/
+
+            # Search for matching files, ensure results are .ipynb
+            echo "Searching for: ${search_term}"
+            search_name=$(basename "$search_term")
+            mapfile -t found_notebooks < <(find books -type f -name "*${search_name}*" | grep '\.ipynb$' | sed 's|^books/||')
+
+            if [ ${#found_notebooks[@]} -eq 0 ]; then
+              echo "::error::No notebook found matching: ${search_term}"
+              exit 1
+            elif [ ${#found_notebooks[@]} -gt 1 ]; then
+              echo "::error::Multiple notebooks found matching '${search_term}':"
+              printf '  - %s\n' "${found_notebooks[@]}"
+              echo "Please provide a more specific path."
+              exit 1
+            fi
+
+            notebook_path="${found_notebooks[0]}"
+            echo "Mode: Running specific notebook: ${notebook_path}"
+            changed_notebooks="${notebook_path}"
 
           else
             echo "Mode: Running changed notebooks only"
             echo "Changed files: ${{ steps.find_changed.outputs.all_changed_files }}"
             changed_notebooks=$(echo "${{ steps.find_changed.outputs.all_changed_files }}")
+          fi
+
+          # Filter out notebooks from skip list
+          if [ -f ".github/skip-notebooks.txt" ]; then
+            echo "Filtering notebooks using skip list..."
+            skip_list=$(grep -v '^#' .github/skip-notebooks.txt | grep -v '^$' || true)
+            filtered_notebooks=""
+            for nb in $changed_notebooks; do
+              skip=false
+              for skip_nb in $skip_list; do
+                if [ "$nb" = "$skip_nb" ]; then
+                  echo "  Skipping: $nb (in skip list)"
+                  skip=true
+                  break
+                fi
+              done
+              if [ "$skip" = false ]; then
+                filtered_notebooks="$filtered_notebooks $nb"
+              fi
+            done
+            changed_notebooks=$(echo "$filtered_notebooks" | xargs)
           fi
 
           # Build JSON array for matrix strategy
@@ -268,7 +240,7 @@ jobs:
   run-notebooks:
     name: Run Notebook
     needs: [setup, select-notebooks]
-    if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' }}
+    if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' && inputs.use_notebook_cache != true }}
     # runs-on: ${{ needs.setup.outputs.runner }}
     runs-on:
       group: arc-base
@@ -295,33 +267,53 @@ jobs:
       - name: Set notebook environment variables
         run: echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
 
-      # - name: Configure runner (Optimize Disk Space)
-      #   if: runner.os == 'Linux'
-      #   run: |
-      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-      #        echo "Optimizing GitHub-hosted runner..."
-      #        sudo swapoff -a && sudo rm -rf /mnt/*
-      #        BASE_PATH=/mnt
-      #     else
-      #        echo "Configuring self-hosted runner..."
-      #        # Be careful not to wipe /mnt on self-hosted if it's used
-      #        BASE_PATH=/storage
-      #     fi
-          
-      #     echo "Using BASE_PATH=$BASE_PATH"
-      #     echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
-          
-      #     # Setup directories
-      #     sudo mkdir -p $BASE_PATH/tmp
-      #     sudo chown $USER $BASE_PATH/tmp
-          
-      #     # Configure Docker data-root (only for GitHub-hosted runners)
-      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-      #       sudo mkdir -p $BASE_PATH/docker
-      #       echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
-      #       sudo systemctl restart docker
-      #       docker system prune -af || true
-      #     fi
+      - name: Configure runner
+        if: runner.os == 'Linux'
+        run: |
+          if [ "${{ needs.setup.outputs.runner }}" == "self-hosted" ]; then
+            echo "Self-hosted runner - using defaults"
+            BASE_PATH=/storage
+          else
+             echo "Configuring self-hosted runner..."
+             # Be careful not to wipe /mnt on self-hosted if it's used
+             BASE_PATH=/storage
+          fi
+
+          echo "Using BASE_PATH=$BASE_PATH"
+          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+
+          # Setup directories
+          sudo mkdir -p $BASE_PATH/tmp
+          sudo chown $USER $BASE_PATH/tmp
+
+          # Configure Docker data-root (only for GitHub-hosted runners)
+          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+            sudo mkdir -p $BASE_PATH/docker
+            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
+            sudo systemctl restart docker
+            docker system prune -af || true
+          else
+            # Clean up stale Docker daemon.json from previous runs that may
+            # have incorrectly configured data-root for a GitHub-hosted runner
+            if [ -f /etc/docker/daemon.json ]; then
+              DATA_ROOT=$(python3 -c "import json; print(json.load(open('/etc/docker/daemon.json')).get('data-root',''))" 2>/dev/null || true)
+              if [ -n "$DATA_ROOT" ] && [ ! -d "$DATA_ROOT" ]; then
+                echo "Stale Docker data-root '$DATA_ROOT' does not exist, removing daemon.json"
+                sudo rm -f /etc/docker/daemon.json
+                sudo systemctl restart docker
+                # Wait for Docker to be ready after restart
+                for _ in $(seq 1 12); do
+                  docker info >/dev/null 2>&1 && break
+                  sleep 5
+                done
+              fi
+            fi
+          fi
+
+          # Setup tmp directory (needed for Docker volume mount)
+          sudo mkdir -p $BASE_PATH/tmp
+          sudo chown $USER $BASE_PATH/tmp
+          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
 
       # -------------------------------------------------------------------------
       # Ensure Neurodesk image available
@@ -667,6 +659,75 @@ jobs:
             exit "$EXEC_RC"
           fi
 
+      # Two-pass workflow for ipyniivue notebooks:
+      # 1. First execution (above) downloads data and generates outputs
+      # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
+      # 3. Second execution generates clean outputs with HF URLs
+      - name: Transform notebook paths to HF URLs (post-execution)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+        run: |
+          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+          WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
+
+          # Check if notebook uses ipyniivue
+          if ! grep -qE "load_volumes|load_meshes" "$NOTEBOOK_PATH" 2>/dev/null; then
+            echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
+            echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "Found ipyniivue usage - transforming local paths to HF URLs..."
+          echo "NEEDS_SECOND_PASS=true" >> $GITHUB_ENV
+
+          # Ensure huggingface_hub with Xet support is installed on the runner
+          pip install -q "huggingface_hub>=0.32.0"
+
+          # Transform paths to URLs, upload to HF, clear outputs for re-execution
+          python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs
+
+      - name: Second execution pass (HF URLs)
+        if: env.NEEDS_SECOND_PASS == 'true'
+        run: |
+          NOTEBOOK_PATH="${{ matrix.notebooks }}"
+          NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
+
+          echo "=== Second execution pass with HF URLs ==="
+          echo "Data files cached from first pass - should be fast"
+
+          docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            set -eo pipefail
+
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+
+            # Initialize the module system
+            if [ -f /usr/share/lmod/lmod/init/bash ]; then
+              source /usr/share/lmod/lmod/init/bash
+            elif [ -f /usr/share/module.sh ]; then
+              source /usr/share/module.sh
+            fi
+
+            export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
+
+            echo "Re-executing notebook with HF URLs: $NOTEBOOK_PATH"
+
+            EXEC_TIMEOUT=86400
+            LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}-pass2.log"
+
+            if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
+              --ExecutePreprocessor.timeout="${EXEC_TIMEOUT}" \
+              --ExecutePreprocessor.kernel_name=python3 \
+              "/home/jovyan/workspace/books/$NOTEBOOK_PATH" 2>&1 | tee "$LOG_FILE"; then
+              echo "Second pass execution complete"
+            else
+              NBEXEC_RC=$?
+              echo "::error::Second pass nbconvert failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
+              tail -n 50 "$LOG_FILE" || true
+              exit "${NBEXEC_RC}"
+            fi
+          '
+
       - name: Cleanup container
         if: always()
         run: |
@@ -782,15 +843,6 @@ jobs:
               print(f"::warning::Could not check notebook for errors: {e}")
           EOF
 
-      - name: Upload nbconvert log artifact
-        if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-        with:
-          name: nbconvert-log-${{ env.NOTEBOOK }}
-          path: nbconvert-${{ env.NOTEBOOK }}.log
-          if-no-files-found: warn
-          retention-days: 7
-
       - name: Upload executed notebook artifact
         if: success()  # Only upload if notebook executed without errors
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -799,14 +851,198 @@ jobs:
           path: books/${{ matrix.notebooks }}
           retention-days: 1
 
+      - name: Upload executed notebook to HuggingFace
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+          NOTEBOOK_PATH: books/${{ matrix.notebooks }}
+          HF_PATH: books/${{ matrix.notebooks }}
+        run: |
+          pip install -q "huggingface_hub>=0.32.0"
+
+          python3 << 'PYEOF'
+          import hashlib
+          import os
+          from huggingface_hub import hf_hub_download, file_exists, upload_file
+
+          notebook_path = os.environ["NOTEBOOK_PATH"]
+          hf_path = os.environ["HF_PATH"]
+          hf_repo = os.environ["HF_REPO"]
+
+          # Hash local file
+          with open(notebook_path, "rb") as f:
+              local_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+
+          # Compare with remote if exists
+          should_upload = True
+          if file_exists(hf_repo, hf_path, repo_type="dataset"):
+              try:
+                  remote_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset")
+                  with open(remote_file, "rb") as f:
+                      remote_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+
+                  if local_hash == remote_hash:
+                      print(f"Notebook unchanged (hash: {local_hash}), skipping upload")
+                      should_upload = False
+                  else:
+                      print(f"Notebook changed (local: {local_hash}, remote: {remote_hash})")
+              except Exception as e:
+                  print(f"Could not compare with remote: {e}")
+
+          if should_upload:
+              print(f"Uploading: {notebook_path} -> {hf_path}")
+              upload_file(
+                  path_or_fileobj=notebook_path,
+                  path_in_repo=hf_path,
+                  repo_id=hf_repo,
+                  repo_type="dataset",
+                  commit_message=f"Update executed notebook: {hf_path}",
+              )
+              print("Upload complete")
+          PYEOF
+
+  # ---------------------------------------------------------------------------
+  # PUBLISH DOIs: Publish new/updated notebooks to Zenodo
+  # ---------------------------------------------------------------------------
+  publish-dois:
+    name: Publish DOIs to Zenodo
+    needs: [run-notebooks]
+    if: ${{ always() && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Print DOI job gating context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "run-notebooks result=${{ needs.run-notebooks.result }}"
+
+      - name: Download all executed notebook artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          pattern: executed-*
+          path: executed-artifacts
+
+      - name: Publish notebooks and tutorials to Zenodo
+        env:
+          ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
+        run: |
+          echo "========== PUBLISHING DOIs TO ZENODO =========="
+          published=0
+          skipped=0
+          failed=0
+          failed_items=()
+
+          publish_content() {
+            local source_file="$1"
+            local canonical_key="$2"
+            local label="$3"
+            set +e
+            python3 .github/scripts/publish-zenodo.py \
+              --notebook-path "$source_file" \
+              --notebook-key "$canonical_key" \
+              --doi-mapping doi-mapping.json \
+              --output-mapping doi-mapping.json \
+              --zenodo-token "$ZENODO_TOKEN" \
+              --site-base-url "https://neurodesk.org/edu"
+            rc=$?
+            set -e
+
+            if [ $rc -eq 0 ]; then
+              echo "  Published successfully (${label})"
+              published=$((published + 1))
+            elif [ $rc -eq 2 ]; then
+              echo "  Skipped unchanged (${label})"
+              skipped=$((skipped + 1))
+            else
+              echo "  ::warning::Failed to publish DOI for ${canonical_key} (exit code $rc)"
+              failed=$((failed + 1))
+              failed_items+=("${canonical_key}")
+            fi
+          }
+
+          echo "Processing executed notebook artifacts..."
+          if [ -d "executed-artifacts" ]; then
+            while IFS= read -r nb_file; do
+              nb_name=$(basename "$nb_file")
+              echo ""
+              echo "--- Notebook: $nb_name ---"
+
+              # Find the canonical key (books/...) by locating it in the repo
+              canonical=$(find books -name "$nb_name" -type f | head -1)
+              if [ -z "$canonical" ]; then
+                echo "  Warning: no matching file in books/ for $nb_name, skipping"
+                skipped=$((skipped + 1))
+                continue
+              fi
+
+              echo "  Canonical key: $canonical"
+              echo "  Executed file: $nb_file"
+              publish_content "$nb_file" "$canonical" "notebook"
+            done < <(find executed-artifacts -name "*.ipynb" -type f)
+          else
+            echo "No executed-artifacts directory found. Skipping notebook DOI publishing."
+          fi
+
+          echo ""
+          echo "Processing tutorials (markdown pages)..."
+          while IFS= read -r tutorial_file; do
+            echo ""
+            echo "--- Tutorial: $(basename "$tutorial_file") ---"
+            echo "  Canonical key: $tutorial_file"
+            publish_content "$tutorial_file" "$tutorial_file" "tutorial"
+          done < <(find books/tutorials -name "*.md" -type f ! -name "intro.md")
+
+          echo ""
+          echo "========== DOI PUBLISHING SUMMARY =========="
+          echo "Published: $published"
+          echo "Skipped:   $skipped"
+          echo "Failed:    $failed"
+          echo "============================================="
+
+          if [ $failed -gt 0 ]; then
+            echo ""
+            echo "::error::DOI publishing failed for ${failed} item(s):"
+            printf ' - %s\n' "${failed_items[@]}"
+            exit 1
+          fi
+
+      - name: Commit doi-mapping.json to main
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add doi-mapping.json
+          if git diff --cached --quiet; then
+            echo "No changes to doi-mapping.json"
+          else
+            git commit -m "Update doi-mapping.json with new DOI entries"
+            git push
+          fi
+
+      - name: Upload updated doi-mapping artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: doi-mapping-updated
+          path: doi-mapping.json
+          retention-days: 1
+
   # ---------------------------------------------------------------------------
   # PUBLISH: Build complete book and deploy to GitHub Pages
   # ---------------------------------------------------------------------------
   publish-pages:
     name: Build & Publish to GitHub Pages
-    needs: [run-notebooks, setup]
+    needs: [run-notebooks, setup, publish-dois]
     if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
+    # Serialize publish jobs to prevent race conditions on gh-pages
+    concurrency:
+      group: publish-pages
+      cancel-in-progress: false  # Queue instead of cancel
 
     steps:
       - name: Fix workspace permissions (for self-hosted runners)
@@ -820,33 +1056,29 @@ jobs:
 
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      # - name: Configure runner (Optimize Disk Space)
-      #   if: runner.os == 'Linux'
-      #   run: |
-      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-      #        echo "Optimizing GitHub-hosted runner..."
-      #        sudo swapoff -a && sudo rm -rf /mnt/*
-      #        BASE_PATH=/mnt
-      #     else
-      #        echo "Configuring self-hosted runner..."
-      #        # Be careful not to wipe /mnt on self-hosted if it's used
-      #        BASE_PATH=/storage
-      #     fi
-          
-      #     echo "Using BASE_PATH=$BASE_PATH"
-      #     echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
-          
-      #     # Setup directories
-      #     sudo mkdir -p $BASE_PATH/tmp
-      #     sudo chown $USER $BASE_PATH/tmp
-          
-      #     # Configure Docker data-root (only for GitHub-hosted runners)
-      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-      #       sudo mkdir -p $BASE_PATH/docker
-      #       echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
-      #       sudo systemctl restart docker
-      #     fi
-          
+      - name: Configure runner (Optimize Disk Space)
+        if: runner.os == 'Linux'
+        run: |
+          # Detect self-hosted by filesystem, not by setup job output.
+          # publish-pages is hardcoded to ubuntu-22.04 but may land on a self-hosted
+          # runner that carries that label, so needs.setup.outputs.runner is unreliable here.
+          if [ -d "/storage" ]; then
+             echo "Configuring self-hosted runner..."
+             BASE_PATH=/storage
+          else
+             echo "Optimizing GitHub-hosted runner..."
+             sudo swapoff -a && sudo rm -rf /mnt/*
+             BASE_PATH=/mnt
+          fi
+
+          echo "Using BASE_PATH=$BASE_PATH"
+          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+
+          # Setup directories
+          sudo mkdir -p $BASE_PATH/tmp
+          sudo chown $USER $BASE_PATH/tmp
+
+
       - name: Ensure Neurodesk image available
         run: |
           IMAGE="${{ needs.setup.outputs.neurodesk_image }}"
@@ -930,23 +1162,81 @@ jobs:
             pip-book-
 
       - name: Download all executed notebook artifacts
+        if: ${{ inputs.use_notebook_cache != true }}
+        continue-on-error: true
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           pattern: executed-*
           path: loaded-artifacts
+
+      - name: Download cached notebooks from HuggingFace
+        if: ${{ inputs.use_notebook_cache == true }}
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+        run: |
+          echo "========== CACHE MODE: Downloading notebooks from HuggingFace =========="
+          pip install -q "huggingface_hub>=0.32.0"
+
+          python3 << 'PYEOF'
+          import os
+          import shutil
+          from pathlib import Path
+          from huggingface_hub import list_repo_files, hf_hub_download
+
+          hf_repo = os.environ["HF_REPO"]
+
+          # Get list of notebooks in the git repo
+          git_notebooks = list(Path("books").rglob("*.ipynb"))
+          print(f"Found {len(git_notebooks)} notebooks in git repo")
+
+          # Check which ones exist on HuggingFace
+          hf_files = set(list_repo_files(hf_repo, repo_type="dataset"))
+
+          os.makedirs("loaded-artifacts", exist_ok=True)
+          downloaded = 0
+          missing = []
+
+          for nb_path in git_notebooks:
+              hf_path = str(nb_path)  # books/examples/... matches HF path
+              nb_name = nb_path.stem
+
+              if hf_path not in hf_files:
+                  missing.append(str(nb_path))
+                  continue
+
+              # Download to artifact structure: loaded-artifacts/executed-{name}/{name}.ipynb
+              artifact_dir = Path(f"loaded-artifacts/executed-{nb_name}")
+              artifact_dir.mkdir(parents=True, exist_ok=True)
+
+              local_file = artifact_dir / nb_path.name
+              print(f"  Downloading: {hf_path}")
+
+              cached_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset")
+              shutil.copy(cached_file, local_file)
+              downloaded += 1
+
+          print(f"\nDownloaded {downloaded} notebooks from HuggingFace")
+          if missing:
+              print(f"Missing from HF (will use source): {len(missing)} notebooks")
+              for m in missing[:10]:
+                  print(f"  - {m}")
+              if len(missing) > 10:
+                  print(f"  ... and {len(missing) - 10} more")
+          PYEOF
 
       - name: Merge executed notebooks into books directory
         run: |
           echo "========== MERGING EXECUTED NOTEBOOKS =========="
           
           echo "=== Step 1: Check artifact directory ==="
-          if [ -d "loaded-artifacts" ]; then
-            echo "loaded-artifacts directory exists"
-            ls -la loaded-artifacts/
-          else
-            echo "::error::loaded-artifacts directory not found!"
-            exit 1
+          if [ ! -d "loaded-artifacts" ]; then
+            echo "::warning::loaded-artifacts directory not found. No executed notebooks to merge."
+            echo "Skipping notebook merge step."
+            exit 0
           fi
+          echo "loaded-artifacts directory exists"
+          ls -la loaded-artifacts/
           
           echo ""
           echo "=== Step 2: Find notebook files ==="
@@ -991,6 +1281,22 @@ jobs:
           find books -name "*.ipynb" -type f -mmin -5 -exec ls -lh {} \; 2>/dev/null | head -10 || true
           
           echo "================================================"
+
+      - name: Download updated doi-mapping (from publish-dois job)
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: doi-mapping-updated
+          path: doi-mapping-artifact
+
+      - name: Use updated doi-mapping if available
+        run: |
+          if [ -f "doi-mapping-artifact/doi-mapping.json" ]; then
+            echo "Using updated doi-mapping.json from publish-dois job"
+            cp doi-mapping-artifact/doi-mapping.json doi-mapping.json
+          else
+            echo "No updated doi-mapping artifact found, using existing doi-mapping.json"
+          fi
 
       - name: Set container name
         run: echo "CONTAINER_NAME=neurodesktop-publish-${{ github.run_id }}" >> $GITHUB_ENV
@@ -1092,13 +1398,98 @@ jobs:
           echo "Removing _sources folder from build output..."
           rm -rf books/_build/html/_sources
           echo "✓ _sources folder removed"
-          
-          # Remove HTML files that exceed GitHub's 100MB limit (temporary fix)
-          echo "Removing oversized HTML files..."
-          rm -f books/_build/html/examples/diffusion_imaging/MRtrix_3.html
-          rm -f books/_build/html/examples/workflows/ipyniivue_ipywidgets.html
-          rm -f books/_build/html/examples/structural_imaging/FSL_course_bet.html
-          echo "✓ Oversized HTML files removed"
+
+      - name: Deduplicate _esm in HTML files
+        run: |
+          echo "Deduplicating _esm JavaScript modules in HTML files..."
+          python3 .github/scripts/deduplicate_esm.py --dir books/_build/html
+          echo ""
+          echo "Large HTML files after deduplication:"
+          find books/_build/html -name "*.html" -size +5M -exec ls -lh {} \; || echo "No files over 5MB"
+
+      - name: Inject DOI buttons and author metadata
+        run: |
+          if [ -f doi-mapping.json ]; then
+            ENTRY_COUNT=$(python3 -c "import json; print(len(json.load(open('doi-mapping.json'))))")
+          else
+            ENTRY_COUNT=0
+            echo "No doi-mapping.json found, DOI links will be skipped"
+          fi
+          echo "DOI mapping entries available: $ENTRY_COUNT"
+
+          echo "Installing jsdom for DOI/author metadata injection..."
+          npm install --no-save jsdom
+
+          echo "Injecting metadata into built content pages..."
+          python3 << 'PYEOF'
+          import glob
+          import json
+          import os
+          import subprocess
+          import sys
+
+          sys.path.insert(0, os.path.join(os.getcwd(), ".github", "scripts"))
+          from notebook_metadata import extract_authors_from_content
+
+          mapping = {}
+          if os.path.isfile("doi-mapping.json"):
+              with open("doi-mapping.json", encoding="utf-8") as f:
+                  mapping = json.load(f)
+
+          notebook_paths = [
+              path for path in glob.glob("books/**/*.ipynb", recursive=True)
+              if "/_build/" not in path and not path.startswith("books/_build/")
+          ]
+          tutorial_paths = [
+              path for path in glob.glob("books/tutorials/**/*.md", recursive=True)
+              if "/_build/" not in path and not path.startswith("books/_build/")
+          ]
+          mapped_paths = [path for path in mapping.keys() if path.startswith("books/")]
+          content_paths = sorted(set(notebook_paths + tutorial_paths + mapped_paths))
+
+          injected = 0
+          skipped_missing_html = 0
+          skipped_no_metadata = 0
+
+          for content_path in content_paths:
+              html_rel = content_path.replace("books/", "", 1).rsplit(".", 1)[0] + ".html"
+              html_path = os.path.join("books/_build/html", html_rel)
+
+              if not os.path.isfile(html_path):
+                  skipped_missing_html += 1
+                  continue
+
+              doi_url = (mapping.get(content_path) or {}).get("doi_url", "")
+              authors = extract_authors_from_content(content_path) if os.path.isfile(content_path) else []
+              if not doi_url and not authors:
+                  skipped_no_metadata += 1
+                  continue
+
+              result = subprocess.run(
+                  [
+                      "node",
+                      ".github/scripts/add-doi-button.js",
+                      doi_url,
+                      html_path,
+                      json.dumps(authors),
+                  ],
+                  capture_output=True, text=True
+              )
+              if result.returncode != 0:
+                  print(f"Warning: metadata injection failed for {html_rel}: {result.stderr.strip()}")
+                  continue
+
+              if result.stdout.strip():
+                  print(result.stdout.strip())
+              injected += 1
+
+          print("")
+          print("Content metadata injection summary:")
+          print(f"  HTML files updated: {injected}")
+          print(f"  Skipped (HTML missing): {skipped_missing_html}")
+          print(f"  Skipped (no DOI and no author metadata): {skipped_no_metadata}")
+          print(f"  DOI mapping entries available: {len(mapping)}")
+          PYEOF
 
       - name: Verify build output
         run: |
@@ -1124,13 +1515,60 @@ jobs:
           
           echo "============================================"
 
+      - name: Check and remove oversized HTML files
+        run: |
+          echo "Checking for oversized HTML files..."
+          OVERSIZED_FILES=()
+          WARNING_FILES=()
+
+          # Find files over 50MB for warnings
+          while IFS= read -r file; do
+            if [ -n "$file" ]; then
+              SIZE_MB=$(du -m "$file" | cut -f1)
+              if [ "$SIZE_MB" -ge 100 ]; then
+                # Over 100MB - must remove (GitHub hard limit)
+                OVERSIZED_FILES+=("$file ($SIZE_MB MB)")
+                echo "::error::Removing oversized file (>100MB): $file ($SIZE_MB MB)"
+                rm -f "$file"
+              else
+                # 50-100MB - warn but keep
+                WARNING_FILES+=("$file ($SIZE_MB MB)")
+                echo "::warning::Large file (>50MB): $file ($SIZE_MB MB)"
+              fi
+            fi
+          done < <(find books/_build/html -name "*.html" -size +50M 2>/dev/null)
+
+          echo ""
+          if [ ${#WARNING_FILES[@]} -gt 0 ]; then
+            echo "${#WARNING_FILES[@]} file(s) over 50MB (warning):"
+            for f in "${WARNING_FILES[@]}"; do
+              echo "  - $f"
+            done
+          fi
+
+          if [ ${#OVERSIZED_FILES[@]} -gt 0 ]; then
+            echo ""
+            echo "${#OVERSIZED_FILES[@]} file(s) over 100MB removed:"
+            for f in "${OVERSIZED_FILES[@]}"; do
+              echo "  - $f"
+            done
+            echo ""
+            echo "These notebooks need HF URL transform to reduce widget data size."
+            echo "Continuing with publish for remaining files..."
+          fi
+
+          if [ ${#WARNING_FILES[@]} -eq 0 ] && [ ${#OVERSIZED_FILES[@]} -eq 0 ]; then
+            echo "✓ No oversized files found"
+          fi
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: (github.ref == 'refs/heads/main' && github.event_name != 'pull_request') || inputs.force_deploy_pages == true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./books/_build/html
           keep_files: false  # Clean publish - removes old/broken notebooks
+          force_orphan: true  # Reset gh-pages history on each deploy to prevent size bloat
 
       - name: Report published website URL for successful PR runs
         if: ${{ github.event_name == 'pull_request' && success() }}
