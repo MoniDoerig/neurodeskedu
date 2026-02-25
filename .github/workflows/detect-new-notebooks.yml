@@ -1,0 +1,315 @@
+# Detect new notebooks/pages that lack an nd_review_id and automatically:
+#   1. Generate a UUID
+#   2. Write it into the notebook/page metadata (via PR)
+#   3. Open a review issue in the reviews repo with the UUID already set
+#
+# This is self-contained — no round-trip dispatch needed.
+# Only requires one cross-repo token: REVIEWS_REPO_TOKEN (to create issues
+# in the reviews repository).
+
+name: Detect new notebooks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'books/**/*.ipynb'
+
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List files without creating issues or PRs'
+        required: false
+        default: 'false'
+        type: boolean
+
+concurrency:
+  group: detect-new-notebooks
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Find notebooks without nd_review_id
+        id: scan
+        run: |
+          python - <<'PYEOF'
+          import json, os, re, sys, glob, uuid
+
+          # Patterns to skip (intros, templates, contribute pages)
+          SKIP_PATTERNS = [
+              r'/intro\.md$',
+              r'/intro\.ipynb$',
+              r'/contribute/',
+              r'template\.ipynb$',
+          ]
+
+          def should_skip(path):
+              for pat in SKIP_PATTERNS:
+                  if re.search(pat, path.replace('\\', '/')):
+                      return True
+              return False
+
+          def has_review_id_ipynb(path):
+              try:
+                  with open(path, encoding='utf-8') as f:
+                      nb = json.load(f)
+                  return bool(nb.get('metadata', {}).get('nd_review_id'))
+              except Exception:
+                  return False
+
+          missing = []
+          for path in glob.glob('books/**/*.ipynb', recursive=True):
+              if should_skip(path):
+                  continue
+              rel = path.replace('\\', '/').removeprefix('books/')
+              if not has_review_id_ipynb(path):
+                  missing.append({'source_path': rel, 'review_id': str(uuid.uuid4())})
+
+          if missing:
+              print(f"Found {len(missing)} file(s) without nd_review_id:")
+              for item in missing:
+                  print(f"  - {item['source_path']} → {item['review_id']}")
+          else:
+              print("All content files have nd_review_id.")
+
+          with open(os.environ.get('GITHUB_OUTPUT', '/dev/null'), 'a') as f:
+              f.write(f"missing={json.dumps(missing)}\n")
+              f.write(f"count={len(missing)}\n")
+          PYEOF
+
+      - name: Verify cross-repo token
+        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        env:
+          HAS_TOKEN: ${{ secrets.REVIEWS_REPO_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::error::REVIEWS_REPO_TOKEN is not set. Cannot create issues in the reviews repo."
+            exit 1
+          fi
+
+      - name: Reconcile UUIDs with existing review issues
+        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        id: reconcile
+        uses: actions/github-script@v7
+        env:
+          REVIEWS_REPO_OWNER: neurodesk
+          REVIEWS_REPO_NAME: neurodeskedu-reviews
+          MISSING_JSON: ${{ steps.scan.outputs.missing }}
+        with:
+          github-token: ${{ secrets.REVIEWS_REPO_TOKEN }}
+          script: |
+            const missing = JSON.parse(process.env.MISSING_JSON);
+            const repoOwner = process.env.REVIEWS_REPO_OWNER;
+            const repoName = process.env.REVIEWS_REPO_NAME;
+            const reconciled = [];
+
+            for (const item of missing) {
+              let useId = item.review_id;
+              let issueExists = false;
+
+              try {
+                const results = await github.rest.search.issuesAndPullRequests({
+                  q: `repo:${repoOwner}/${repoName} "${item.source_path}" in:body is:issue`,
+                });
+
+                if (results.data.total_count > 0) {
+                  issueExists = true;
+                  const existingBody = results.data.items[0].body || '';
+                  const m = existingBody.match(
+                    /<!--\s*nd-review\s*\n([\s\S]*?)-->/
+                  );
+                  if (m) {
+                    const rid = (m[1].match(/review_id:\s*(\S+)/) || [])[1];
+                    if (rid) {
+                      core.info(
+                        `Issue already exists for ${item.source_path} ` +
+                        `with UUID ${rid} — reusing instead of ${item.review_id}`
+                      );
+                      useId = rid;
+                    }
+                  }
+                }
+              } catch (err) {
+                core.warning(
+                  `Could not check existing issues for ${item.source_path}: ${err.message}`
+                );
+              }
+
+              reconciled.push({
+                source_path: item.source_path,
+                review_id: useId,
+                issue_exists: issueExists,
+              });
+              await new Promise(r => setTimeout(r, 500));
+            }
+
+            core.setOutput('reconciled', JSON.stringify(reconciled));
+
+      - name: Inject UUIDs and create PR
+        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        id: inject
+        env:
+          RECONCILED_JSON: ${{ steps.reconcile.outputs.reconciled }}
+        run: |
+          python - <<'PYEOF'
+          import json, os, re
+
+          missing = json.loads(os.environ['RECONCILED_JSON'])
+          modified = []
+
+          for item in missing:
+              review_id = item['review_id']
+              source_path = item['source_path']
+              file_path = f"books/{source_path}"
+
+              if not os.path.exists(file_path):
+                  print(f"WARNING: {file_path} not found, skipping.")
+                  continue
+
+              if file_path.endswith('.ipynb'):
+                  with open(file_path, encoding='utf-8') as f:
+                      nb = json.load(f)
+                  nb.setdefault('metadata', {})['nd_review_id'] = review_id
+                  with open(file_path, 'w', encoding='utf-8') as f:
+                      json.dump(nb, f, indent=1, ensure_ascii=False)
+                      f.write('\n')
+                  modified.append(item)
+                  print(f"Injected {review_id} into {file_path}")
+
+          with open(os.environ.get('GITHUB_OUTPUT', '/dev/null'), 'a') as f:
+              f.write(f"modified={json.dumps(modified)}\n")
+          PYEOF
+
+      - name: Check for existing auto-inject PR
+        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        id: check_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list --state open --json number,url,headRefName --jq '[.[] | select(.headRefName | startswith("review/auto-inject-"))][0].url // empty' 2>/dev/null || true)
+          if [ -n "$EXISTING" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "An auto-inject PR is already open: $EXISTING"
+            echo "Skipping PR creation. Merge the existing PR first."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push branch
+        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true' && steps.check_pr.outputs.skip != 'true'
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="review/auto-inject-$(date +%Y%m%d-%H%M%S)"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+          git add books/
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            echo "pr_created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          COUNT=$(echo '${{ steps.scan.outputs.missing }}' | python -c "import sys,json; print(len(json.load(sys.stdin)))")
+
+          git commit -m "Add nd_review_id to ${COUNT} new notebook(s)
+
+          Automatically generated by detect-new-notebooks workflow."
+
+          git push origin "$BRANCH"
+
+          PR_URL=$(gh pr create \
+            --title "Add review IDs to ${COUNT} new notebook(s)" \
+            --body "Automatically adds \`nd_review_id\` metadata to new notebooks that were merged without one.
+
+          _This PR was created automatically by the detect-new-notebooks workflow._" \
+            --base main \
+            --head "$BRANCH")
+
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+          echo "pr_created=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open review issues in reviews repo
+        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true' && steps.check_pr.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        env:
+          REVIEWS_REPO_OWNER: neurodesk
+          REVIEWS_REPO_NAME: neurodeskedu-reviews
+          RECONCILED_JSON: ${{ steps.reconcile.outputs.reconciled }}
+        with:
+          github-token: ${{ secrets.REVIEWS_REPO_TOKEN }}
+          script: |
+            const reconciled = JSON.parse(process.env.RECONCILED_JSON);
+            const repoOwner = process.env.REVIEWS_REPO_OWNER;
+            const repoName = process.env.REVIEWS_REPO_NAME;
+            const failed = [];
+
+            for (const item of reconciled) {
+              if (item.issue_exists) {
+                core.info(
+                  `Issue already exists for ${item.source_path} — ` +
+                  `UUID ${item.review_id} was reused. Skipping issue creation.`
+                );
+                continue;
+              }
+
+              try {
+                const body = [
+                  `### Source path (relative to books/)`,
+                  ``,
+                  item.source_path,
+                  ``,
+                  `### Notes`,
+                  ``,
+                  `Automatically opened by the detect-new-notebooks workflow.`,
+                  ``,
+                  ``,
+                  `<!-- nd-review`,
+                  `review_id: ${item.review_id}`,
+                  `source_path: ${item.source_path}`,
+                  `-->`,
+                ].join('\n');
+
+                const { data: issue } = await github.rest.issues.create({
+                  owner: repoOwner,
+                  repo: repoName,
+                  title: `Review: ${item.source_path}`,
+                  labels: ['review:queued'],
+                  body: body,
+                });
+
+                core.info(`Created issue #${issue.number} for ${item.source_path}`);
+              } catch (err) {
+                core.warning(
+                  `Failed to create issue for ${item.source_path}: ${err.message}`
+                );
+                failed.push(item.source_path);
+              }
+              await new Promise(r => setTimeout(r, 1000));
+            }
+
+            if (failed.length > 0) {
+              core.setFailed(
+                `Failed to create ${failed.length} issue(s): ${failed.join(', ')}. ` +
+                `Re-run this workflow to retry.`
+              );
+            }

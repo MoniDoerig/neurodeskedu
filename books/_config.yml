@@ -40,6 +40,9 @@ sphinx:
     nb_code_prompt_hide: "outputs"
     nb_merge_streams: true
     mathjax_path: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+    html_static_path: ["_static"]
+    html_js_files: ["review-badge.js"]
+    html_css_files: ["review-badge.css"]
     html_theme_options:
       analytics:
         google_analytics_id: "G-4Z9774J59Y"
@@ -69,6 +72,7 @@ sphinx:
             url: "https://edu.neurodesk.org"
   local_extensions:
     multiple_jupyterhub: _ext
+    nd_review_meta: _ext
 
 parse:
   myst_enable_extensions:
