@@ -341,20 +341,24 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
     unique_files, duplicates = scan_data_files(working_dir)
     print(f"  Found {len(unique_files)} unique files, {len(duplicates)} with duplicates")
 
-    # Check for duplicates in referenced files - FAIL if found
+    # Handle duplicates in referenced files via hash check
     referenced_duplicates = {name: paths for name, paths in duplicates.items() if name in referenced_files}
     if referenced_duplicates:
-        print("\n" + "=" * 60)
-        print("ERROR: Duplicate filenames found for referenced files!")
-        print("Cannot determine which file the notebook is using.")
-        print("Manual code review required.")
-        print("=" * 60)
         for name, paths in referenced_duplicates.items():
-            print(f"\n  {name}:")
-            for p in paths:
-                print(f"    - {p}")
-        print()
-        sys.exit(1)
+            hashes = {get_file_hash(p): p for p in paths}
+            if len(hashes) == 1:
+                # All copies are identical — pick the first one
+                print(f"  {name}: {len(paths)} copies found, all identical (hash match) — using first")
+                unique_files[name] = paths[0]
+            else:
+                print("\n" + "=" * 60)
+                print(f"ERROR: {name} has {len(paths)} copies with DIFFERENT content!")
+                print("Cannot determine which file the notebook is using.")
+                print("=" * 60)
+                for p in paths:
+                    print(f"    - {p}  (hash: {get_file_hash(p)})")
+                print()
+                sys.exit(1)
 
     # Filter to only files that are actually referenced
     data_files = {name: path for name, path in unique_files.items() if name in referenced_files}
