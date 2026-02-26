@@ -269,6 +269,51 @@ jobs:
 
       # NOTE: Configure runner step skipped for ARC runners (no /storage, no $USER, DinD handles Docker)
       # The main branch has this step active for GitHub-hosted / legacy self-hosted runners.
+      # - name: Configure runner
+      #   if: runner.os == 'Linux'
+      #   run: |
+      #     if [ "${{ needs.setup.outputs.runner }}" == "self-hosted" ]; then
+      #       echo "Self-hosted runner - using defaults"
+      #       BASE_PATH=/storage
+      #     else
+      #        echo "Configuring self-hosted runner..."
+      #        BASE_PATH=/storage
+      #     fi
+      #
+      #     echo "Using BASE_PATH=$BASE_PATH"
+      #     echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+      #
+      #     # Setup directories
+      #     sudo mkdir -p $BASE_PATH/tmp
+      #     sudo chown $USER $BASE_PATH/tmp
+      #
+      #     # Configure Docker data-root (only for GitHub-hosted runners)
+      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+      #       sudo mkdir -p $BASE_PATH/docker
+      #       echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
+      #       sudo systemctl restart docker
+      #       docker system prune -af || true
+      #     else
+      #       # Clean up stale Docker daemon.json from previous runs that may
+      #       # have incorrectly configured data-root for a GitHub-hosted runner
+      #       if [ -f /etc/docker/daemon.json ]; then
+      #         DATA_ROOT=$(python3 -c "import json; print(json.load(open('/etc/docker/daemon.json')).get('data-root',''))" 2>/dev/null || true)
+      #         if [ -n "$DATA_ROOT" ] && [ ! -d "$DATA_ROOT" ]; then
+      #           echo "Stale Docker data-root '$DATA_ROOT' does not exist, removing daemon.json"
+      #           sudo rm -f /etc/docker/daemon.json
+      #           sudo systemctl restart docker
+      #           for _ in $(seq 1 12); do
+      #             docker info >/dev/null 2>&1 && break
+      #             sleep 5
+      #           done
+      #         fi
+      #       fi
+      #     fi
+      #
+      #     # Setup tmp directory (needed for Docker volume mount)
+      #     sudo mkdir -p $BASE_PATH/tmp
+      #     sudo chown $USER $BASE_PATH/tmp
+      #     echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
 
       # -------------------------------------------------------------------------
       # Ensure Neurodesk image available
