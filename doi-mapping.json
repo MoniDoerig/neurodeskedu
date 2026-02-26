@@ -420,13 +420,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728782",
     "website_url": "https://neurodesk.org/edu/examples/workflows/ipyniivue_ipywidgets.html",
     "concept_recid": "18728782",
-    "record_id": "18736058",
+    "record_id": "18779850",
     "content_type": "notebook",
-    "checksum": "256dd601c9615659a7ec447b39ca7776",
+    "checksum": "4ac3f6339344e01492a6ddcc60526292",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-02-22T23:20:06Z"
+    "updated_at": "2026-02-26T04:29:53Z"
   },
   "books/examples/workflows/Magic_commands.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728786",
@@ -561,14 +561,14 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728808",
     "website_url": "https://neurodesk.org/edu/examples/structural_imaging/SYNcro.html",
     "concept_recid": "18728808",
-    "record_id": "18740161",
+    "record_id": "18779865",
     "content_type": "notebook",
-    "checksum": "58d4a20ff3a903e02c0fcc48f5099705",
+    "checksum": "d1c6014e01b2fc61474cce0f10f953df",
     "authors": [
       "Chris Rorden",
       "Steffen Bollmann"
     ],
-    "updated_at": "2026-02-23T09:12:41Z"
+    "updated_at": "2026-02-26T04:30:02Z"
   },
   "books/examples/diffusion_imaging/Diffusion_TBSS_Demo.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728812",
