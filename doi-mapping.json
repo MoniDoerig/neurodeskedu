@@ -730,5 +730,18 @@
       "Monika Doerig"
     ],
     "updated_at": "2026-02-23T09:13:03Z"
+  },
+  "books/examples/functional_imaging/fMRI_tutorial_in_R_magic.ipynb": {
+    "doi_url": "https://doi.org/10.5281/zenodo.18779080",
+    "website_url": "https://neurodesk.org/edu/examples/functional_imaging/fMRI_tutorial_in_R_magic.html",
+    "concept_recid": "18779080",
+    "record_id": "18779081",
+    "content_type": "notebook",
+    "checksum": "86c48cfc9a26c4dcdf94712985820c95",
+    "authors": [
+      "Giulia Baracchini",
+      "Monika Doerig"
+    ],
+    "updated_at": "2026-02-26T02:17:28Z"
   }
 }
