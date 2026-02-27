@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-02-26T18:37:36+00:00",
+  "generated_at": "2026-02-27T01:06:04+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -174,15 +174,15 @@
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/16",
       "source_path": "examples/functional_imaging/intro_to_preprocessing.ipynb"
     },
-    "e166a1f9-f4bd-429b-b497-fbc862211eea": {
-      "state": "queued",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/15",
-      "source_path": "examples/functional_imaging/FSLnets_course_practical.ipynb"
-    },
     "4937acbd-3beb-4b7f-bbca-a2ea7d422efe": {
       "state": "queued",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/14",
       "source_path": "examples/functional_imaging/FSL_preproc_glm.ipynb"
+    },
+    "e166a1f9-f4bd-429b-b497-fbc862211eea": {
+      "state": "queued",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/15",
+      "source_path": "examples/functional_imaging/FSLnets_course_practical.ipynb"
     },
     "440f8450-0094-4e60-b3c9-23c197e8a85f": {
       "state": "queued",
