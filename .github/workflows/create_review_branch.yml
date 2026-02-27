@@ -1,0 +1,61 @@
+# =============================================================================
+# Create Review Branch for PRs
+# =============================================================================
+# When a PR is opened targeting main, this workflow auto-creates a
+# review/pr-{N} branch and posts instructions for the reviewer.
+#
+# Security: Uses pull_request_target which runs base-branch code (safe).
+# The PR's code is NOT checked out or executed — only a branch is created.
+# =============================================================================
+
+name: Create Review Branch
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened]
+
+jobs:
+  create-review-branch:
+    name: Create Review Branch
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Create review branch and post instructions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUM=${{ github.event.pull_request.number }}
+          PR_HEAD=${{ github.event.pull_request.head.ref }}
+          BRANCH="review/pr-${PR_NUM}"
+
+          # Check if review branch already exists
+          if git ls-remote --exit-code origin "refs/heads/${BRANCH}" >/dev/null 2>&1; then
+            echo "Review branch ${BRANCH} already exists, skipping creation"
+          else
+            echo "Creating review branch: ${BRANCH}"
+            git checkout -b "$BRANCH"
+            git push origin "$BRANCH"
+          fi
+
+          # Post comment on PR with merge instructions
+          gh pr comment "$PR_NUM" --body "## Review Branch Created
+
+          A review branch \`${BRANCH}\` has been created for testing this PR.
+
+          **To test this PR:**
+          \`\`\`bash
+          git fetch origin
+          git checkout ${BRANCH}
+          git merge origin/${PR_HEAD}
+          git push origin ${BRANCH}
+          \`\`\`
+
+          Once pushed, CI will automatically:
+          1. Execute the notebooks in a Neurodesk container
+          2. Upload results to HuggingFace (branch \`${BRANCH}\`)
+          3. Create a PR from \`${BRANCH}\` to \`main\` if all notebooks pass
+
+          **To preview the site**, go to Actions → Run workflow → select \`${BRANCH}\` → check \`force_deploy_pages\`."
