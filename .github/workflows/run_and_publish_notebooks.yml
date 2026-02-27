@@ -436,6 +436,9 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # CVMFS toggle: To enable, swap the two lines marked [A] and [B] below.
+          # Requires CVMFS CSI driver installed on the cluster first.
+          # (FUSE-based CVMFS hangs inside DinD nesting; CSI mounts it at pod level)
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
@@ -448,8 +451,10 @@ jobs:
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
-            ${{ needs.setup.outputs.neurodesk_image }}
-          
+            ${{ needs.setup.outputs.neurodesk_image }}                  # [A] CVMFS OFF (current)
+          #   -v /cvmfs:/cvmfs:ro \
+          #   ${{ needs.setup.outputs.neurodesk_image }}                # [B] CVMFS ON  (uncomment these 2, comment out [A])
+
           echo "Started container: $CONTAINER_NAME"
 
       - name: Wait for container readiness
@@ -1313,6 +1318,7 @@ jobs:
           # to ensure the environment (Lmod, Apptainer overlay) initializes
           # correctly without permission errors.
           # -----------------------------------------------------------------------
+          # CVMFS toggle: Same as run-notebooks job. Swap [A] and [B] to enable.
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
@@ -1324,8 +1330,10 @@ jobs:
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
-            ${{ needs.setup.outputs.neurodesk_image }}
-          
+            ${{ needs.setup.outputs.neurodesk_image }}                  # [A] CVMFS OFF (current)
+          #   -v /cvmfs:/cvmfs:ro \
+          #   ${{ needs.setup.outputs.neurodesk_image }}                # [B] CVMFS ON  (uncomment these 2, comment out [A])
+
           echo "Started container: $CONTAINER_NAME"
 
       - name: Wait for container readiness
