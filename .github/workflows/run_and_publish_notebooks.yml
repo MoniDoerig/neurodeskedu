@@ -451,9 +451,9 @@ jobs:
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
-            ${{ needs.setup.outputs.neurodesk_image }}                  # [A] CVMFS OFF (current)
-          #   -v /cvmfs:/cvmfs:ro \
-          #   ${{ needs.setup.outputs.neurodesk_image }}                # [B] CVMFS ON  (uncomment these 2, comment out [A])
+          #   ${{ needs.setup.outputs.neurodesk_image }}                # [A] CVMFS OFF
+              -v /cvmfs:/cvmfs:ro \
+              ${{ needs.setup.outputs.neurodesk_image }}                # [B] CVMFS ON  (current)
 
           echo "Started container: $CONTAINER_NAME"
 
@@ -1330,9 +1330,9 @@ jobs:
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
-            ${{ needs.setup.outputs.neurodesk_image }}                  # [A] CVMFS OFF (current)
-          #   -v /cvmfs:/cvmfs:ro \
-          #   ${{ needs.setup.outputs.neurodesk_image }}                # [B] CVMFS ON  (uncomment these 2, comment out [A])
+          #   ${{ needs.setup.outputs.neurodesk_image }}                # [A] CVMFS OFF
+              -v /cvmfs:/cvmfs:ro \
+              ${{ needs.setup.outputs.neurodesk_image }}                # [B] CVMFS ON  (current)
 
           echo "Started container: $CONTAINER_NAME"
 
