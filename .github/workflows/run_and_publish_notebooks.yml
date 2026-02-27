@@ -436,9 +436,8 @@ jobs:
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # CVMFS toggle: To enable, swap the two lines marked [A] and [B] below.
-          # Requires CVMFS CSI driver installed on the cluster first.
-          # (FUSE-based CVMFS hangs inside DinD nesting; CSI mounts it at pod level)
+          # CVMFS: Pod-level CSI mount, bind-mounted into container.
+          # To disable: remove the "-v /cvmfs:/cvmfs:ro" line below.
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
@@ -446,14 +445,13 @@ jobs:
             -v ${{ github.workspace }}:/home/jovyan/workspace \
             -v ${{ env.BASE_PATH }}/tmp:/overlay-storage \
             -v ${{ github.workspace }}/.cache/pip:/home/jovyan/.cache/pip \
+            -v /cvmfs:/cvmfs:ro \
             -w /home/jovyan/workspace/books \
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
-          #   ${{ needs.setup.outputs.neurodesk_image }}                # [A] CVMFS OFF
-              -v /cvmfs:/cvmfs:ro \
-              ${{ needs.setup.outputs.neurodesk_image }}                # [B] CVMFS ON  (current)
+            ${{ needs.setup.outputs.neurodesk_image }}
 
           echo "Started container: $CONTAINER_NAME"
 
@@ -1318,7 +1316,7 @@ jobs:
           # to ensure the environment (Lmod, Apptainer overlay) initializes
           # correctly without permission errors.
           # -----------------------------------------------------------------------
-          # CVMFS toggle: Same as run-notebooks job. Swap [A] and [B] to enable.
+          # CVMFS: Same as run-notebooks job. Remove "-v /cvmfs" line to disable.
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
@@ -1326,13 +1324,12 @@ jobs:
             -v ${{ github.workspace }}:/home/jovyan/workspace \
             -v ${{ env.BASE_PATH }}/tmp:/overlay-storage \
             -v ${{ github.workspace }}/.cache/pip:/home/jovyan/.cache/pip \
+            -v /cvmfs:/cvmfs:ro \
             -w /home/jovyan/workspace/books \
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
-          #   ${{ needs.setup.outputs.neurodesk_image }}                # [A] CVMFS OFF
-              -v /cvmfs:/cvmfs:ro \
-              ${{ needs.setup.outputs.neurodesk_image }}                # [B] CVMFS ON  (current)
+            ${{ needs.setup.outputs.neurodesk_image }}
 
           echo "Started container: $CONTAINER_NAME"
 
