@@ -76,11 +76,12 @@ def main():
     notebook_path = sys.argv[1]  # e.g. books/examples/functional_imaging/intro.ipynb
     hf_repo = os.environ.get("HF_REPO", "neurodeskorg/neurodeskedu")
     hf_source_path = notebook_path  # source keeps same filename on HF
-    hf_executed_path = notebook_path.replace(".ipynb", ".executed.ipynb")
+    # outputs/ mirror of books/ — same filename, different prefix
+    hf_outputs_path = "outputs/" + notebook_path.removeprefix("books/")
 
     print(f"Checking promotion cache for: {notebook_path}")
     print(f"  HF source path: {hf_source_path}")
-    print(f"  HF executed path: {hf_executed_path}")
+    print(f"  HF outputs path: {hf_outputs_path}")
 
     try:
         from huggingface_hub import HfApi, hf_hub_download, file_exists
@@ -132,18 +133,18 @@ def main():
             print(f"    Source mismatch")
             continue
 
-        # Source matches! Download the executed notebook
-        print(f"    Source matches! Downloading executed notebook...")
+        # Source matches! Download the outputs notebook
+        print(f"    Source matches! Downloading outputs notebook...")
         try:
-            if not file_exists(hf_repo, hf_executed_path, repo_type="dataset", revision=branch):
-                print(f"    No executed notebook found on this branch")
+            if not file_exists(hf_repo, hf_outputs_path, repo_type="dataset", revision=branch):
+                print(f"    No outputs notebook found on this branch")
                 continue
 
-            remote_executed = hf_hub_download(
-                hf_repo, hf_executed_path,
+            remote_outputs = hf_hub_download(
+                hf_repo, hf_outputs_path,
                 repo_type="dataset", revision=branch,
             )
-            shutil.copy(remote_executed, notebook_path)
+            shutil.copy(remote_outputs, notebook_path)
             print(f"    Promoted from branch '{branch}' -> {notebook_path}")
             sys.exit(0)
 
