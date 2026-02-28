@@ -887,6 +887,8 @@ jobs:
           python3 << 'PYEOF'
           import hashlib
           import os
+          import time
+          import random
           from huggingface_hub import hf_hub_download, file_exists, upload_file, HfApi
 
           executed_path = os.environ["EXECUTED_PATH"]
@@ -925,14 +927,24 @@ jobs:
                       print(f"  [{label}] Could not compare: {e}")
 
               print(f"  [{label}] Uploading: {local_path} -> {hf_path} (branch: {hf_branch})")
-              upload_file(
-                  path_or_fileobj=local_path,
-                  path_in_repo=hf_path,
-                  repo_id=hf_repo,
-                  repo_type="dataset",
-                  revision=hf_branch,
-                  commit_message=f"Update {label}: {hf_path}",
-              )
+              for attempt in range(5):
+                  try:
+                      upload_file(
+                          path_or_fileobj=local_path,
+                          path_in_repo=hf_path,
+                          repo_id=hf_repo,
+                          repo_type="dataset",
+                          revision=hf_branch,
+                          commit_message=f"Update {label}: {hf_path}",
+                      )
+                      break
+                  except Exception as e:
+                      if "412" in str(e) and attempt < 4:
+                          wait = random.uniform(2, 8) * (attempt + 1)
+                          print(f"  [{label}] Conflict (attempt {attempt+1}/5), retrying in {wait:.1f}s...")
+                          time.sleep(wait)
+                      else:
+                          raise
 
           # Upload notebook with outputs to outputs/ prefix
           print(f"Uploading outputs notebook...")
