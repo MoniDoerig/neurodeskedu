@@ -7,10 +7,8 @@
 #   3. Builds the Jupyter Book and publishes to GitHub Pages
 #
 # Triggers:
-#   - Push to main (when notebooks or book markdown files change)
-#   - Pull request target (auto-creates review branch, no execution)
+#   - Push to any branch (when notebooks or book markdown files change)
 #   - Manual dispatch (with options for image override, force execution, etc.)
-#   - Weekly scheduled run (executes all notebooks)
 # =============================================================================
 
 name: Run Notebooks & Publish
@@ -267,8 +265,7 @@ jobs:
             echo "Self-hosted runner - using defaults"
             BASE_PATH=/storage
           else
-             echo "Configuring self-hosted runner..."
-             # Be careful not to wipe /mnt on self-hosted if it's used
+             echo "Configuring GitHub-hosted runner..."
              BASE_PATH=/storage
           fi
 
@@ -1679,14 +1676,3 @@ jobs:
           keep_files: false  # Clean publish - removes old/broken notebooks
           force_orphan: true  # Reset gh-pages history on each deploy to prevent size bloat
 
-      - name: Report published website URL for successful PR runs
-        if: ${{ github.event_name == 'pull_request' && success() }}
-        run: |
-          SITE_URL="https://neurodesk.github.io/neurodeskedu/"
-          echo "PR validation succeeded."
-          echo "Please check the published notebook website: ${SITE_URL}"
-          {
-            echo "### PR validation succeeded"
-            echo ""
-            echo "Please check the published notebook website: ${SITE_URL}"
-          } >> "$GITHUB_STEP_SUMMARY"
