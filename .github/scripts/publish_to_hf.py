@@ -16,6 +16,7 @@ Usage:
 Environment variables:
     HF_TOKEN: Hugging Face token with write access
     HF_REPO: Hugging Face dataset repo (default: neurodeskorg/neurodeskedu)
+    HF_BRANCH: HuggingFace branch to upload to (default: main)
     DRY_RUN: If "true", skip upload and just show what would be done
 """
 
@@ -28,8 +29,32 @@ from pathlib import Path
 
 # Hugging Face configuration
 HF_REPO = os.environ.get("HF_REPO", "neurodeskorg/neurodeskedu")
-HF_BASE_URL = f"https://huggingface.co/datasets/{HF_REPO}/resolve/main"
+HF_BRANCH = os.environ.get("HF_BRANCH", "main")
+HF_BASE_URL = f"https://huggingface.co/datasets/{HF_REPO}/resolve/{HF_BRANCH}"
 DRY_RUN = os.environ.get("DRY_RUN", "").lower() == "true"
+
+_hf_branch_ensured = False
+
+
+def ensure_hf_branch() -> None:
+    """Create the HF branch if it doesn't exist (branching off main)."""
+    global _hf_branch_ensured
+    if _hf_branch_ensured or DRY_RUN or HF_BRANCH == "main":
+        _hf_branch_ensured = True
+        return
+
+    try:
+        from huggingface_hub import HfApi
+        api = HfApi()
+        refs = api.list_repo_refs(HF_REPO, repo_type="dataset")
+        existing = {b.name for b in refs.branches}
+        if HF_BRANCH not in existing:
+            print(f"  Creating HF branch '{HF_BRANCH}' from main...")
+            api.create_branch(HF_REPO, repo_type="dataset", branch=HF_BRANCH)
+        _hf_branch_ensured = True
+    except Exception as e:
+        print(f"  WARNING: Could not ensure HF branch '{HF_BRANCH}': {e}")
+
 
 # File extensions that ipyniivue can load
 NIIVUE_EXTENSIONS = {
@@ -109,9 +134,11 @@ def ensure_gitattributes(extensions: set[str]) -> None:
     try:
         from huggingface_hub import hf_hub_download, CommitOperationAdd, HfApi
 
+        ensure_hf_branch()
+
         # Download current .gitattributes
         try:
-            ga_path = hf_hub_download(HF_REPO, ".gitattributes", repo_type="dataset")
+            ga_path = hf_hub_download(HF_REPO, ".gitattributes", repo_type="dataset", revision=HF_BRANCH)
             current = open(ga_path).read()
         except Exception:
             current = ""
@@ -137,6 +164,7 @@ def ensure_gitattributes(extensions: set[str]) -> None:
         api.create_commit(
             repo_id=HF_REPO,
             repo_type="dataset",
+            revision=HF_BRANCH,
             operations=[CommitOperationAdd(path_in_repo=".gitattributes", path_or_fileobj=updated.encode())],
             commit_message=f"Add LFS patterns for neuroimaging extensions: {', '.join(missing)}",
         )
@@ -155,7 +183,9 @@ def upload_to_hf(filepath: Path, path_in_repo: str) -> str:
     try:
         from huggingface_hub import upload_file, file_exists
 
-        if file_exists(HF_REPO, path_in_repo, repo_type="dataset"):
+        ensure_hf_branch()
+
+        if file_exists(HF_REPO, path_in_repo, repo_type="dataset", revision=HF_BRANCH):
             print(f"  Already exists: {path_in_repo}")
             return url
 
@@ -166,6 +196,7 @@ def upload_to_hf(filepath: Path, path_in_repo: str) -> str:
             path_in_repo=path_in_repo,
             repo_id=HF_REPO,
             repo_type="dataset",
+            revision=HF_BRANCH,
             commit_message=f"Add data: {path_in_repo}",
         )
 
@@ -313,6 +344,7 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
 
     print(f"\nProcessing: {notebook_path}")
     print(f"Working dir: {working_dir}")
+    print(f"HF branch: {HF_BRANCH}")
 
     # Load notebook
     with open(notebook_path) as f:

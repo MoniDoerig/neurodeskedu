@@ -7,10 +7,8 @@
 #   3. Builds the Jupyter Book and publishes to GitHub Pages
 #
 # Triggers:
-#   - Push to main (when notebooks or book markdown files change)
-#   - Pull requests to main (for validation, no deployment)
+#   - Push to any branch (when notebooks or book markdown files change)
 #   - Manual dispatch (with options for image override, force execution, etc.)
-#   - Weekly scheduled run (executes all notebooks)
 # =============================================================================
 
 name: Run Notebooks & Publish
@@ -23,22 +21,15 @@ defaults:
 # TRIGGERS
 # =============================================================================
 on:
-  schedule:
-    # Weekly at 00:00 UTC on Sunday
-    - cron: '0 0 * * 0'
-
   push:
-    branches: [main]
+    branches: ['**']
     paths:
       - '**/*.ipynb'
       - 'books/**/*.md'
 
-  pull_request:
-    branches: [main]
-    paths:
-      - '**/*.ipynb'
-      - 'books/**/*.md'
-    types: [opened, synchronize, reopened, ready_for_review]
+  # NOTE: create_review_branch.yml uses pull_request_target to auto-create a
+  # review branch. A reviewer must merge the PR into that branch to trigger CI
+  # (push event, collaborators only).
 
   workflow_dispatch:
     inputs:
@@ -276,7 +267,7 @@ jobs:
       #       echo "Self-hosted runner - using defaults"
       #       BASE_PATH=/storage
       #     else
-      #        echo "Configuring self-hosted runner..."
+      #        echo "Configuring GitHub-hosted runner..."
       #        BASE_PATH=/storage
       #     fi
       #
@@ -552,7 +543,34 @@ jobs:
             echo "Root-level setup complete"
           '
 
+      - name: Save source notebook (pre-execution snapshot)
+        run: |
+          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+          SOURCE_DIR="${RUNNER_TEMP}/source-notebooks"
+          mkdir -p "$SOURCE_DIR"
+          cp "$NOTEBOOK_PATH" "$SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
+          echo "Saved source snapshot: $SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
+
+      - name: Try promoting cached notebook (main only)
+        if: github.ref == 'refs/heads/main'
+        id: promote
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+        run: |
+          pip install -q "huggingface_hub>=0.32.0"
+          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+
+          if python3 .github/scripts/promote_notebook.py "$NOTEBOOK_PATH"; then
+            echo "promoted=true" >> $GITHUB_OUTPUT
+            echo "Notebook promoted from cache — skipping execution"
+          else
+            echo "promoted=false" >> $GITHUB_OUTPUT
+            echo "No cache match — will execute normally"
+          fi
+
       - name: Execute notebook in container
+        if: steps.promote.outputs.promoted != 'true'
         timeout-minutes: 1500
         run: |
           NOTEBOOK_PATH="${{ matrix.notebooks }}"
@@ -668,9 +686,11 @@ jobs:
       # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
       # 3. Second execution generates clean outputs with HF URLs
       - name: Transform notebook paths to HF URLs (post-execution)
+        if: steps.promote.outputs.promoted != 'true'
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
+          HF_BRANCH: ${{ github.ref_name }}
         run: |
           NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
           WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
@@ -692,7 +712,7 @@ jobs:
           python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs
 
       - name: Second execution pass (HF URLs)
-        if: env.NEEDS_SECOND_PASS == 'true'
+        if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
         run: |
           NOTEBOOK_PATH="${{ matrix.notebooks }}"
           NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
@@ -740,6 +760,7 @@ jobs:
           docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
       - name: Check for execution errors
+        if: steps.promote.outputs.promoted != 'true'
         run: |
           # Check the notebook for errors - step/job fails (red) if errors found, but publish still runs
           python3 << 'EOF'
@@ -855,56 +876,145 @@ jobs:
           path: books/${{ matrix.notebooks }}
           retention-days: 1
 
-      - name: Upload executed notebook to HuggingFace
-        if: success() && github.ref == 'refs/heads/main'
+      - name: Upload source + executed notebooks to HuggingFace
+        if: success()
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
-          NOTEBOOK_PATH: books/${{ matrix.notebooks }}
-          HF_PATH: books/${{ matrix.notebooks }}
+          HF_BRANCH: ${{ github.ref_name }}
+          EXECUTED_PATH: books/${{ matrix.notebooks }}
+          SOURCE_DIR: ${{ runner.temp }}/source-notebooks
+          NOTEBOOK_BASENAME: ${{ matrix.notebooks }}
+          HF_SOURCE_PATH: books/${{ matrix.notebooks }}
         run: |
           pip install -q "huggingface_hub>=0.32.0"
 
           python3 << 'PYEOF'
           import hashlib
           import os
-          from huggingface_hub import hf_hub_download, file_exists, upload_file
+          import time
+          import random
+          from huggingface_hub import hf_hub_download, file_exists, upload_file, HfApi
 
-          notebook_path = os.environ["NOTEBOOK_PATH"]
-          hf_path = os.environ["HF_PATH"]
+          executed_path = os.environ["EXECUTED_PATH"]
+          nb_basename = os.path.basename(os.environ["NOTEBOOK_BASENAME"])
+          source_path = os.path.join(os.environ["SOURCE_DIR"], nb_basename)
+          hf_source_path = os.environ["HF_SOURCE_PATH"]
+          # outputs/ mirror of books/ — same filename, different prefix
+          hf_outputs_path = "outputs/" + hf_source_path.removeprefix("books/")
           hf_repo = os.environ["HF_REPO"]
+          hf_branch = os.environ.get("HF_BRANCH", "main")
 
-          # Hash local file
-          with open(notebook_path, "rb") as f:
-              local_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+          api = HfApi()
 
-          # Compare with remote if exists
-          should_upload = True
-          if file_exists(hf_repo, hf_path, repo_type="dataset"):
-              try:
-                  remote_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset")
-                  with open(remote_file, "rb") as f:
-                      remote_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+          # Ensure branch exists on HF
+          if hf_branch != "main":
+              refs = api.list_repo_refs(hf_repo, repo_type="dataset")
+              if hf_branch not in {b.name for b in refs.branches}:
+                  print(f"Creating HF branch '{hf_branch}' from main...")
+                  api.create_branch(hf_repo, repo_type="dataset", branch=hf_branch)
 
-                  if local_hash == remote_hash:
-                      print(f"Notebook unchanged (hash: {local_hash}), skipping upload")
-                      should_upload = False
-                  else:
-                      print(f"Notebook changed (local: {local_hash}, remote: {remote_hash})")
-              except Exception as e:
-                  print(f"Could not compare with remote: {e}")
+          def upload_if_changed(local_path, hf_path, label):
+              """Upload file to HF if it has changed (hash comparison)."""
+              with open(local_path, "rb") as f:
+                  local_hash = hashlib.sha256(f.read()).hexdigest()[:16]
 
-          if should_upload:
-              print(f"Uploading: {notebook_path} -> {hf_path}")
-              upload_file(
-                  path_or_fileobj=notebook_path,
-                  path_in_repo=hf_path,
-                  repo_id=hf_repo,
-                  repo_type="dataset",
-                  commit_message=f"Update executed notebook: {hf_path}",
-              )
-              print("Upload complete")
+              if file_exists(hf_repo, hf_path, repo_type="dataset", revision=hf_branch):
+                  try:
+                      remote_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset", revision=hf_branch)
+                      with open(remote_file, "rb") as f:
+                          remote_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+                      if local_hash == remote_hash:
+                          print(f"  [{label}] Unchanged (hash: {local_hash}), skipping")
+                          return
+                      print(f"  [{label}] Changed (local: {local_hash}, remote: {remote_hash})")
+                  except Exception as e:
+                      print(f"  [{label}] Could not compare: {e}")
+
+              print(f"  [{label}] Uploading: {local_path} -> {hf_path} (branch: {hf_branch})")
+              for attempt in range(5):
+                  try:
+                      upload_file(
+                          path_or_fileobj=local_path,
+                          path_in_repo=hf_path,
+                          repo_id=hf_repo,
+                          repo_type="dataset",
+                          revision=hf_branch,
+                          commit_message=f"Update {label}: {hf_path}",
+                      )
+                      break
+                  except Exception as e:
+                      if "412" in str(e) and attempt < 4:
+                          wait = random.uniform(2, 8) * (attempt + 1)
+                          print(f"  [{label}] Conflict (attempt {attempt+1}/5), retrying in {wait:.1f}s...")
+                          time.sleep(wait)
+                      else:
+                          raise
+
+          # Upload notebook with outputs to outputs/ prefix
+          print(f"Uploading outputs notebook...")
+          upload_if_changed(executed_path, hf_outputs_path, "outputs")
+
+          # Upload source notebook (pre-execution snapshot for promotion comparison)
+          if os.path.exists(source_path):
+              print(f"Uploading source snapshot...")
+              upload_if_changed(source_path, hf_source_path, "source")
+          else:
+              print(f"WARNING: Source snapshot not found at {source_path}")
+
+          print("Done.")
           PYEOF
+
+  # ---------------------------------------------------------------------------
+  # AUTO-PR: Create PR from review branch to main after successful CI
+  # ---------------------------------------------------------------------------
+  auto-pr-to-main:
+    name: Create PR to main
+    needs: [run-notebooks]
+    if: >-
+      needs.run-notebooks.result == 'success' &&
+      startsWith(github.ref, 'refs/heads/review/pr-')
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Create or update PR to main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          PR_NUM=$(echo "$BRANCH" | sed 's|review/pr-||')
+
+          # Check if PR already exists from this branch to main
+          EXISTING=$(gh pr list --head "$BRANCH" --base main --json number --jq '.[0].number // empty')
+
+          if [ -z "$EXISTING" ]; then
+            gh pr create \
+              --head "$BRANCH" \
+              --base main \
+              --title "Merge reviewed notebooks from PR #${PR_NUM}" \
+              --body "$(cat <<EOF
+          ## Summary
+
+          Auto-generated PR. Notebooks from #${PR_NUM} have been executed and validated.
+
+          All executed notebooks are cached on HuggingFace branch \`${BRANCH}\`.
+          Merging this will promote the cached artifacts to production (no re-execution needed).
+
+          ## How promotion works
+
+          When this PR is merged to main, CI will:
+          1. Compare source notebooks against cached versions on HF branch \`${BRANCH}\`
+          2. If sources match, use the cached executed notebooks (instant promotion)
+          3. Only re-execute if source notebooks have changed since the review build
+          EOF
+          )"
+            echo "Created PR from ${BRANCH} to main"
+          else
+            echo "PR #${EXISTING} already exists for ${BRANCH} -> main"
+            gh pr comment "$EXISTING" --body "CI passed. Notebooks re-validated on $(date -u +%Y-%m-%dT%H:%M:%SZ)."
+          fi
 
   # ---------------------------------------------------------------------------
   # PUBLISH DOIs: Publish new/updated notebooks to Zenodo
@@ -912,7 +1022,7 @@ jobs:
   publish-dois:
     name: Publish DOIs to Zenodo
     needs: [run-notebooks]
-    if: ${{ always() && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') }}
+    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -1178,6 +1288,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
+          HF_BRANCH: ${{ github.ref_name }}
         run: |
           echo "========== CACHE MODE: Downloading notebooks from HuggingFace =========="
           pip install -q "huggingface_hub>=0.32.0"
@@ -1189,23 +1300,32 @@ jobs:
           from huggingface_hub import list_repo_files, hf_hub_download
 
           hf_repo = os.environ["HF_REPO"]
+          hf_branch = os.environ.get("HF_BRANCH", "main")
+          print(f"Using HF branch: {hf_branch}")
 
           # Get list of notebooks in the git repo
           git_notebooks = list(Path("books").rglob("*.ipynb"))
           print(f"Found {len(git_notebooks)} notebooks in git repo")
 
-          # Check which ones exist on HuggingFace
-          hf_files = set(list_repo_files(hf_repo, repo_type="dataset"))
+          # Check which ones exist on HuggingFace (try branch first, fall back to main)
+          try:
+              hf_files = set(list_repo_files(hf_repo, repo_type="dataset", revision=hf_branch))
+              print(f"Using cached notebooks from HF branch '{hf_branch}'")
+          except Exception:
+              print(f"HF branch '{hf_branch}' not found, falling back to main")
+              hf_branch = "main"
+              hf_files = set(list_repo_files(hf_repo, repo_type="dataset", revision="main"))
 
           os.makedirs("loaded-artifacts", exist_ok=True)
           downloaded = 0
           missing = []
 
           for nb_path in git_notebooks:
-              hf_path = str(nb_path)  # books/examples/... matches HF path
+              # Outputs notebooks are stored under outputs/ prefix on HF
+              hf_outputs_path = "outputs/" + str(nb_path).removeprefix("books/")
               nb_name = nb_path.stem
 
-              if hf_path not in hf_files:
+              if hf_outputs_path not in hf_files:
                   missing.append(str(nb_path))
                   continue
 
@@ -1213,10 +1333,10 @@ jobs:
               artifact_dir = Path(f"loaded-artifacts/executed-{nb_name}")
               artifact_dir.mkdir(parents=True, exist_ok=True)
 
-              local_file = artifact_dir / nb_path.name
-              print(f"  Downloading: {hf_path}")
+              local_file = artifact_dir / nb_path.name  # Save as original name for merge step
+              print(f"  Downloading: {hf_outputs_path}")
 
-              cached_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset")
+              cached_file = hf_hub_download(hf_repo, hf_outputs_path, repo_type="dataset", revision=hf_branch)
               shutil.copy(cached_file, local_file)
               downloaded += 1
 
@@ -1569,21 +1689,10 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
-        if: (github.ref == 'refs/heads/main' && github.event_name != 'pull_request') || inputs.force_deploy_pages == true
+        if: github.ref == 'refs/heads/main' || inputs.force_deploy_pages == true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./books/_build/html
           keep_files: false  # Clean publish - removes old/broken notebooks
           force_orphan: true  # Reset gh-pages history on each deploy to prevent size bloat
 
-      - name: Report published website URL for successful PR runs
-        if: ${{ github.event_name == 'pull_request' && success() }}
-        run: |
-          SITE_URL="https://neurodesk.github.io/neurodeskedu/"
-          echo "PR validation succeeded."
-          echo "Please check the published notebook website: ${SITE_URL}"
-          {
-            echo "### PR validation succeeded"
-            echo ""
-            echo "Please check the published notebook website: ${SITE_URL}"
-          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,7 +1,7 @@
 ---
-title: "Contribute Tutorials"
-linkTitle: "Contribute tutorials"
-weight: 1
+title: "Creating Tutorials"
+linkTitle: "Creating tutorials"
+weight: 2
 author: Angela I. Renton, updated by Michèle Masson-Trottier
 aliases:
 - /tutorials/tutorial-template
@@ -10,7 +10,7 @@ tags: ["template", "documentation"]
 description: >
   A brief guide for contributing new tutorials.
 ---
-# Contribute Tutorials
+# Creating Tutorials
 
 We welcome tutorials that walk users through using tools or workflows available in Neurodesk. These tutorials are valuable learning resources that support accessible, reproducible neuroimaging.
 
@@ -19,7 +19,6 @@ We welcome tutorials that walk users through using tools or workflows available 
 Tutorials are written in Markdown and hosted in the <a href="https://github.com/neurodesk/neurodeskedu/tree/main/books/tutorials" target="_blank" rel="noopener">
   `neurodeskedu:tutorials`
 </a> repository, where they appear as part of the documentation site.
-
 
 ---
 

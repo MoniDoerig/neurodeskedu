@@ -1,22 +1,21 @@
 ---
-title: "Contribute Example Notebooks"
-linkTitle: "Contribute examples"
+title: "Creating Example Notebooks"
+linkTitle: "Creating Examples"
 weight: 1
 aliases:
   - /tutorials/tutorial-template
   - /tutorials-examples/contribute/contribute-examples
 description: >
-  A brief guide for contributing new example notebooks.
+  A brief guide for creating a new example notebooks.
 ---
 
+# Creating Example Notebooks
 We welcome example notebooks that demonstrate how to use tools within Neurodesk. These notebooks serve as valuable learning resources and promote reproducible workflows across the neuroimaging community.
 
 Example notebooks are hosted in the <a href="https://github.com/neurodesk/neurodeskedu/tree/main/books/examples" target="_blank" rel="noopener">
   `neurodesk/neurodeskedu:examples`
 </a> repository and are intended to be lightweight, self-contained, and easy to follow.
 
----
-# Contribute Example Notebooks
 
 ## Getting Started
 

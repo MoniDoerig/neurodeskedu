@@ -1,0 +1,98 @@
+# =============================================================================
+# Cleanup Stale HuggingFace Branches
+# =============================================================================
+# Compares branches on the HF dataset repo against GitHub branches.
+# Deletes HF branches that have no matching GitHub branch (stale mirrors).
+#
+# Run manually from Actions tab whenever HF branches need pruning.
+# Default is dry-run mode — shows what would be deleted without deleting.
+# =============================================================================
+
+name: Cleanup Stale HF Branches
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — only list branches that would be deleted'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  cleanup:
+    name: Prune stale HF branches
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0  # Need all branches for comparison
+
+      - name: Install dependencies
+        run: pip install "huggingface_hub>=0.32.0"
+
+      - name: Compare GitHub and HF branches
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import subprocess
+          from huggingface_hub import HfApi
+
+          dry_run = os.environ.get("DRY_RUN", "true").lower() == "true"
+          hf_repo = "neurodeskorg/neurodeskedu"
+
+          api = HfApi()
+
+          # Get HF branches
+          refs = api.list_repo_refs(hf_repo, repo_type="dataset")
+          hf_branches = {b.name for b in refs.branches}
+          print(f"HF branches ({len(hf_branches)}):")
+          for b in sorted(hf_branches):
+              print(f"  - {b}")
+
+          # Get GitHub branches (remote)
+          result = subprocess.run(
+              ["git", "branch", "-r", "--format=%(refname:short)"],
+              capture_output=True, text=True, check=True
+          )
+          gh_branches = {
+              line.replace("origin/", "")
+              for line in result.stdout.strip().split("\n")
+              if line.strip()
+          }
+          print(f"\nGitHub branches ({len(gh_branches)}):")
+          for b in sorted(gh_branches):
+              print(f"  - {b}")
+
+          # Find stale HF branches (on HF but not on GitHub, always keep 'main')
+          stale = hf_branches - gh_branches - {"main"}
+          print(f"\nStale HF branches ({len(stale)}):")
+          for b in sorted(stale):
+              print(f"  - {b}")
+
+          if not stale:
+              print("\nNothing to clean up!")
+          elif dry_run:
+              print("\n[DRY RUN] Would delete the above branches.")
+              print("Re-run with dry_run unchecked to actually delete.")
+          else:
+              deleted = 0
+              failed = 0
+              for branch in sorted(stale):
+                  print(f"\n  Deleting HF branch: {branch} ...", end=" ")
+                  try:
+                      api.delete_branch(hf_repo, repo_type="dataset", branch=branch)
+                      print("done")
+                      deleted += 1
+                  except Exception as e:
+                      print(f"FAILED: {e}")
+                      failed += 1
+
+              print(f"\nDeleted: {deleted}, Failed: {failed}")
+              if failed > 0:
+                  exit(1)
+          PYEOF
