@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-02T03:43:50+00:00",
+  "generated_at": "2026-03-02T04:53:32+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -14,13 +14,10 @@
       ],
       "source_path": "examples/spectroscopy/osprey.ipynb"
     },
-    "b8f472e3-3d87-45da-80d8-086501ffb91a": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/29",
-      "reviewers": [
-        "MoniDoerig"
-      ],
-      "source_path": "examples/workflows/bids_conversion.ipynb"
+    "378baf4c-c107-47b9-a8bf-cc286d89d91e": {
+      "state": "queued",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/33",
+      "source_path": "examples/workflows/nextflow_neurodesk.ipynb"
     },
     "776677f3-4ea4-4810-a314-4212d09cb31a": {
       "state": "in-progress",
@@ -105,11 +102,6 @@
       "state": "queued",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/32",
       "source_path": "examples/workflows/nipype_short.ipynb"
-    },
-    "378baf4c-c107-47b9-a8bf-cc286d89d91e": {
-      "state": "queued",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/33",
-      "source_path": "examples/workflows/nextflow_neurodesk.ipynb"
     },
     "ae2af25f-cf27-440b-a0d8-884a7b7e1703": {
       "state": "queued",
@@ -244,6 +236,16 @@
       "state": "queued",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/8",
       "source_path": "examples/functional_imaging/AFNI_preprocessing_plus_glm.ipynb"
+    },
+    "b8f472e3-3d87-45da-80d8-086501ffb91a": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/29",
+      "reviewers": [
+        "MoniDoerig"
+      ],
+      "reviewed_at": "2026-03-02",
+      "review_commit_sha": "62a503b00a5ee77872135733d944ec0b31991d46",
+      "source_path": "examples/workflows/bids_conversion.ipynb"
     },
     "77605892-b360-443a-adbf-47051ebdcdb3": {
       "state": "queued",
