@@ -1,5 +1,5 @@
 ---
-title: "Reviewing Existing Resources"
+title: "Reviewing Existing NeurodeskEDU Resources"
 linkTitle: "Reviewing Resources"
 weight: 3
 author: Michèle Masson-Trottier
@@ -9,7 +9,7 @@ description: >
   Neurodesk is a community-driven, open-source platform for reproducible neuroimaging. In NeurodeskEDU, community members contribute tutorials, and example notebooks pull requests. This policy ensures that the review of those contributions is impartial, transparent, and free from conflicts of interest.
 
 ---
-# Reviewing content for NeurodeskEDU
+# Reviewing for NeurodeskEDU
 Thank you for agreeing to review for [NeurodeskEDU](https://neurodesk.org/edu). We're delighted to have your help. This document outlines our review guidelines and helps you understand what we look for when accepting a tutorial or example notebook into the NeurodeskEDU repository. Our review process takes place publicly via GitHub pull requests on the [neurodeskedu](https://github.com/neurodesk/neurodeskedu) repository.
 We like to think of NeurodeskEDU as a contributor-friendly resource. If the submitting author has followed best practices (clear instructions, working code, and proper attribution), then their review should be quick. For submissions that don't quite meet the bar, please try to give clear, constructive feedback on how the author can improve. A key goal of NeurodeskEDU is to raise the quality of neuroimaging education resources, and you (the experienced reviewer) are well placed to help with that.
 

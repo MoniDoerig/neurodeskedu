@@ -1,7 +1,7 @@
 ---
-title: "Create a Tutorial"
-linkTitle: "Create tutorials"
-weight: 1
+title: "Creating Tutorials"
+linkTitle: "Creating tutorials"
+weight: 2
 author: Angela I. Renton, updated by Michèle Masson-Trottier
 aliases:
 - /tutorials/tutorial-template
@@ -10,7 +10,7 @@ tags: ["template", "documentation"]
 description: >
   A brief guide for contributing new tutorials.
 ---
-# Create a Tutorial
+# Creating Tutorials
 
 We welcome tutorials that walk users through using tools or workflows available in Neurodesk. These tutorials are valuable learning resources that support accessible, reproducible neuroimaging.
 
