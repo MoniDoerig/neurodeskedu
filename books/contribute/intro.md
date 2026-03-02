@@ -4,7 +4,7 @@ title: "Contribute"
 
 # Contribute
 
-Guides for contributing new examples and tutorials.
+Guides for contributing to NeurodeskEDU, either by creating new examples and tutorials or by reviewing existing content.
 
 ```{tableofcontents}
 ```
