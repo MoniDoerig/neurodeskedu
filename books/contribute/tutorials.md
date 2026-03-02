@@ -20,7 +20,6 @@ Tutorials are written in Markdown and hosted in the <a href="https://github.com/
   `neurodeskedu:tutorials`
 </a> repository, where they appear as part of the documentation site.
 
-
 ---
 
 ## Getting Started
