@@ -55,9 +55,6 @@ See below for a 4-minute tutorial on Installation, Usage and Data Access with Ne
 </div>
 
 
-
-
-
 ## Acknowledgements
 This example repository is funded by the Wellcome Trust with a Wellcome Discretionary Award as part of the Chan Zuckerberg Initiative (CZI), The Kavli Foundation and Wellcome’s Essential Open Source Software for Science (Cycle 6) Program [313306/Z/24/Z]
 
