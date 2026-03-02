@@ -623,14 +623,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740135",
     "website_url": "https://neurodesk.org/edu/examples/structural_imaging/freesurfer-recon-all-clinical.html",
     "concept_recid": "18740135",
-    "record_id": "18740136",
+    "record_id": "18835280",
     "content_type": "notebook",
-    "checksum": "ef72b6d45a2212beda7daef1383e21e5",
+    "checksum": "b311d2ec80f51ded9b10628712222141",
     "authors": [
-      "Thomas Shaw",
-      "1 Sept 2025"
+      "Thomas Shaw"
     ],
-    "updated_at": "2026-02-23T09:11:58Z"
+    "updated_at": "2026-03-02T12:15:06Z"
   },
   "books/examples/functional_imaging/FSLnets_course_practical.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18740141",
@@ -743,5 +742,15 @@
       "Monika Doerig"
     ],
     "updated_at": "2026-02-26T02:17:28Z"
+  },
+  "books/examples/workflows/nipype_full.ipynb": {
+    "doi_url": "https://doi.org/10.5281/zenodo.18835281",
+    "website_url": "https://neurodesk.org/edu/examples/workflows/nipype_full.html",
+    "concept_recid": "18835281",
+    "record_id": "18835282",
+    "content_type": "notebook",
+    "checksum": "256e770bf02e48135c7ee76aa2877d23",
+    "authors": [],
+    "updated_at": "2026-03-02T12:15:10Z"
   }
 }
