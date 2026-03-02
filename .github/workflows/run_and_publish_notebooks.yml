@@ -543,34 +543,36 @@ jobs:
             echo "Root-level setup complete"
           '
 
-      - name: Save source notebook (pre-execution snapshot)
-        run: |
-          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
-          SOURCE_DIR="${RUNNER_TEMP}/source-notebooks"
-          mkdir -p "$SOURCE_DIR"
-          cp "$NOTEBOOK_PATH" "$SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
-          echo "Saved source snapshot: $SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
+      # --- DISABLED FOR TESTING (arc-runner) ---
+      # - name: Save source notebook (pre-execution snapshot)
+      #   run: |
+      #     NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+      #     SOURCE_DIR="${RUNNER_TEMP}/source-notebooks"
+      #     mkdir -p "$SOURCE_DIR"
+      #     cp "$NOTEBOOK_PATH" "$SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
+      #     echo "Saved source snapshot: $SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
 
-      - name: Try promoting cached notebook (main only)
-        if: github.ref == 'refs/heads/main'
-        id: promote
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_REPO: neurodeskorg/neurodeskedu
-        run: |
-          pip install -q "huggingface_hub>=0.32.0"
-          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
-
-          if python3 .github/scripts/promote_notebook.py "$NOTEBOOK_PATH"; then
-            echo "promoted=true" >> $GITHUB_OUTPUT
-            echo "Notebook promoted from cache — skipping execution"
-          else
-            echo "promoted=false" >> $GITHUB_OUTPUT
-            echo "No cache match — will execute normally"
-          fi
+      # - name: Try promoting cached notebook (main only)
+      #   if: github.ref == 'refs/heads/main'
+      #   id: promote
+      #   env:
+      #     HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      #     HF_REPO: neurodeskorg/neurodeskedu
+      #   run: |
+      #     pip install -q "huggingface_hub>=0.32.0"
+      #     NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+      #
+      #     if python3 .github/scripts/promote_notebook.py "$NOTEBOOK_PATH"; then
+      #       echo "promoted=true" >> $GITHUB_OUTPUT
+      #       echo "Notebook promoted from cache — skipping execution"
+      #     else
+      #       echo "promoted=false" >> $GITHUB_OUTPUT
+      #       echo "No cache match — will execute normally"
+      #     fi
+      # --- END DISABLED ---
 
       - name: Execute notebook in container
-        if: steps.promote.outputs.promoted != 'true'
+        # if: steps.promote.outputs.promoted != 'true'
         timeout-minutes: 1500
         run: |
           NOTEBOOK_PATH="${{ matrix.notebooks }}"
@@ -681,76 +683,78 @@ jobs:
             exit "$EXEC_RC"
           fi
 
-      # Two-pass workflow for ipyniivue notebooks:
-      # 1. First execution (above) downloads data and generates outputs
-      # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
-      # 3. Second execution generates clean outputs with HF URLs
-      - name: Transform notebook paths to HF URLs (post-execution)
-        if: steps.promote.outputs.promoted != 'true'
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_REPO: neurodeskorg/neurodeskedu
-          HF_BRANCH: ${{ github.ref_name }}
-        run: |
-          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
-          WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
-
-          # Check if notebook uses ipyniivue
-          if ! grep -qE "load_volumes|load_meshes" "$NOTEBOOK_PATH" 2>/dev/null; then
-            echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
-            echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
-            exit 0
-          fi
-
-          echo "Found ipyniivue usage - transforming local paths to HF URLs..."
-          echo "NEEDS_SECOND_PASS=true" >> $GITHUB_ENV
-
-          # Ensure huggingface_hub with Xet support is installed on the runner
-          pip install -q "huggingface_hub>=0.32.0"
-
-          # Transform paths to URLs, upload to HF, clear outputs for re-execution
-          python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs
-
-      - name: Second execution pass (HF URLs)
-        if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
-        run: |
-          NOTEBOOK_PATH="${{ matrix.notebooks }}"
-          NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
-
-          echo "=== Second execution pass with HF URLs ==="
-          echo "Data files cached from first pass - should be fast"
-
-          docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
-            set -eo pipefail
-
-            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
-
-            # Initialize the module system
-            if [ -f /usr/share/lmod/lmod/init/bash ]; then
-              source /usr/share/lmod/lmod/init/bash
-            elif [ -f /usr/share/module.sh ]; then
-              source /usr/share/module.sh
-            fi
-
-            export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
-
-            echo "Re-executing notebook with HF URLs: $NOTEBOOK_PATH"
-
-            EXEC_TIMEOUT=86400
-            LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}-pass2.log"
-
-            if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
-              --ExecutePreprocessor.timeout="${EXEC_TIMEOUT}" \
-              --ExecutePreprocessor.kernel_name=python3 \
-              "/home/jovyan/workspace/books/$NOTEBOOK_PATH" 2>&1 | tee "$LOG_FILE"; then
-              echo "Second pass execution complete"
-            else
-              NBEXEC_RC=$?
-              echo "::error::Second pass nbconvert failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
-              tail -n 50 "$LOG_FILE" || true
-              exit "${NBEXEC_RC}"
-            fi
-          '
+      # --- DISABLED FOR TESTING (arc-runner) ---
+      # # Two-pass workflow for ipyniivue notebooks:
+      # # 1. First execution (above) downloads data and generates outputs
+      # # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
+      # # 3. Second execution generates clean outputs with HF URLs
+      # - name: Transform notebook paths to HF URLs (post-execution)
+      #   if: steps.promote.outputs.promoted != 'true'
+      #   env:
+      #     HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      #     HF_REPO: neurodeskorg/neurodeskedu
+      #     HF_BRANCH: ${{ github.ref_name }}
+      #   run: |
+      #     NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+      #     WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
+      #
+      #     # Check if notebook uses ipyniivue
+      #     if ! grep -qE "load_volumes|load_meshes" "$NOTEBOOK_PATH" 2>/dev/null; then
+      #       echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
+      #       echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
+      #       exit 0
+      #     fi
+      #
+      #     echo "Found ipyniivue usage - transforming local paths to HF URLs..."
+      #     echo "NEEDS_SECOND_PASS=true" >> $GITHUB_ENV
+      #
+      #     # Ensure huggingface_hub with Xet support is installed on the runner
+      #     pip install -q "huggingface_hub>=0.32.0"
+      #
+      #     # Transform paths to URLs, upload to HF, clear outputs for re-execution
+      #     python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs
+      #
+      # - name: Second execution pass (HF URLs)
+      #   if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
+      #   run: |
+      #     NOTEBOOK_PATH="${{ matrix.notebooks }}"
+      #     NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
+      #
+      #     echo "=== Second execution pass with HF URLs ==="
+      #     echo "Data files cached from first pass - should be fast"
+      #
+      #     docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+      #       set -eo pipefail
+      #
+      #       export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+      #
+      #       # Initialize the module system
+      #       if [ -f /usr/share/lmod/lmod/init/bash ]; then
+      #         source /usr/share/lmod/lmod/init/bash
+      #       elif [ -f /usr/share/module.sh ]; then
+      #         source /usr/share/module.sh
+      #       fi
+      #
+      #       export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
+      #
+      #       echo "Re-executing notebook with HF URLs: $NOTEBOOK_PATH"
+      #
+      #       EXEC_TIMEOUT=86400
+      #       LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}-pass2.log"
+      #
+      #       if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
+      #         --ExecutePreprocessor.timeout="${EXEC_TIMEOUT}" \
+      #         --ExecutePreprocessor.kernel_name=python3 \
+      #         "/home/jovyan/workspace/books/$NOTEBOOK_PATH" 2>&1 | tee "$LOG_FILE"; then
+      #         echo "Second pass execution complete"
+      #       else
+      #         NBEXEC_RC=$?
+      #         echo "::error::Second pass nbconvert failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
+      #         tail -n 50 "$LOG_FILE" || true
+      #         exit "${NBEXEC_RC}"
+      #       fi
+      #     '
+      # --- END DISABLED ---
 
       - name: Cleanup container
         if: always()
@@ -760,7 +764,7 @@ jobs:
           docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
       - name: Check for execution errors
-        if: steps.promote.outputs.promoted != 'true'
+        # if: steps.promote.outputs.promoted != 'true'  # disabled for testing
         run: |
           # Check the notebook for errors - step/job fails (red) if errors found, but publish still runs
           python3 << 'EOF'
@@ -868,102 +872,104 @@ jobs:
               print(f"::warning::Could not check notebook for errors: {e}")
           EOF
 
-      - name: Upload executed notebook artifact
-        if: success()  # Only upload if notebook executed without errors
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
-        with:
-          name: executed-${{ env.NOTEBOOK }}
-          path: books/${{ matrix.notebooks }}
-          retention-days: 1
-
-      - name: Upload source + executed notebooks to HuggingFace
-        if: success()
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_REPO: neurodeskorg/neurodeskedu
-          HF_BRANCH: ${{ github.ref_name }}
-          EXECUTED_PATH: books/${{ matrix.notebooks }}
-          SOURCE_DIR: ${{ runner.temp }}/source-notebooks
-          NOTEBOOK_BASENAME: ${{ matrix.notebooks }}
-          HF_SOURCE_PATH: books/${{ matrix.notebooks }}
-        run: |
-          pip install -q "huggingface_hub>=0.32.0"
-
-          python3 << 'PYEOF'
-          import hashlib
-          import os
-          import time
-          import random
-          from huggingface_hub import hf_hub_download, file_exists, upload_file, HfApi
-
-          executed_path = os.environ["EXECUTED_PATH"]
-          nb_basename = os.path.basename(os.environ["NOTEBOOK_BASENAME"])
-          source_path = os.path.join(os.environ["SOURCE_DIR"], nb_basename)
-          hf_source_path = os.environ["HF_SOURCE_PATH"]
-          # outputs/ mirror of books/ — same filename, different prefix
-          hf_outputs_path = "outputs/" + hf_source_path.removeprefix("books/")
-          hf_repo = os.environ["HF_REPO"]
-          hf_branch = os.environ.get("HF_BRANCH", "main")
-
-          api = HfApi()
-
-          # Ensure branch exists on HF
-          if hf_branch != "main":
-              refs = api.list_repo_refs(hf_repo, repo_type="dataset")
-              if hf_branch not in {b.name for b in refs.branches}:
-                  print(f"Creating HF branch '{hf_branch}' from main...")
-                  api.create_branch(hf_repo, repo_type="dataset", branch=hf_branch)
-
-          def upload_if_changed(local_path, hf_path, label):
-              """Upload file to HF if it has changed (hash comparison)."""
-              with open(local_path, "rb") as f:
-                  local_hash = hashlib.sha256(f.read()).hexdigest()[:16]
-
-              if file_exists(hf_repo, hf_path, repo_type="dataset", revision=hf_branch):
-                  try:
-                      remote_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset", revision=hf_branch)
-                      with open(remote_file, "rb") as f:
-                          remote_hash = hashlib.sha256(f.read()).hexdigest()[:16]
-                      if local_hash == remote_hash:
-                          print(f"  [{label}] Unchanged (hash: {local_hash}), skipping")
-                          return
-                      print(f"  [{label}] Changed (local: {local_hash}, remote: {remote_hash})")
-                  except Exception as e:
-                      print(f"  [{label}] Could not compare: {e}")
-
-              print(f"  [{label}] Uploading: {local_path} -> {hf_path} (branch: {hf_branch})")
-              for attempt in range(5):
-                  try:
-                      upload_file(
-                          path_or_fileobj=local_path,
-                          path_in_repo=hf_path,
-                          repo_id=hf_repo,
-                          repo_type="dataset",
-                          revision=hf_branch,
-                          commit_message=f"Update {label}: {hf_path}",
-                      )
-                      break
-                  except Exception as e:
-                      if "412" in str(e) and attempt < 4:
-                          wait = random.uniform(2, 8) * (attempt + 1)
-                          print(f"  [{label}] Conflict (attempt {attempt+1}/5), retrying in {wait:.1f}s...")
-                          time.sleep(wait)
-                      else:
-                          raise
-
-          # Upload notebook with outputs to outputs/ prefix
-          print(f"Uploading outputs notebook...")
-          upload_if_changed(executed_path, hf_outputs_path, "outputs")
-
-          # Upload source notebook (pre-execution snapshot for promotion comparison)
-          if os.path.exists(source_path):
-              print(f"Uploading source snapshot...")
-              upload_if_changed(source_path, hf_source_path, "source")
-          else:
-              print(f"WARNING: Source snapshot not found at {source_path}")
-
-          print("Done.")
-          PYEOF
+      # --- DISABLED FOR TESTING (arc-runner) ---
+      # - name: Upload executed notebook artifact
+      #   if: success()  # Only upload if notebook executed without errors
+      #   uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      #   with:
+      #     name: executed-${{ env.NOTEBOOK }}
+      #     path: books/${{ matrix.notebooks }}
+      #     retention-days: 1
+      #
+      # - name: Upload source + executed notebooks to HuggingFace
+      #   if: success()
+      #   env:
+      #     HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      #     HF_REPO: neurodeskorg/neurodeskedu
+      #     HF_BRANCH: ${{ github.ref_name }}
+      #     EXECUTED_PATH: books/${{ matrix.notebooks }}
+      #     SOURCE_DIR: ${{ runner.temp }}/source-notebooks
+      #     NOTEBOOK_BASENAME: ${{ matrix.notebooks }}
+      #     HF_SOURCE_PATH: books/${{ matrix.notebooks }}
+      #   run: |
+      #     pip install -q "huggingface_hub>=0.32.0"
+      #
+      #     python3 << 'PYEOF'
+      #     import hashlib
+      #     import os
+      #     import time
+      #     import random
+      #     from huggingface_hub import hf_hub_download, file_exists, upload_file, HfApi
+      #
+      #     executed_path = os.environ["EXECUTED_PATH"]
+      #     nb_basename = os.path.basename(os.environ["NOTEBOOK_BASENAME"])
+      #     source_path = os.path.join(os.environ["SOURCE_DIR"], nb_basename)
+      #     hf_source_path = os.environ["HF_SOURCE_PATH"]
+      #     # outputs/ mirror of books/ — same filename, different prefix
+      #     hf_outputs_path = "outputs/" + hf_source_path.removeprefix("books/")
+      #     hf_repo = os.environ["HF_REPO"]
+      #     hf_branch = os.environ.get("HF_BRANCH", "main")
+      #
+      #     api = HfApi()
+      #
+      #     # Ensure branch exists on HF
+      #     if hf_branch != "main":
+      #         refs = api.list_repo_refs(hf_repo, repo_type="dataset")
+      #         if hf_branch not in {b.name for b in refs.branches}:
+      #             print(f"Creating HF branch '{hf_branch}' from main...")
+      #             api.create_branch(hf_repo, repo_type="dataset", branch=hf_branch)
+      #
+      #     def upload_if_changed(local_path, hf_path, label):
+      #         """Upload file to HF if it has changed (hash comparison)."""
+      #         with open(local_path, "rb") as f:
+      #             local_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+      #
+      #         if file_exists(hf_repo, hf_path, repo_type="dataset", revision=hf_branch):
+      #             try:
+      #                 remote_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset", revision=hf_branch)
+      #                 with open(remote_file, "rb") as f:
+      #                     remote_hash = hashlib.sha256(f.read()).hexdigest()[:16]
+      #                 if local_hash == remote_hash:
+      #                     print(f"  [{label}] Unchanged (hash: {local_hash}), skipping")
+      #                     return
+      #                 print(f"  [{label}] Changed (local: {local_hash}, remote: {remote_hash})")
+      #             except Exception as e:
+      #                 print(f"  [{label}] Could not compare: {e}")
+      #
+      #         print(f"  [{label}] Uploading: {local_path} -> {hf_path} (branch: {hf_branch})")
+      #         for attempt in range(5):
+      #             try:
+      #                 upload_file(
+      #                     path_or_fileobj=local_path,
+      #                     path_in_repo=hf_path,
+      #                     repo_id=hf_repo,
+      #                     repo_type="dataset",
+      #                     revision=hf_branch,
+      #                     commit_message=f"Update {label}: {hf_path}",
+      #                 )
+      #                 break
+      #             except Exception as e:
+      #                 if "412" in str(e) and attempt < 4:
+      #                     wait = random.uniform(2, 8) * (attempt + 1)
+      #                     print(f"  [{label}] Conflict (attempt {attempt+1}/5), retrying in {wait:.1f}s...")
+      #                     time.sleep(wait)
+      #                 else:
+      #                     raise
+      #
+      #     # Upload notebook with outputs to outputs/ prefix
+      #     print(f"Uploading outputs notebook...")
+      #     upload_if_changed(executed_path, hf_outputs_path, "outputs")
+      #
+      #     # Upload source notebook (pre-execution snapshot for promotion comparison)
+      #     if os.path.exists(source_path):
+      #         print(f"Uploading source snapshot...")
+      #         upload_if_changed(source_path, hf_source_path, "source")
+      #     else:
+      #         print(f"WARNING: Source snapshot not found at {source_path}")
+      #
+      #     print("Done.")
+      #     PYEOF
+      # --- END DISABLED ---
 
   # ---------------------------------------------------------------------------
   # AUTO-PR: Create PR from review branch to main after successful CI
@@ -1022,7 +1028,9 @@ jobs:
   publish-dois:
     name: Publish DOIs to Zenodo
     needs: [run-notebooks]
-    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' }}
+    # DISABLED FOR TESTING (arc-runner) — original condition:
+    # if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' }}
+    if: false
     runs-on: ubuntu-22.04
 
     steps:
@@ -1151,7 +1159,9 @@ jobs:
   publish-pages:
     name: Build & Publish to GitHub Pages
     needs: [run-notebooks, setup, publish-dois]
-    if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
+    # DISABLED FOR TESTING (arc-runner) — original condition:
+    # if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
+    if: false
     runs-on: ubuntu-22.04
     # Serialize publish jobs to prevent race conditions on gh-pages
     concurrency:
