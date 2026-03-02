@@ -109,7 +109,27 @@ done
     echo "    sections:"
 
     # Parent direct pages (if any)
-    if [[ -n "${direct_entries[$parent]:-}" ]]; then
+    # For contribute, enforce a specific display order
+    if [[ "$parent" == "contribute" && -n "${direct_entries[$parent]:-}" ]]; then
+      for ordered_file in examples tutorials review; do
+        line="      - file: contribute/$ordered_file"
+        if echo -e "${direct_entries[$parent]}" | grep -q "$line"; then
+          echo "$line"
+        fi
+      done
+      # Also emit any entries not in the explicit list (future-proofing)
+      while IFS= read -r entry; do
+        [[ -z "$entry" ]] && continue
+        skip=false
+        for ordered_file in examples tutorials review; do
+          if [[ "$entry" == *"contribute/$ordered_file"* ]]; then
+            skip=true
+            break
+          fi
+        done
+        $skip || echo "$entry"
+      done <<< "$(echo -e "${direct_entries[$parent]}")"
+    elif [[ -n "${direct_entries[$parent]:-}" ]]; then
       echo -e "${direct_entries[$parent]}"
     fi
 
