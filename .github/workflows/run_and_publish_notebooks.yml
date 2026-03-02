@@ -437,7 +437,8 @@ jobs:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # CVMFS: Pod-level CSI mount, bind-mounted into container.
-          # To disable: remove the "-v /cvmfs:/cvmfs:ro" line below.
+          # rslave propagation lets CVMFS automount events from DinD flow into the container.
+          # To disable: remove the --mount line below.
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
@@ -445,7 +446,7 @@ jobs:
             -v ${{ github.workspace }}:/home/jovyan/workspace \
             -v ${{ env.BASE_PATH }}/tmp:/overlay-storage \
             -v ${{ github.workspace }}/.cache/pip:/home/jovyan/.cache/pip \
-            -v /cvmfs:/cvmfs:ro \
+            --mount type=bind,source=/cvmfs,target=/cvmfs,readonly,bind-propagation=rslave \
             -w /home/jovyan/workspace/books \
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
@@ -1316,7 +1317,7 @@ jobs:
           # to ensure the environment (Lmod, Apptainer overlay) initializes
           # correctly without permission errors.
           # -----------------------------------------------------------------------
-          # CVMFS: Same as run-notebooks job. Remove "-v /cvmfs" line to disable.
+          # CVMFS: Same as run-notebooks job. Remove --mount line to disable.
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
@@ -1324,7 +1325,7 @@ jobs:
             -v ${{ github.workspace }}:/home/jovyan/workspace \
             -v ${{ env.BASE_PATH }}/tmp:/overlay-storage \
             -v ${{ github.workspace }}/.cache/pip:/home/jovyan/.cache/pip \
-            -v /cvmfs:/cvmfs:ro \
+            --mount type=bind,source=/cvmfs,target=/cvmfs,readonly,bind-propagation=rslave \
             -w /home/jovyan/workspace/books \
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
