@@ -690,21 +690,33 @@ jobs:
           NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
           WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
 
-          # Check if notebook uses ipyniivue
+          # Skip if notebook doesn't reference ipyniivue
           if ! grep -qE "load_volumes|load_meshes" "$NOTEBOOK_PATH" 2>/dev/null; then
             echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
             echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
             exit 0
           fi
 
-          echo "Found ipyniivue usage - transforming local paths to HF URLs..."
-          echo "NEEDS_SECOND_PASS=true" >> $GITHUB_ENV
+          echo "Found ipyniivue references - checking if paths need transformation..."
 
           # Ensure huggingface_hub with Xet support is installed on the runner
           pip install -q "huggingface_hub>=0.32.0"
 
           # Transform paths to URLs, upload to HF, clear outputs for re-execution
-          python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs
+          # The script prints "Cells modified: N" — only need second pass if cells were actually changed
+          OUTPUT=$(python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs 2>&1) || true
+          echo "$OUTPUT"
+
+          if echo "$OUTPUT" | grep -q "Cells modified: 0"; then
+            echo "No paths were transformed - skipping second pass"
+            echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
+          elif echo "$OUTPUT" | grep -q "No transformation needed"; then
+            echo "No transformation needed - skipping second pass"
+            echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
+          else
+            echo "Paths were transformed - second execution pass needed"
+            echo "NEEDS_SECOND_PASS=true" >> $GITHUB_ENV
+          fi
 
       - name: Second execution pass (HF URLs)
         if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
