@@ -396,13 +396,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728778",
     "website_url": "https://neurodesk.org/edu/examples/spectroscopy/lcmodel.html",
     "concept_recid": "18728778",
-    "record_id": "18728779",
+    "record_id": "18842072",
     "content_type": "notebook",
-    "checksum": "ca95bf2c66ffca0a7b80c8a402069c21",
+    "checksum": "4ce2a88eeaf112ce3c53301a14cb8813",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-02-22T03:23:59Z"
+    "updated_at": "2026-03-02T22:03:22Z"
   },
   "books/examples/structural_imaging/FSL_course_bet.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728780",
