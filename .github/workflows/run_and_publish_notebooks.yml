@@ -647,15 +647,13 @@ jobs:
 
             echo ""
             echo "--- 10. Direct apptainer exec test ---"
-            # Find the FSL simg file
-            FSL_SIMG=$(find /cvmfs/neurodesk.ardc.edu.au/containers -name "fsl_6.0.4*" -name "*.simg" 2>/dev/null | head -1)
+            # Use known path from wrapper script (avoid slow find on CVMFS)
+            FSL_SIMG="/cvmfs/neurodesk.ardc.edu.au/containers/fsl_6.0.4_20210105/fsl_6.0.4_20210105.simg"
             echo "FSL simg: $FSL_SIMG"
-            if [ -n "$FSL_SIMG" ]; then
+            ls -la "$FSL_SIMG" 2>&1 || echo "simg file NOT FOUND"
+            if [ -f "$FSL_SIMG" ]; then
               echo "Testing: apptainer exec $FSL_SIMG mcflirt -help"
-              apptainer exec "$FSL_SIMG" mcflirt -help 2>&1 || echo "apptainer exec FAILED with exit code $?"
-              echo ""
-              echo "Testing: apptainer exec --fakeroot $FSL_SIMG echo hello"
-              apptainer exec --fakeroot "$FSL_SIMG" echo hello 2>&1 || echo "apptainer exec --fakeroot FAILED with exit code $?"
+              timeout 120 apptainer exec "$FSL_SIMG" mcflirt -help 2>&1 || echo "apptainer exec FAILED with exit code $?"
             fi
 
             echo ""
