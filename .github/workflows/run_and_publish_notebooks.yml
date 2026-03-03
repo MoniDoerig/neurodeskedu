@@ -443,8 +443,6 @@ jobs:
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
-            -e APPTAINER_UNSQUASH=true \
-            -e APPTAINER_TMPDIR=/overlay-storage/apptainer_tmp \
             ${{ needs.setup.outputs.neurodesk_image }}
 
           echo "Started container: $CONTAINER_NAME"
@@ -1557,8 +1555,6 @@ jobs:
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
-            -e APPTAINER_UNSQUASH=true \
-            -e APPTAINER_TMPDIR=/overlay-storage/apptainer_tmp \
             ${{ needs.setup.outputs.neurodesk_image }}
 
           echo "Started container: $CONTAINER_NAME"
