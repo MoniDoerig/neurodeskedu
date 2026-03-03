@@ -1417,7 +1417,7 @@ jobs:
           echo "================================================"
 
       - name: Download updated doi-mapping (from publish-dois job)
-        continue-on-error: true
+        if: needs.publish-dois.result == 'success'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: doi-mapping-updated
