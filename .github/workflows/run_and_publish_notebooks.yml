@@ -571,6 +571,55 @@ jobs:
       #     fi
       # --- END DISABLED ---
 
+      - name: Debug network and datalad inside container
+        run: |
+          echo "=== Network & datalad debug (arc-runner) ==="
+          docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            set +e
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+
+            echo "--- 1. DNS resolution ---"
+            nslookup github.com 2>&1 || echo "nslookup not found, trying host..."
+            host github.com 2>&1 || echo "host not found, trying getent..."
+            getent hosts github.com 2>&1 || echo "getent failed too"
+
+            echo ""
+            echo "--- 2. HTTPS connectivity ---"
+            curl -sI --connect-timeout 10 https://github.com 2>&1 | head -5 || echo "curl to github.com FAILED"
+            curl -sI --connect-timeout 10 https://datasets.datalad.org 2>&1 | head -5 || echo "curl to datasets.datalad.org FAILED"
+
+            echo ""
+            echo "--- 3. git & git-annex availability ---"
+            which git && git --version
+            which git-annex && git-annex version 2>&1 | head -3
+            which datalad && datalad --version
+
+            echo ""
+            echo "--- 4. Test datalad install (with verbose output) ---"
+            cd /tmp
+            rm -rf ds000102-test
+            mkdir ds000102-test && cd ds000102-test
+            datalad install -s https://github.com/OpenNeuroDatasets/ds000102.git . 2>&1
+            INSTALL_RC=$?
+            echo "datalad install exit code: $INSTALL_RC"
+
+            if [ $INSTALL_RC -eq 0 ]; then
+              echo ""
+              echo "--- 5. Test datalad get (single small file) ---"
+              datalad get sub-01/anat/sub-01_T1w.nii.gz 2>&1
+              GET_RC=$?
+              echo "datalad get exit code: $GET_RC"
+              ls -la sub-01/anat/ 2>&1 || true
+            fi
+
+            echo ""
+            echo "--- 6. Network interface info ---"
+            ip addr show 2>&1 | grep -E "inet |mtu" || ifconfig 2>&1 | grep -E "inet |mtu" || echo "no ip/ifconfig"
+
+            echo ""
+            echo "=== Debug complete ==="
+          '
+
       - name: Execute notebook in container
         # if: steps.promote.outputs.promoted != 'true'
         timeout-minutes: 1500
