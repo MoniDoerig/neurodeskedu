@@ -1142,7 +1142,8 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to doi-mapping.json"
           else
-            git commit -m "Update doi-mapping.json with new DOI entries"
+            git commit -m "chore: update doi-mapping.json [skip ci]"
+            git pull --rebase origin main
             git push
           fi
 
@@ -1359,6 +1360,9 @@ jobs:
                   print(f"  ... and {len(missing) - 10} more")
           PYEOF
 
+      - name: Save source notebooks before merge
+        run: cp -a books "$RUNNER_TEMP/source-books"
+
       - name: Merge executed notebooks into books directory
         run: |
           echo "========== MERGING EXECUTED NOTEBOOKS =========="
@@ -1528,12 +1532,10 @@ jobs:
           docker stop "$CONTAINER_NAME" 2>/dev/null || true
           docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
-      - name: Remove large files to avoid GitHub size limits
+      - name: Replace _sources with raw source notebooks
         run: |
-          # _sources contains copies of executed notebooks which can exceed GitHub's 100MB limit
-          echo "Removing _sources folder from build output..."
-          rm -rf books/_build/html/_sources
-          echo "✓ _sources folder removed"
+          # _sources has executed notebooks (huge with outputs). Swap in the raw sources.
+          cp -a "$RUNNER_TEMP/source-books/"* books/_build/html/_sources/ 2>/dev/null || echo "No _sources to replace"
 
       - name: Deduplicate _esm in HTML files
         run: |
