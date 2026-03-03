@@ -290,13 +290,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728759",
     "website_url": "https://neurodesk.org/edu/examples/quantitative_imaging/qsmxt.html",
     "concept_recid": "18728759",
-    "record_id": "18728760",
+    "record_id": "18847175",
     "content_type": "notebook",
-    "checksum": "79560ab57d2707a0e56ca54eee0a585d",
+    "checksum": "ef7290d4a0de930ee4106bd372aa7abd",
     "authors": [
       "Ashley Stewart"
     ],
-    "updated_at": "2026-02-22T03:23:18Z"
+    "updated_at": "2026-03-03T10:00:47Z"
   },
   "books/examples/spectroscopy/osprey.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728761",
