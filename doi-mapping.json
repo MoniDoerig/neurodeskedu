@@ -752,5 +752,17 @@
     "checksum": "256e770bf02e48135c7ee76aa2877d23",
     "authors": [],
     "updated_at": "2026-03-02T12:15:10Z"
+  },
+  "books/examples/structural_imaging/freesurfer.ipynb": {
+    "doi_url": "https://doi.org/10.5281/zenodo.18843449",
+    "website_url": "https://neurodesk.org/edu/examples/structural_imaging/freesurfer.html",
+    "concept_recid": "18843449",
+    "record_id": "18843450",
+    "content_type": "notebook",
+    "checksum": "781d4c1e0796dd7faa8199882979e628",
+    "authors": [
+      "Steffen Bollmann"
+    ],
+    "updated_at": "2026-03-03T02:28:26Z"
   }
 }
