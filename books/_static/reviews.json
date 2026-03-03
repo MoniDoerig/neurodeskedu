@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-03T00:19:45+00:00",
+  "generated_at": "2026-03-03T00:20:32+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -199,22 +199,6 @@
       ],
       "source_path": "examples/functional_imaging/AFNI_preprocessing_plus_glm.ipynb"
     },
-    "800d8b06-269e-4d0f-84a0-8c4b078db09c": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/42",
-      "reviewers": [
-        "MoniDoerig"
-      ],
-      "source_path": "examples/structural_imaging/freesurfer-recon-all-clinical.ipynb"
-    },
-    "71fd5ecb-23f1-424c-9701-3beb2027db7d": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/45",
-      "reviewers": [
-        "MoniDoerig"
-      ],
-      "source_path": "examples/functional_imaging/AFNI_processing_task_based.ipynb"
-    },
     "20e4499d-61ef-44df-a5c1-6fd48cc5d23f": {
       "state": "reviewed",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/21",
@@ -279,6 +263,26 @@
       "state": "queued",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/44",
       "source_path": "examples/functional_imaging/fMRI_tutorial_in_R_magic.ipynb"
+    },
+    "71fd5ecb-23f1-424c-9701-3beb2027db7d": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/45",
+      "reviewers": [
+        "MoniDoerig"
+      ],
+      "reviewed_at": "2026-03-03",
+      "review_commit_sha": "fa4d6c4071dc8c55cc2c367b9c05795bd27122d2",
+      "source_path": "examples/functional_imaging/AFNI_processing_task_based.ipynb"
+    },
+    "800d8b06-269e-4d0f-84a0-8c4b078db09c": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/42",
+      "reviewers": [
+        "MoniDoerig"
+      ],
+      "reviewed_at": "2026-03-03",
+      "review_commit_sha": "e40060cb820d061b02dfd90412d0e8d1e8406604",
+      "source_path": "examples/structural_imaging/freesurfer-recon-all-clinical.ipynb"
     },
     "b8f472e3-3d87-45da-80d8-086501ffb91a": {
       "state": "reviewed",
