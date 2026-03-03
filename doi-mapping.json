@@ -314,13 +314,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728764",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/intro_to_preprocessing.html",
     "concept_recid": "18728764",
-    "record_id": "18728765",
+    "record_id": "18850348",
     "content_type": "notebook",
-    "checksum": "a73bf889d18db6ccd3a25e7a70b9bb6b",
+    "checksum": "372c98ef76db781909dc8bc1c6416544",
     "authors": [
       "Marla Pinkert"
     ],
-    "updated_at": "2026-02-22T03:23:31Z"
+    "updated_at": "2026-03-03T14:49:59Z"
   },
   "books/examples/functional_imaging/mri_vol2surf.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728766",
@@ -673,13 +673,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740155",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/fmriprep.html",
     "concept_recid": "18740155",
-    "record_id": "18740156",
+    "record_id": "18850349",
     "content_type": "notebook",
-    "checksum": "2142f6d17f1b21fe3ec31da985fb48e3",
+    "checksum": "b10bddfd9f435905b6d1ea9e72ff5e67",
     "authors": [
       "Steffen Bollmann"
     ],
-    "updated_at": "2026-02-23T09:12:18Z"
+    "updated_at": "2026-03-03T14:50:05Z"
   },
   "books/examples/quantitative_imaging/aslprep.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18740157",
