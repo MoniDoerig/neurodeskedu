@@ -443,6 +443,8 @@ jobs:
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
+            -e APPTAINER_UNSQUASH=true \
+            -e APPTAINER_TMPDIR=/overlay-storage/apptainer_tmp \
             ${{ needs.setup.outputs.neurodesk_image }}
 
           echo "Started container: $CONTAINER_NAME"
@@ -524,6 +526,10 @@ jobs:
               # Symlink to expected location
               ln -sf /overlay-storage/apptainer_overlay /tmp/apptainer_overlay
             fi
+
+            # Create temp dir for Apptainer unsquash extractions (avoids FUSE in DinD)
+            mkdir -p /overlay-storage/apptainer_tmp
+            chmod 777 /overlay-storage/apptainer_tmp
 
             # Move apptainer working dir to secondary storage to save root disk space
             mkdir -p /overlay-storage/var_lib_apptainer/mnt/session
@@ -1551,6 +1557,8 @@ jobs:
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
+            -e APPTAINER_UNSQUASH=true \
+            -e APPTAINER_TMPDIR=/overlay-storage/apptainer_tmp \
             ${{ needs.setup.outputs.neurodesk_image }}
 
           echo "Started container: $CONTAINER_NAME"
