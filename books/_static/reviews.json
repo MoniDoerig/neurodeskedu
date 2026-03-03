@@ -1,11 +1,19 @@
 {
   "version": 2,
-  "generated_at": "2026-03-03T04:42:50+00:00",
+  "generated_at": "2026-03-03T06:37:00+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
   },
   "reviews": {
+    "5d3c6acd-b9c9-42d9-b3af-55f3458b0f52": {
+      "state": "in-progress",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/20",
+      "reviewers": [
+        "t-michal"
+      ],
+      "source_path": "examples/spectroscopy/lcmodel.ipynb"
+    },
     "3ae3595e-e83b-496c-a70d-a91c32f8a6d0": {
       "state": "in-progress",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/5",
@@ -53,11 +61,6 @@
       "state": "queued",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/30",
       "source_path": "examples/workflows/MRIQC.ipynb"
-    },
-    "5d3c6acd-b9c9-42d9-b3af-55f3458b0f52": {
-      "state": "queued",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/20",
-      "source_path": "examples/spectroscopy/lcmodel.ipynb"
     },
     "9dab0bae-455d-46a8-a15f-f3d449581ce9": {
       "state": "in-progress",
