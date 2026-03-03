@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-03T04:41:36+00:00",
+  "generated_at": "2026-03-03T04:42:50+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -22,22 +22,6 @@
         "MoniDoerig"
       ],
       "source_path": "examples/functional_imaging/fmriprep.ipynb"
-    },
-    "1b898d09-a15e-466a-b6f2-d7b1f48b5042": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/10",
-      "reviewers": [
-        "MoniDoerig"
-      ],
-      "source_path": "examples/functional_imaging/deepretinotopy.ipynb"
-    },
-    "38be8dd8-a1c1-4e9d-b151-9bbd24c77534": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/23",
-      "reviewers": [
-        "MoniDoerig"
-      ],
-      "source_path": "examples/quantitative_imaging/qsmxt.ipynb"
     },
     "ce423cf1-cbb0-4ac5-bf58-b3a52ad441c4": {
       "state": "in-progress",
@@ -259,6 +243,26 @@
       "reviewed_at": "2026-03-03",
       "review_commit_sha": "62a503b00a5ee77872135733d944ec0b31991d46",
       "source_path": "examples/spectroscopy/osprey.ipynb"
+    },
+    "38be8dd8-a1c1-4e9d-b151-9bbd24c77534": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/23",
+      "reviewers": [
+        "MoniDoerig"
+      ],
+      "reviewed_at": "2026-03-03",
+      "review_commit_sha": "fa4d6c4071dc8c55cc2c367b9c05795bd27122d2",
+      "source_path": "examples/quantitative_imaging/qsmxt.ipynb"
+    },
+    "1b898d09-a15e-466a-b6f2-d7b1f48b5042": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/10",
+      "reviewers": [
+        "MoniDoerig"
+      ],
+      "reviewed_at": "2026-03-03",
+      "review_commit_sha": "c50b3f9b8078eda2654b986050d9fadfc20165ee",
+      "source_path": "examples/functional_imaging/deepretinotopy.ipynb"
     },
     "b8f472e3-3d87-45da-80d8-086501ffb91a": {
       "state": "reviewed",
