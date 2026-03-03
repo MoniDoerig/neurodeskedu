@@ -690,8 +690,8 @@ jobs:
           NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
           WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
 
-          # Skip if notebook doesn't reference ipyniivue
-          if ! grep -qE "load_volumes|load_meshes" "$NOTEBOOK_PATH" 2>/dev/null; then
+          # Skip if notebook doesn't reference ipyniivue at all
+          if ! grep -qE "ipyniivue|NiiVue" "$NOTEBOOK_PATH" 2>/dev/null; then
             echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
             echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
             exit 0
@@ -758,6 +758,11 @@ jobs:
               exit "${NBEXEC_RC}"
             fi
           '
+
+      - name: Remove patcher cell after second execution
+        if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
+        run: |
+          python3 .github/scripts/publish_to_hf.py "books/${{ matrix.notebooks }}" --remove-patcher
 
       - name: Cleanup container
         if: always()

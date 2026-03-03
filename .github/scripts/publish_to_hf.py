@@ -319,6 +319,11 @@ def extract_referenced_files(nb: dict) -> set[str]:
         if not any(kw in source_str for kw in ["load_volumes", "load_meshes", "add_volume", "add_mesh", "NiiVue", "ipyniivue", "Mesh", "Volume"]):
             continue
 
+        # Skip injected patcher cells
+        tags = cell.get("metadata", {}).get("tags", [])
+        if "hf-url-patcher" in tags:
+            continue
+
         # Use fallback pattern to catch ALL niivue-compatible filenames
         for match in re.finditer(pattern_any_niivue_string, source_str, re.IGNORECASE):
             path_or_filename = match.group(1)
@@ -328,6 +333,116 @@ def extract_referenced_files(nb: dict) -> set[str]:
                 referenced.add(filename)
 
     return referenced
+
+
+PATCHER_TAG = "hf-url-patcher"
+
+
+def generate_patcher_cell(url_map: dict[str, str]) -> dict:
+    """
+    Generate a notebook cell that monkey-patches ipyniivue at runtime to replace
+    local file paths with HF URLs, keyed by filename.
+
+    Handles: load_volumes, load_meshes, add_volume, add_mesh, Mesh(path=...).
+    """
+    url_map_repr = repr(url_map)
+    source = f'''\
+# [HF-URL-PATCHER] Auto-injected by publish_to_hf.py — do not edit
+import json as _json
+from pathlib import Path as _Path
+
+_HF_URL_MAP = {url_map_repr}
+
+
+def _resolve_hf(path_val):
+    if not path_val:
+        return None
+    s = str(path_val)
+    if s.startswith(("http://", "https://")):
+        return None
+    try:
+        return _HF_URL_MAP.get(_Path(s).name)
+    except Exception:
+        return None
+
+
+def _patch_vol_list(vols):
+    if not vols:
+        return vols
+    out = []
+    for v in vols:
+        if isinstance(v, dict) and "path" in v:
+            url = _resolve_hf(v["path"])
+            if url:
+                v = {{**v, "url": url}}
+                del v["path"]
+                print(f"[HF-patcher] {{_Path(str(url)).name.split('_')[0]}}: path → url")
+        out.append(v)
+    return out
+
+
+try:
+    import ipyniivue as _nv_mod
+
+    _orig_lv = _nv_mod.NiiVue.load_volumes
+    def _lv(self, volumes, *a, **kw): return _orig_lv(self, _patch_vol_list(volumes), *a, **kw)
+    _nv_mod.NiiVue.load_volumes = _lv
+
+    _orig_lm = _nv_mod.NiiVue.load_meshes
+    def _lm(self, meshes, *a, **kw): return _orig_lm(self, _patch_vol_list(meshes), *a, **kw)
+    _nv_mod.NiiVue.load_meshes = _lm
+
+    _orig_av = _nv_mod.NiiVue.add_volume
+    def _av(self, volume, *a, **kw): return _orig_av(self, _patch_vol_list([volume])[0], *a, **kw)
+    _nv_mod.NiiVue.add_volume = _av
+
+    _orig_am = _nv_mod.NiiVue.add_mesh
+    def _am(self, mesh, *a, **kw): return _orig_am(self, _patch_vol_list([mesh])[0] if isinstance(mesh, dict) else mesh, *a, **kw)
+    _nv_mod.NiiVue.add_mesh = _am
+
+    if hasattr(_nv_mod, "Mesh"):
+        _orig_mesh = _nv_mod.Mesh.__init__
+        def _mesh_init(self, path=None, **kw):
+            if path is not None:
+                url = _resolve_hf(path)
+                if url:
+                    print(f"[HF-patcher] {{_Path(str(path)).name}}: path → url")
+                    kw["url"] = url
+                    path = None
+            return _orig_mesh(self, path=path, **kw)
+        _nv_mod.Mesh.__init__ = _mesh_init
+
+    print(f"[HF-patcher] ipyniivue patched — {{len(_HF_URL_MAP)}} file(s) mapped to HF URLs")
+except Exception as _e:
+    print(f"[HF-patcher] Warning: patch failed: {{_e}}")
+'''
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {"tags": [PATCHER_TAG]},
+        "outputs": [],
+        "source": source,
+    }
+
+
+def inject_patcher_cell(nb: dict, url_map: dict[str, str]) -> None:
+    """Insert the runtime patcher cell at position 0 (before all other cells)."""
+    remove_patcher_cells(nb)  # Remove any stale patcher from a previous run
+    nb["cells"].insert(0, generate_patcher_cell(url_map))
+    print(f"  Injected runtime patcher cell ({len(url_map)} URL mappings)")
+
+
+def remove_patcher_cells(nb: dict) -> int:
+    """Remove all cells tagged as hf-url-patcher. Returns count removed."""
+    before = len(nb["cells"])
+    nb["cells"] = [
+        c for c in nb["cells"]
+        if PATCHER_TAG not in c.get("metadata", {}).get("tags", [])
+    ]
+    removed = before - len(nb["cells"])
+    if removed:
+        print(f"  Removed {removed} patcher cell(s)")
+    return removed
 
 
 def transform_notebook(notebook_path: str, working_dir: str = None, clear_outputs: bool = False) -> dict:
@@ -364,48 +479,69 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
     referenced_files = extract_referenced_files(nb)
     print(f"  Found {len(referenced_files)} referenced files: {sorted(referenced_files)}")
 
-    if not referenced_files:
-        print("  No ipyniivue file references found")
-        return {"transformed": False, "reason": "no_references"}
-
     # Scan working directory for all niivue files
     print("\nScanning for niivue data files...")
     unique_files, duplicates = scan_data_files(working_dir)
     print(f"  Found {len(unique_files)} unique files, {len(duplicates)} with duplicates")
 
-    # Handle duplicates in referenced files via hash check
-    referenced_duplicates = {name: paths for name, paths in duplicates.items() if name in referenced_files}
-    if referenced_duplicates:
-        for name, paths in referenced_duplicates.items():
+    # Decide mode: static rewriting vs runtime patcher
+    # Static rewriting requires knowing the exact filenames from source code.
+    # Patcher mode handles dynamic paths (glob, tempfile, f-strings, variables).
+    use_patcher = False
+
+    if not referenced_files:
+        # No static filenames detected — dynamic paths (glob, tempfile, variables).
+        # Fall back to uploading all NII files and using the runtime patcher.
+        print("  No static file references detected — using runtime patcher fallback")
+        use_patcher = True
+        data_files = dict(unique_files)
+        # Resolve duplicates: use identical copies, error on divergent ones
+        for name, paths in duplicates.items():
             hashes = {get_file_hash(p): p for p in paths}
             if len(hashes) == 1:
-                # All copies are identical — pick the first one
-                print(f"  {name}: {len(paths)} copies found, all identical (hash match) — using first")
-                unique_files[name] = paths[0]
+                data_files[name] = paths[0]
             else:
-                print("\n" + "=" * 60)
-                print(f"ERROR: {name} has {len(paths)} copies with DIFFERENT content!")
-                print("Cannot determine which file the notebook is using.")
-                print("=" * 60)
+                print(f"\nERROR: {name} has {len(paths)} copies with DIFFERENT content — cannot resolve")
                 for p in paths:
                     print(f"    - {p}  (hash: {get_file_hash(p)})")
-                print()
                 sys.exit(1)
+    else:
+        # Handle duplicates in referenced files via hash check
+        referenced_duplicates = {name: paths for name, paths in duplicates.items() if name in referenced_files}
+        if referenced_duplicates:
+            for name, paths in referenced_duplicates.items():
+                hashes = {get_file_hash(p): p for p in paths}
+                if len(hashes) == 1:
+                    print(f"  {name}: {len(paths)} copies found, all identical (hash match) — using first")
+                    unique_files[name] = paths[0]
+                else:
+                    print("\n" + "=" * 60)
+                    print(f"ERROR: {name} has {len(paths)} copies with DIFFERENT content!")
+                    print("Cannot determine which file the notebook is using.")
+                    print("=" * 60)
+                    for p in paths:
+                        print(f"    - {p}  (hash: {get_file_hash(p)})")
+                    print()
+                    sys.exit(1)
 
-    # Filter to only files that are actually referenced
-    data_files = {name: path for name, path in unique_files.items() if name in referenced_files}
-    print(f"  {len(data_files)} files match references")
+        # Filter to only files that are actually referenced
+        data_files = {name: path for name, path in unique_files.items() if name in referenced_files}
+        print(f"  {len(data_files)} files match references")
 
-    # Warn about missing files
-    missing = referenced_files - set(data_files.keys())
-    if missing:
-        print(f"  WARNING: {len(missing)} referenced files not found: {sorted(missing)}")
+        # Warn about missing files
+        missing = referenced_files - set(data_files.keys())
+        if missing:
+            print(f"  WARNING: {len(missing)} referenced files not found: {sorted(missing)}")
+
+        if not data_files:
+            print("  No matching data files found")
+            return {"transformed": False, "reason": "no_matching_files"}
 
     if not data_files:
-        print("  No matching data files found")
-        return {"transformed": False, "reason": "no_matching_files"}
+        print("  No NII files found in working directory — cannot transform")
+        return {"transformed": False, "reason": "no_files_found"}
 
-    # Upload only the referenced files
+    # Upload files to HuggingFace
     print("\nUploading to Hugging Face...")
 
     # Ensure .gitattributes has LFS patterns for all our file extensions
@@ -440,32 +576,46 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
         url_mapping[filename] = hf_url
         total_size += filepath.stat().st_size
 
-    # Transform cells
-    print("\nTransforming notebook cells...")
     cells_modified = 0
     total_replacements = 0
 
-    for i, cell in enumerate(nb.get("cells", [])):
-        if cell.get("cell_type") != "code":
-            continue
+    if use_patcher:
+        # Inject runtime patcher cell — handles dynamic paths at execution time
+        print("\nInjecting runtime patcher cell...")
+        inject_patcher_cell(nb, url_mapping)
+        cells_modified = 1  # The injected cell counts as a modification
+    else:
+        # Static rewriting: replace literal path strings with HF URLs in source
+        print("\nTransforming notebook cells...")
+        for i, cell in enumerate(nb.get("cells", [])):
+            if cell.get("cell_type") != "code":
+                continue
 
-        source = cell.get("source", [])
-        if isinstance(source, list):
-            source_str = "".join(source)
-        else:
-            source_str = source
+            source = cell.get("source", [])
+            if isinstance(source, list):
+                source_str = "".join(source)
+            else:
+                source_str = source
 
-        # Check if cell has ipyniivue usage
-        if not any(kw in source_str for kw in ["load_volumes", "load_meshes", "add_volume", "add_mesh", "ipyniivue"]):
-            continue
+            # Check if cell has ipyniivue usage
+            if not any(kw in source_str for kw in ["load_volumes", "load_meshes", "add_volume", "add_mesh", "ipyniivue"]):
+                continue
 
-        new_source, replacements = transform_cell_paths(source_str, url_mapping)
+            new_source, replacements = transform_cell_paths(source_str, url_mapping)
 
-        if replacements > 0:
-            cell["source"] = new_source
-            cells_modified += 1
-            total_replacements += replacements
-            print(f"  Cell {i}: {replacements} path(s) transformed")
+            if replacements > 0:
+                cell["source"] = new_source
+                cells_modified += 1
+                total_replacements += replacements
+                print(f"  Cell {i}: {replacements} path(s) transformed")
+
+        if cells_modified == 0 and url_mapping:
+            # Files were found and uploaded but static rewriting matched nothing
+            # (e.g. paths built via variables). Fall back to patcher.
+            print("  Static rewriting matched no cells — falling back to runtime patcher")
+            inject_patcher_cell(nb, url_mapping)
+            use_patcher = True
+            cells_modified = 1
 
     # Clear outputs if requested
     outputs_cleared = 0
@@ -479,10 +629,12 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
         json.dump(nb, f, indent=1)
 
     print(f"\nSummary:")
+    print(f"  Mode: {'runtime patcher' if use_patcher else 'static rewriting'}")
     print(f"  Files uploaded: {len(url_mapping)}")
     print(f"  Total data size: {total_size:,} bytes ({total_size/1024/1024:.2f} MB)")
     print(f"  Cells modified: {cells_modified}")
-    print(f"  Path replacements: {total_replacements}")
+    if not use_patcher:
+        print(f"  Path replacements: {total_replacements}")
 
     return {
         "transformed": cells_modified > 0 or len(url_mapping) > 0,
@@ -490,6 +642,7 @@ def transform_notebook(notebook_path: str, working_dir: str = None, clear_output
         "files_uploaded": len(url_mapping),
         "total_size": total_size,
         "outputs_cleared": outputs_cleared,
+        "used_patcher": use_patcher,
     }
 
 
@@ -501,6 +654,8 @@ def main():
     parser.add_argument("--working-dir", "-w", help="Working directory for resolving paths")
     parser.add_argument("--clear-outputs", "-c", action="store_true",
                         help="Clear all cell outputs after transform (for two-pass workflow)")
+    parser.add_argument("--remove-patcher", action="store_true",
+                        help="Remove injected patcher cell(s) and save — run after second execution")
 
     args = parser.parse_args()
 
@@ -508,13 +663,23 @@ def main():
         print(f"ERROR: Notebook not found: {args.notebook}")
         sys.exit(1)
 
+    if args.remove_patcher:
+        with open(args.notebook) as f:
+            nb = json.load(f)
+        removed = remove_patcher_cells(nb)
+        with open(args.notebook, "w") as f:
+            json.dump(nb, f, indent=1)
+        print(f"Removed {removed} patcher cell(s) from {args.notebook}")
+        return
+
     if not DRY_RUN and not os.environ.get("HF_TOKEN"):
         print("WARNING: HF_TOKEN not set. Uploads will fail.")
 
     result = transform_notebook(args.notebook, args.working_dir, clear_outputs=args.clear_outputs)
 
     if result["transformed"]:
-        print(f"\nSuccess! Notebook transformed for HF URLs.")
+        mode = "runtime patcher" if result.get("used_patcher") else "static rewriting"
+        print(f"\nSuccess! Notebook transformed for HF URLs ({mode}).")
         if args.clear_outputs:
             print("Outputs cleared - ready for second execution pass.")
     else:
