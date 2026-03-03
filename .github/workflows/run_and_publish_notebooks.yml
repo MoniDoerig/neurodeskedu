@@ -617,6 +617,44 @@ jobs:
             ip addr show 2>&1 | grep -E "inet |mtu" || ifconfig 2>&1 | grep -E "inet |mtu" || echo "no ip/ifconfig"
 
             echo ""
+            echo "--- 7. Test Apptainer/Singularity inside container ---"
+            which apptainer 2>&1 && apptainer --version 2>&1 || echo "apptainer not found"
+            which singularity 2>&1 && singularity --version 2>&1 || echo "singularity not found"
+
+            echo ""
+            echo "--- 8. Test module load + tool execution ---"
+            source /usr/share/lmod/lmod/init/bash 2>/dev/null || true
+            export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
+
+            # Try loading FSL and running mcflirt
+            module load fsl/6.0.4 2>&1
+            echo "FSLDIR=$FSLDIR"
+            echo "PATH fsl entries: $(echo $PATH | tr : \\n | grep fsl || echo NONE)"
+            which mcflirt 2>&1 || echo "mcflirt NOT in PATH"
+
+            echo ""
+            echo "--- 9. Inspect mcflirt wrapper script ---"
+            MCFLIRT_PATH=$(which mcflirt 2>/dev/null)
+            if [ -n "$MCFLIRT_PATH" ]; then
+              file "$MCFLIRT_PATH" 2>&1
+              echo "--- First 20 lines of mcflirt: ---"
+              head -20 "$MCFLIRT_PATH" 2>&1
+            fi
+
+            echo ""
+            echo "--- 10. Direct apptainer exec test ---"
+            # Find the FSL simg file
+            FSL_SIMG=$(find /cvmfs/neurodesk.ardc.edu.au/containers -name "fsl_6.0.4*" -name "*.simg" 2>/dev/null | head -1)
+            echo "FSL simg: $FSL_SIMG"
+            if [ -n "$FSL_SIMG" ]; then
+              echo "Testing: apptainer exec $FSL_SIMG mcflirt -help"
+              apptainer exec "$FSL_SIMG" mcflirt -help 2>&1 || echo "apptainer exec FAILED with exit code $?"
+              echo ""
+              echo "Testing: apptainer exec --fakeroot $FSL_SIMG echo hello"
+              apptainer exec --fakeroot "$FSL_SIMG" echo hello 2>&1 || echo "apptainer exec --fakeroot FAILED with exit code $?"
+            fi
+
+            echo ""
             echo "=== Debug complete ==="
           '
 
