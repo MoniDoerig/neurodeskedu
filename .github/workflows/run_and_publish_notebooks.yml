@@ -772,78 +772,93 @@ jobs:
             exit "$EXEC_RC"
           fi
 
-      # --- DISABLED FOR TESTING (arc-runner) ---
-      # # Two-pass workflow for ipyniivue notebooks:
-      # # 1. First execution (above) downloads data and generates outputs
-      # # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
-      # # 3. Second execution generates clean outputs with HF URLs
-      # - name: Transform notebook paths to HF URLs (post-execution)
-      #   if: steps.promote.outputs.promoted != 'true'
-      #   env:
-      #     HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      #     HF_REPO: neurodeskorg/neurodeskedu
-      #     HF_BRANCH: ${{ github.ref_name }}
-      #   run: |
-      #     NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
-      #     WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
-      #
-      #     # Check if notebook uses ipyniivue
-      #     if ! grep -qE "load_volumes|load_meshes" "$NOTEBOOK_PATH" 2>/dev/null; then
-      #       echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
-      #       echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
-      #       exit 0
-      #     fi
-      #
-      #     echo "Found ipyniivue usage - transforming local paths to HF URLs..."
-      #     echo "NEEDS_SECOND_PASS=true" >> $GITHUB_ENV
-      #
-      #     # Ensure huggingface_hub with Xet support is installed on the runner
-      #     pip install -q "huggingface_hub>=0.32.0"
-      #
-      #     # Transform paths to URLs, upload to HF, clear outputs for re-execution
-      #     python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs
-      #
-      # - name: Second execution pass (HF URLs)
-      #   if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
-      #   run: |
-      #     NOTEBOOK_PATH="${{ matrix.notebooks }}"
-      #     NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
-      #
-      #     echo "=== Second execution pass with HF URLs ==="
-      #     echo "Data files cached from first pass - should be fast"
-      #
-      #     docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
-      #       set -eo pipefail
-      #
-      #       export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
-      #
-      #       # Initialize the module system
-      #       if [ -f /usr/share/lmod/lmod/init/bash ]; then
-      #         source /usr/share/lmod/lmod/init/bash
-      #       elif [ -f /usr/share/module.sh ]; then
-      #         source /usr/share/module.sh
-      #       fi
-      #
-      #       export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
-      #
-      #       echo "Re-executing notebook with HF URLs: $NOTEBOOK_PATH"
-      #
-      #       EXEC_TIMEOUT=86400
-      #       LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}-pass2.log"
-      #
-      #       if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
-      #         --ExecutePreprocessor.timeout="${EXEC_TIMEOUT}" \
-      #         --ExecutePreprocessor.kernel_name=python3 \
-      #         "/home/jovyan/workspace/books/$NOTEBOOK_PATH" 2>&1 | tee "$LOG_FILE"; then
-      #         echo "Second pass execution complete"
-      #       else
-      #         NBEXEC_RC=$?
-      #         echo "::error::Second pass nbconvert failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
-      #         tail -n 50 "$LOG_FILE" || true
-      #         exit "${NBEXEC_RC}"
-      #       fi
-      #     '
-      # --- END DISABLED ---
+      # Two-pass workflow for ipyniivue notebooks:
+      # 1. First execution (above) downloads data and generates outputs
+      # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
+      # 3. Second execution generates clean outputs with HF URLs
+      - name: Transform notebook paths to HF URLs (post-execution)
+        if: steps.promote.outputs.promoted != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+          HF_BRANCH: ${{ github.ref_name }}
+        run: |
+          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+          WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
+
+          # Skip if notebook doesn't reference ipyniivue at all
+          if ! grep -qE "ipyniivue|NiiVue" "$NOTEBOOK_PATH" 2>/dev/null; then
+            echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
+            echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          echo "Found ipyniivue references - checking if paths need transformation..."
+
+          # Ensure huggingface_hub with Xet support is installed on the runner
+          pip install -q "huggingface_hub>=0.32.0"
+
+          # Transform paths to URLs, upload to HF, clear outputs for re-execution
+          # The script prints "Cells modified: N" — only need second pass if cells were actually changed
+          OUTPUT=$(python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs 2>&1) || true
+          echo "$OUTPUT"
+
+          if echo "$OUTPUT" | grep -q "Cells modified: 0"; then
+            echo "No paths were transformed - skipping second pass"
+            echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
+          elif echo "$OUTPUT" | grep -q "No transformation needed"; then
+            echo "No transformation needed - skipping second pass"
+            echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
+          else
+            echo "Paths were transformed - second execution pass needed"
+            echo "NEEDS_SECOND_PASS=true" >> $GITHUB_ENV
+          fi
+
+      - name: Second execution pass (HF URLs)
+        if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
+        run: |
+          NOTEBOOK_PATH="${{ matrix.notebooks }}"
+          NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
+
+          echo "=== Second execution pass with HF URLs ==="
+          echo "Data files cached from first pass - should be fast"
+
+          docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            set -eo pipefail
+
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+
+            # Initialize the module system
+            if [ -f /usr/share/lmod/lmod/init/bash ]; then
+              source /usr/share/lmod/lmod/init/bash
+            elif [ -f /usr/share/module.sh ]; then
+              source /usr/share/module.sh
+            fi
+
+            export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
+
+            echo "Re-executing notebook with HF URLs: $NOTEBOOK_PATH"
+
+            EXEC_TIMEOUT=86400
+            LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}-pass2.log"
+
+            if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
+              --ExecutePreprocessor.timeout="${EXEC_TIMEOUT}" \
+              --ExecutePreprocessor.kernel_name=python3 \
+              "/home/jovyan/workspace/books/$NOTEBOOK_PATH" 2>&1 | tee "$LOG_FILE"; then
+              echo "Second pass execution complete"
+            else
+              NBEXEC_RC=$?
+              echo "::error::Second pass nbconvert failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
+              tail -n 50 "$LOG_FILE" || true
+              exit "${NBEXEC_RC}"
+            fi
+          '
+
+      - name: Remove patcher cell after second execution
+        if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
+        run: |
+          python3 .github/scripts/publish_to_hf.py "books/${{ matrix.notebooks }}" --remove-patcher
 
       - name: Cleanup container
         if: always()
@@ -1510,7 +1525,7 @@ jobs:
           echo "================================================"
 
       - name: Download updated doi-mapping (from publish-dois job)
-        continue-on-error: true
+        if: needs.publish-dois.result == 'success'
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: doi-mapping-updated
