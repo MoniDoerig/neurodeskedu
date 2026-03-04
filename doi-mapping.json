@@ -314,13 +314,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728764",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/intro_to_preprocessing.html",
     "concept_recid": "18728764",
-    "record_id": "18850348",
+    "record_id": "18856225",
     "content_type": "notebook",
-    "checksum": "372c98ef76db781909dc8bc1c6416544",
+    "checksum": "6599f6ab658b6b4fbd79d69b193427b9",
     "authors": [
       "Marla Pinkert"
     ],
-    "updated_at": "2026-03-03T14:49:59Z"
+    "updated_at": "2026-03-04T00:30:46Z"
   },
   "books/examples/functional_imaging/mri_vol2surf.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728766",
@@ -466,13 +466,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728792",
     "website_url": "https://neurodesk.org/edu/examples/structural_imaging/sct_toolbox.html",
     "concept_recid": "18728792",
-    "record_id": "18728793",
+    "record_id": "18856226",
     "content_type": "notebook",
-    "checksum": "909f348b9f002c83d768200fabc557ef",
+    "checksum": "b69073c2e57c4becfdc3c12c12b2fe7e",
     "authors": [
       "Steffen Bollmann"
     ],
-    "updated_at": "2026-02-22T03:24:24Z"
+    "updated_at": "2026-03-04T00:30:51Z"
   },
   "books/examples/electrophysiology/eeg_with_mne.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728794",
