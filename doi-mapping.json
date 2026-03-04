@@ -647,14 +647,14 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740151",
     "website_url": "https://neurodesk.org/edu/examples/diffusion_imaging/mrtrix3tissue.html",
     "concept_recid": "18740151",
-    "record_id": "18740152",
+    "record_id": "18860169",
     "content_type": "notebook",
-    "checksum": "0b7d9bd122a30bc0aa00acc5347f5af4",
+    "checksum": "c2dfa8b5149b947e3bc0b56ab54f0f5e",
     "authors": [
       "Thuy Dao",
       "Monika Doerig"
     ],
-    "updated_at": "2026-02-23T09:12:10Z"
+    "updated_at": "2026-03-04T08:08:55Z"
   },
   "books/examples/functional_imaging/process_five_echo_dataset.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18740153",
