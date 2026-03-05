@@ -280,11 +280,11 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728757",
     "website_url": "https://neurodesk.org/edu/examples/workflows/AA_Neurodesk_demo_tour.html",
     "concept_recid": "18728757",
-    "record_id": "18740122",
+    "record_id": "18872504",
     "content_type": "notebook",
-    "checksum": "e1ea8ebee28f94ec69ad81c9fe16fefa",
+    "checksum": "d5e47b8c4735b1188a2fffce6f44c64b",
     "authors": [],
-    "updated_at": "2026-02-23T09:11:07Z"
+    "updated_at": "2026-03-05T07:53:58Z"
   },
   "books/examples/quantitative_imaging/qsmxt.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728759",
@@ -326,13 +326,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728766",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/mri_vol2surf.html",
     "concept_recid": "18728766",
-    "record_id": "18728767",
+    "record_id": "18872518",
     "content_type": "notebook",
-    "checksum": "69f74a74deb342b86641ac2f6f727211",
+    "checksum": "8884bbb04fc0fbedb82737a6a68180a5",
     "authors": [
       "Fernanda L. Ribeiro"
     ],
-    "updated_at": "2026-02-22T03:23:35Z"
+    "updated_at": "2026-03-05T07:56:27Z"
   },
   "books/examples/template.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728768",
@@ -420,13 +420,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728782",
     "website_url": "https://neurodesk.org/edu/examples/workflows/ipyniivue_ipywidgets.html",
     "concept_recid": "18728782",
-    "record_id": "18862511",
+    "record_id": "18872545",
     "content_type": "notebook",
-    "checksum": "8c350d51b7613699f8707220a8f0dec1",
+    "checksum": "9bb65275ee2ac674af27db299e053eb7",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-03-04T11:49:01Z"
+    "updated_at": "2026-03-05T07:58:26Z"
   },
   "books/examples/workflows/Magic_commands.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728786",
@@ -587,13 +587,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740123",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/AFNI_preprocessing_only.html",
     "concept_recid": "18740123",
-    "record_id": "18740124",
+    "record_id": "18872507",
     "content_type": "notebook",
-    "checksum": "030175bee77a26fbbfa427232df28897",
+    "checksum": "90d886aed3eef4b7c52e1416ac7f0ff3",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-02-23T09:11:14Z"
+    "updated_at": "2026-03-05T07:54:26Z"
   },
   "books/examples/functional_imaging/AFNI_preprocessing_plus_glm_group.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18740130",
@@ -611,13 +611,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740132",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/deepretinotopy.html",
     "concept_recid": "18740132",
-    "record_id": "18740133",
+    "record_id": "18872527",
     "content_type": "notebook",
-    "checksum": "6000f33e8a7316899539e86c4005dc4a",
+    "checksum": "3397ef51d730f19e0ff245b8f02fb989",
     "authors": [
       "Fernanda Ribeiro"
     ],
-    "updated_at": "2026-02-23T09:11:41Z"
+    "updated_at": "2026-03-05T07:58:03Z"
   },
   "books/examples/structural_imaging/freesurfer-recon-all-clinical.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18740135",
@@ -722,13 +722,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740171",
     "website_url": "https://neurodesk.org/edu/examples/diffusion_imaging/MRtrix_2.html",
     "concept_recid": "18740171",
-    "record_id": "18740172",
+    "record_id": "18872561",
     "content_type": "notebook",
-    "checksum": "407a17142cd025a3dcb276f847f50c54",
+    "checksum": "18ee548a99e0a874c9d16f92ebf01e5a",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-02-23T09:13:03Z"
+    "updated_at": "2026-03-05T07:59:58Z"
   },
   "books/examples/functional_imaging/fMRI_tutorial_in_R_magic.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18779080",
@@ -764,5 +764,29 @@
       "Steffen Bollmann"
     ],
     "updated_at": "2026-03-03T02:28:26Z"
+  },
+  "books/examples/diffusion_imaging/MRtrix_1.ipynb": {
+    "doi_url": "https://doi.org/10.5281/zenodo.18872514",
+    "website_url": "https://neurodesk.org/edu/examples/diffusion_imaging/MRtrix_1.html",
+    "concept_recid": "18872514",
+    "record_id": "18872515",
+    "content_type": "notebook",
+    "checksum": "6ea8cb20d2d901b8915e862e74a448ad",
+    "authors": [
+      "Monika Doerig"
+    ],
+    "updated_at": "2026-03-05T07:54:37Z"
+  },
+  "books/examples/diffusion_imaging/MRtrix_3.ipynb": {
+    "doi_url": "https://doi.org/10.5281/zenodo.18872548",
+    "website_url": "https://neurodesk.org/edu/examples/diffusion_imaging/MRtrix_3.html",
+    "concept_recid": "18872548",
+    "record_id": "18872549",
+    "content_type": "notebook",
+    "checksum": "7ac08bb6503bdfc0c339f8e35e550a91",
+    "authors": [
+      "Monika Doerig"
+    ],
+    "updated_at": "2026-03-05T07:59:40Z"
   }
 }
