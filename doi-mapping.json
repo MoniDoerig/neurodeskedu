@@ -326,13 +326,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728766",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/mri_vol2surf.html",
     "concept_recid": "18728766",
-    "record_id": "18872518",
+    "record_id": "18882602",
     "content_type": "notebook",
-    "checksum": "8884bbb04fc0fbedb82737a6a68180a5",
+    "checksum": "1ebc8fdd32b6ef96f550dbf4bbc232f2",
     "authors": [
       "Fernanda L. Ribeiro"
     ],
-    "updated_at": "2026-03-05T07:56:27Z"
+    "updated_at": "2026-03-05T23:01:48Z"
   },
   "books/examples/template.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728768",
@@ -420,13 +420,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728782",
     "website_url": "https://neurodesk.org/edu/examples/workflows/ipyniivue_ipywidgets.html",
     "concept_recid": "18728782",
-    "record_id": "18872545",
+    "record_id": "18882606",
     "content_type": "notebook",
-    "checksum": "9bb65275ee2ac674af27db299e053eb7",
+    "checksum": "2d6139a2ea48c62c83f717b821728472",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-03-05T07:58:26Z"
+    "updated_at": "2026-03-05T23:02:02Z"
   },
   "books/examples/workflows/Magic_commands.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728786",
@@ -587,13 +587,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740123",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/AFNI_preprocessing_only.html",
     "concept_recid": "18740123",
-    "record_id": "18872507",
+    "record_id": "18882598",
     "content_type": "notebook",
-    "checksum": "90d886aed3eef4b7c52e1416ac7f0ff3",
+    "checksum": "2ffd274700204133418bebecc3caa230",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-03-05T07:54:26Z"
+    "updated_at": "2026-03-05T23:01:35Z"
   },
   "books/examples/functional_imaging/AFNI_preprocessing_plus_glm_group.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18740130",
@@ -611,13 +611,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740132",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/deepretinotopy.html",
     "concept_recid": "18740132",
-    "record_id": "18872527",
+    "record_id": "18882603",
     "content_type": "notebook",
-    "checksum": "3397ef51d730f19e0ff245b8f02fb989",
+    "checksum": "d73e56a26e6208aed3ef421cbc9a4913",
     "authors": [
       "Fernanda Ribeiro"
     ],
-    "updated_at": "2026-03-05T07:58:03Z"
+    "updated_at": "2026-03-05T23:01:54Z"
   },
   "books/examples/structural_imaging/freesurfer-recon-all-clinical.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18740135",
@@ -722,13 +722,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740171",
     "website_url": "https://neurodesk.org/edu/examples/diffusion_imaging/MRtrix_2.html",
     "concept_recid": "18740171",
-    "record_id": "18872561",
+    "record_id": "18882608",
     "content_type": "notebook",
-    "checksum": "18ee548a99e0a874c9d16f92ebf01e5a",
+    "checksum": "9a3d552ae79f30286d2ae0bc6d27c5ca",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-03-05T07:59:58Z"
+    "updated_at": "2026-03-05T23:02:18Z"
   },
   "books/examples/functional_imaging/fMRI_tutorial_in_R_magic.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18779080",
@@ -769,24 +769,24 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18872514",
     "website_url": "https://neurodesk.org/edu/examples/diffusion_imaging/MRtrix_1.html",
     "concept_recid": "18872514",
-    "record_id": "18872515",
+    "record_id": "18882601",
     "content_type": "notebook",
-    "checksum": "6ea8cb20d2d901b8915e862e74a448ad",
+    "checksum": "5dab6ac99ae9ac532d43b9331fec8d9d",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-03-05T07:54:37Z"
+    "updated_at": "2026-03-05T23:01:41Z"
   },
   "books/examples/diffusion_imaging/MRtrix_3.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18872548",
     "website_url": "https://neurodesk.org/edu/examples/diffusion_imaging/MRtrix_3.html",
     "concept_recid": "18872548",
-    "record_id": "18872549",
+    "record_id": "18882607",
     "content_type": "notebook",
-    "checksum": "7ac08bb6503bdfc0c339f8e35e550a91",
+    "checksum": "3cd7ecbe01ee23ef35c9d68c050b0318",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-03-05T07:59:40Z"
+    "updated_at": "2026-03-05T23:02:08Z"
   }
 }
