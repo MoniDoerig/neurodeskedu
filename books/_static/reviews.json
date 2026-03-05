@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-05T03:35:25+00:00",
+  "generated_at": "2026-03-05T05:08:58+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -29,14 +29,6 @@
         "handwerkerd"
       ],
       "source_path": "examples/quantitative_imaging/aslprep.ipynb"
-    },
-    "ae2af25f-cf27-440b-a0d8-884a7b7e1703": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/31",
-      "reviewers": [
-        "micmas"
-      ],
-      "source_path": "examples/workflows/nipype_full.ipynb"
     },
     "ce423cf1-cbb0-4ac5-bf58-b3a52ad441c4": {
       "state": "in-progress",
@@ -206,6 +198,16 @@
       ],
       "source_path": "examples/functional_imaging/fMRI_tutorial_in_R_magic.ipynb"
     },
+    "ae2af25f-cf27-440b-a0d8-884a7b7e1703": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/31",
+      "reviewers": [
+        "micmas"
+      ],
+      "reviewed_at": "2026-03-05",
+      "review_commit_sha": "c20323f110aacb06dc1f5cd41000a743ae798de1",
+      "source_path": "examples/workflows/nipype_full.ipynb"
+    },
     "3ae3595e-e83b-496c-a70d-a91c32f8a6d0": {
       "state": "reviewed",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/5",
@@ -263,34 +265,37 @@
       "source_path": "examples/functional_imaging/fmriprep.ipynb"
     },
     "f4439cdb-8be0-42e6-ba12-eb96f736f304": {
-      "state": "reviewed",
+      "state": "stale",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/4",
       "reviewers": [
         "giuliabaracc"
       ],
       "reviewed_at": "2026-03-05",
       "review_commit_sha": "62a503b00a5ee77872135733d944ec0b31991d46",
-      "source_path": "examples/diffusion_imaging/MRtrix_3.ipynb"
+      "source_path": "examples/diffusion_imaging/MRtrix_3.ipynb",
+      "stale_reason": "File modified after review (latest: 43ebdf3fdbd0, reviewed at: 62a503b00a5e)"
     },
     "38be8dd8-a1c1-4e9d-b151-9bbd24c77534": {
-      "state": "reviewed",
+      "state": "stale",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/23",
       "reviewers": [
         "MoniDoerig"
       ],
       "reviewed_at": "2026-03-03",
       "review_commit_sha": "fa4d6c4071dc8c55cc2c367b9c05795bd27122d2",
-      "source_path": "examples/quantitative_imaging/qsmxt.ipynb"
+      "source_path": "examples/quantitative_imaging/qsmxt.ipynb",
+      "stale_reason": "File modified after review (latest: 43ebdf3fdbd0, reviewed at: fa4d6c4071dc)"
     },
     "1b898d09-a15e-466a-b6f2-d7b1f48b5042": {
-      "state": "reviewed",
+      "state": "stale",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/10",
       "reviewers": [
         "MoniDoerig"
       ],
       "reviewed_at": "2026-03-03",
       "review_commit_sha": "c50b3f9b8078eda2654b986050d9fadfc20165ee",
-      "source_path": "examples/functional_imaging/deepretinotopy.ipynb"
+      "source_path": "examples/functional_imaging/deepretinotopy.ipynb",
+      "stale_reason": "File modified after review (latest: 43ebdf3fdbd0, reviewed at: c50b3f9b8078)"
     },
     "b8f472e3-3d87-45da-80d8-086501ffb91a": {
       "state": "reviewed",
@@ -313,14 +318,15 @@
       "source_path": "examples/structural_imaging/sct_toolbox.ipynb"
     },
     "61b2682e-754e-42f0-86f7-f84192adef0b": {
-      "state": "reviewed",
+      "state": "stale",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/17",
       "reviewers": [
         "MoniDoerig"
       ],
       "reviewed_at": "2026-03-03",
       "review_commit_sha": "c50b3f9b8078eda2654b986050d9fadfc20165ee",
-      "source_path": "examples/functional_imaging/mri_vol2surf.ipynb"
+      "source_path": "examples/functional_imaging/mri_vol2surf.ipynb",
+      "stale_reason": "File modified after review (latest: 43ebdf3fdbd0, reviewed at: c50b3f9b8078)"
     },
     "cb3ff00e-c02a-45ff-b97f-8b58f1aec62c": {
       "state": "reviewed",
