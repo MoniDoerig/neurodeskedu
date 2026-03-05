@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-05T02:25:02+00:00",
+  "generated_at": "2026-03-05T03:23:18+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -58,14 +58,6 @@
         "micmas"
       ],
       "source_path": "examples/structural_imaging/freesurfer.ipynb"
-    },
-    "f4439cdb-8be0-42e6-ba12-eb96f736f304": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/4",
-      "reviewers": [
-        "giuliabaracc"
-      ],
-      "source_path": "examples/diffusion_imaging/MRtrix_3.ipynb"
     },
     "7b0edb6e-1f30-4116-beed-b311f3832a99": {
       "state": "queued",
@@ -237,6 +229,16 @@
       "state": "queued",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/19",
       "source_path": "examples/functional_imaging/process_five_echo_dataset.ipynb"
+    },
+    "f4439cdb-8be0-42e6-ba12-eb96f736f304": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/4",
+      "reviewers": [
+        "giuliabaracc"
+      ],
+      "reviewed_at": "2026-03-05",
+      "review_commit_sha": "62a503b00a5ee77872135733d944ec0b31991d46",
+      "source_path": "examples/diffusion_imaging/MRtrix_3.ipynb"
     },
     "77605892-b360-443a-adbf-47051ebdcdb3": {
       "state": "queued",
