@@ -360,13 +360,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728772",
     "website_url": "https://neurodesk.org/edu/examples/workflows/nipype_short.html",
     "concept_recid": "18728772",
-    "record_id": "18740127",
+    "record_id": "18883499",
     "content_type": "notebook",
-    "checksum": "cb64d7efaa3c71b863a142ebde0d620a",
+    "checksum": "ba0298a7bc948d5c3f3893184341e93c",
     "authors": [
       "Steffen Bollmann"
     ],
-    "updated_at": "2026-02-23T09:11:32Z"
+    "updated_at": "2026-03-06T02:12:57Z"
   },
   "books/examples/diffusion_imaging/DIPY_2.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728774",
