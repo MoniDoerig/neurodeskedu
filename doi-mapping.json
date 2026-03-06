@@ -788,5 +788,17 @@
       "Monika Doerig"
     ],
     "updated_at": "2026-03-05T23:02:08Z"
+  },
+  "books/examples/structural_imaging/brain_extraction_different_tools.ipynb": {
+    "doi_url": "https://doi.org/10.5281/zenodo.18883334",
+    "website_url": "https://neurodesk.org/edu/examples/structural_imaging/brain_extraction_different_tools.html",
+    "concept_recid": "18883334",
+    "record_id": "18883335",
+    "content_type": "notebook",
+    "checksum": "b9dae506004eb558d1b10820c3de4211",
+    "authors": [
+      "Monika Doerig"
+    ],
+    "updated_at": "2026-03-06T01:33:36Z"
   }
 }
