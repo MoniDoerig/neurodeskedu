@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-06T04:29:58+00:00",
+  "generated_at": "2026-03-06T04:33:22+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -199,6 +199,16 @@
       ],
       "source_path": "examples/functional_imaging/fMRI_tutorial_in_R_magic.ipynb"
     },
+    "1b898d09-a15e-466a-b6f2-d7b1f48b5042": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/10",
+      "reviewers": [
+        "MoniDoerig"
+      ],
+      "reviewed_at": "2026-03-06",
+      "review_commit_sha": "fd7705e44f378a44314212fa73c7956504978793",
+      "source_path": "examples/functional_imaging/deepretinotopy.ipynb"
+    },
     "ae2af25f-cf27-440b-a0d8-884a7b7e1703": {
       "state": "reviewed",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/31",
@@ -269,17 +279,6 @@
       "review_commit_sha": "fa4d6c4071dc8c55cc2c367b9c05795bd27122d2",
       "source_path": "examples/quantitative_imaging/qsmxt.ipynb",
       "stale_reason": "File modified after review (latest: 43ebdf3fdbd0, reviewed at: fa4d6c4071dc)"
-    },
-    "1b898d09-a15e-466a-b6f2-d7b1f48b5042": {
-      "state": "stale",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/10",
-      "reviewers": [
-        "MoniDoerig"
-      ],
-      "reviewed_at": "2026-03-03",
-      "review_commit_sha": "c50b3f9b8078eda2654b986050d9fadfc20165ee",
-      "source_path": "examples/functional_imaging/deepretinotopy.ipynb",
-      "stale_reason": "File modified after review (latest: fd7705e44f37, reviewed at: c50b3f9b8078)"
     },
     "b8f472e3-3d87-45da-80d8-086501ffb91a": {
       "state": "reviewed",
