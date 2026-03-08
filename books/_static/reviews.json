@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-08T22:10:48+00:00",
+  "generated_at": "2026-03-08T22:40:17+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -29,14 +29,6 @@
         "t-michal"
       ],
       "source_path": "examples/spectroscopy/lcmodel.ipynb"
-    },
-    "1ba869e1-d94c-44b6-b958-f49cd5cb4e5e": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/41",
-      "reviewers": [
-        "felenitaribeiro"
-      ],
-      "source_path": "examples/workflows/ipyniivue_ipywidgets.ipynb"
     },
     "c5351fdf-eece-465a-9ec9-b2b2077145aa": {
       "state": "in-progress",
@@ -74,14 +66,6 @@
         "micmas"
       ],
       "source_path": "examples/structural_imaging/freesurfer.ipynb"
-    },
-    "e166a1f9-f4bd-429b-b497-fbc862211eea": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/15",
-      "reviewers": [
-        "mrneont"
-      ],
-      "source_path": "examples/functional_imaging/FSLnets_course_practical.ipynb"
     },
     "e007b633-50a5-4109-baa8-3d0a6c19467f": {
       "state": "in-progress",
@@ -176,6 +160,36 @@
       ],
       "source_path": "examples/functional_imaging/AFNI_preprocessing_plus_glm.ipynb"
     },
+    "1ba869e1-d94c-44b6-b958-f49cd5cb4e5e": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/41",
+      "reviewers": [
+        "felenitaribeiro"
+      ],
+      "reviewed_at": "2026-03-08",
+      "review_commit_sha": "29a43836273f3e069fe9bdac2f1192f4818910fc",
+      "source_path": "examples/workflows/ipyniivue_ipywidgets.ipynb"
+    },
+    "e166a1f9-f4bd-429b-b497-fbc862211eea": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/15",
+      "reviewers": [
+        "mrneont"
+      ],
+      "reviewed_at": "2026-03-08",
+      "review_commit_sha": "29a43836273f3e069fe9bdac2f1192f4818910fc",
+      "source_path": "examples/functional_imaging/FSLnets_course_practical.ipynb"
+    },
+    "ae2af25f-cf27-440b-a0d8-884a7b7e1703": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/31",
+      "reviewers": [
+        "micmas"
+      ],
+      "reviewed_at": "2026-03-06",
+      "review_commit_sha": "c20323f110aacb06dc1f5cd41000a743ae798de1",
+      "source_path": "examples/workflows/nipype_full.ipynb"
+    },
     "521aa89c-987d-4a47-8e75-575e76ea4460": {
       "state": "reviewed",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/36",
@@ -205,16 +219,6 @@
       "reviewed_at": "2026-03-06",
       "review_commit_sha": "fd7705e44f378a44314212fa73c7956504978793",
       "source_path": "examples/functional_imaging/deepretinotopy.ipynb"
-    },
-    "ae2af25f-cf27-440b-a0d8-884a7b7e1703": {
-      "state": "reviewed",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/31",
-      "reviewers": [
-        "micmas"
-      ],
-      "reviewed_at": "2026-03-06",
-      "review_commit_sha": "c20323f110aacb06dc1f5cd41000a743ae798de1",
-      "source_path": "examples/workflows/nipype_full.ipynb"
     },
     "25f75b0e-c5e5-4f35-854c-3824f0a15762": {
       "state": "reviewed",
