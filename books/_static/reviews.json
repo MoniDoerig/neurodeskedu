@@ -1,19 +1,11 @@
 {
   "version": 2,
-  "generated_at": "2026-03-08T12:25:09+00:00",
+  "generated_at": "2026-03-08T18:19:27+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
   },
   "reviews": {
-    "7b7d5b21-df7c-45ab-9b57-6692beb2190c": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/30",
-      "reviewers": [
-        "felenitaribeiro"
-      ],
-      "source_path": "examples/workflows/MRIQC.ipynb"
-    },
     "7b0edb6e-1f30-4116-beed-b311f3832a99": {
       "state": "in-progress",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/35",
@@ -22,6 +14,14 @@
       ],
       "source_path": "examples/workflows/PyBIDS.ipynb"
     },
+    "7b7d5b21-df7c-45ab-9b57-6692beb2190c": {
+      "state": "in-progress",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/30",
+      "reviewers": [
+        "felenitaribeiro"
+      ],
+      "source_path": "examples/workflows/MRIQC.ipynb"
+    },
     "5d3c6acd-b9c9-42d9-b3af-55f3458b0f52": {
       "state": "in-progress",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/20",
@@ -29,6 +29,14 @@
         "t-michal"
       ],
       "source_path": "examples/spectroscopy/lcmodel.ipynb"
+    },
+    "521aa89c-987d-4a47-8e75-575e76ea4460": {
+      "state": "in-progress",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/36",
+      "reviewers": [
+        "air2310"
+      ],
+      "source_path": "examples/workflows/pydra_preproc_ants.ipynb"
     },
     "1ba869e1-d94c-44b6-b958-f49cd5cb4e5e": {
       "state": "in-progress",
@@ -61,14 +69,6 @@
         "micmas"
       ],
       "source_path": "examples/workflows/RISE_slideshow.ipynb"
-    },
-    "521aa89c-987d-4a47-8e75-575e76ea4460": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/36",
-      "reviewers": [
-        "air2310"
-      ],
-      "source_path": "examples/workflows/pydra_preproc_ants.ipynb"
     },
     "378baf4c-c107-47b9-a8bf-cc286d89d91e": {
       "state": "queued",
