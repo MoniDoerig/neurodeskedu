@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-08T18:19:27+00:00",
+  "generated_at": "2026-03-08T22:10:48+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -29,14 +29,6 @@
         "t-michal"
       ],
       "source_path": "examples/spectroscopy/lcmodel.ipynb"
-    },
-    "521aa89c-987d-4a47-8e75-575e76ea4460": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/36",
-      "reviewers": [
-        "air2310"
-      ],
-      "source_path": "examples/workflows/pydra_preproc_ants.ipynb"
     },
     "1ba869e1-d94c-44b6-b958-f49cd5cb4e5e": {
       "state": "in-progress",
@@ -183,6 +175,16 @@
         "neurolabusc"
       ],
       "source_path": "examples/functional_imaging/AFNI_preprocessing_plus_glm.ipynb"
+    },
+    "521aa89c-987d-4a47-8e75-575e76ea4460": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/36",
+      "reviewers": [
+        "air2310"
+      ],
+      "reviewed_at": "2026-03-08",
+      "review_commit_sha": "62a503b00a5ee77872135733d944ec0b31991d46",
+      "source_path": "examples/workflows/pydra_preproc_ants.ipynb"
     },
     "38be8dd8-a1c1-4e9d-b151-9bbd24c77534": {
       "state": "reviewed",
