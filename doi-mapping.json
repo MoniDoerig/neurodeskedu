@@ -420,13 +420,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728782",
     "website_url": "https://neurodesk.org/edu/examples/workflows/ipyniivue_ipywidgets.html",
     "concept_recid": "18728782",
-    "record_id": "18882606",
+    "record_id": "18918608",
     "content_type": "notebook",
-    "checksum": "2d6139a2ea48c62c83f717b821728472",
+    "checksum": "1f738d40a8b8c57dce5efd367a15134b",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-03-05T23:02:02Z"
+    "updated_at": "2026-03-09T05:30:00Z"
   },
   "books/examples/workflows/Magic_commands.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728786",
@@ -635,13 +635,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18740141",
     "website_url": "https://neurodesk.org/edu/examples/functional_imaging/FSLnets_course_practical.html",
     "concept_recid": "18740141",
-    "record_id": "18740142",
+    "record_id": "18918609",
     "content_type": "notebook",
-    "checksum": "4210e6cbcd183b8c13d69727abe3d8db",
+    "checksum": "9c02bb93e6d2624344f735da6080d9cd",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-02-23T09:12:02Z"
+    "updated_at": "2026-03-09T05:30:09Z"
   },
   "books/examples/diffusion_imaging/mrtrix3tissue.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18740151",
