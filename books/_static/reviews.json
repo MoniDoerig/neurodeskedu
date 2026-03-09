@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-08T22:41:38+00:00",
+  "generated_at": "2026-03-09T01:08:20+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -54,6 +54,14 @@
       ],
       "source_path": "examples/workflows/RISE_slideshow.ipynb"
     },
+    "3334c019-8478-4eb9-8ed4-9a76f2dc6ba1": {
+      "state": "in-progress",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/34",
+      "reviewers": [
+        "MoniDoerig"
+      ],
+      "source_path": "examples/workflows/papermill-slurm-submission-example.ipynb"
+    },
     "378baf4c-c107-47b9-a8bf-cc286d89d91e": {
       "state": "queued",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/33",
@@ -99,14 +107,6 @@
       ],
       "source_path": "examples/diffusion_imaging/MRtrix_1.ipynb"
     },
-    "3334c019-8478-4eb9-8ed4-9a76f2dc6ba1": {
-      "state": "in-progress",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/34",
-      "reviewers": [
-        "MoniDoerig"
-      ],
-      "source_path": "examples/workflows/papermill-slurm-submission-example.ipynb"
-    },
     "a8e7a7f7-f7aa-473b-b622-34e1fb415429": {
       "state": "in-progress",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/38",
@@ -151,16 +151,6 @@
         "neurolabusc"
       ],
       "source_path": "examples/functional_imaging/AFNI_preprocessing_plus_glm.ipynb"
-    },
-    "77605892-b360-443a-adbf-47051ebdcdb3": {
-      "state": "reviewed",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/13",
-      "reviewers": [
-        "andrewjahn"
-      ],
-      "reviewed_at": "2026-03-08",
-      "review_commit_sha": "62a503b00a5ee77872135733d944ec0b31991d46",
-      "source_path": "examples/functional_imaging/fsl_all_levels_flanker_nipype.ipynb"
     },
     "ae2af25f-cf27-440b-a0d8-884a7b7e1703": {
       "state": "reviewed",
@@ -321,6 +311,16 @@
       "reviewed_at": "2026-03-05",
       "review_commit_sha": "c50b3f9b8078eda2654b986050d9fadfc20165ee",
       "source_path": "examples/structural_imaging/FSL_course_bet.ipynb"
+    },
+    "77605892-b360-443a-adbf-47051ebdcdb3": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/13",
+      "reviewers": [
+        "andrewjahn"
+      ],
+      "reviewed_at": "2026-03-08",
+      "review_commit_sha": "62a503b00a5ee77872135733d944ec0b31991d46",
+      "source_path": "examples/functional_imaging/fsl_all_levels_flanker_nipype.ipynb"
     },
     "9dab0bae-455d-46a8-a15f-f3d449581ce9": {
       "state": "reviewed",
