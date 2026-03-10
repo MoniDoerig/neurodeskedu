@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-03-09T18:37:16+00:00",
+  "generated_at": "2026-03-10T00:42:15+00:00",
   "source": {
     "type": "github-issues",
     "repo": "neurodesk/neurodeskedu-reviews"
@@ -99,17 +99,6 @@
       ],
       "source_path": "examples/diffusion_imaging/MRtrix_1.ipynb"
     },
-    "5d3c6acd-b9c9-42d9-b3af-55f3458b0f52": {
-      "state": "stale",
-      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/20",
-      "reviewers": [
-        "t-michal"
-      ],
-      "reviewed_at": "2026-03-09",
-      "review_commit_sha": "62a503b00a5ee77872135733d944ec0b31991d46",
-      "source_path": "examples/spectroscopy/lcmodel.ipynb",
-      "stale_reason": "File modified after review (latest: f3fc17b39993, reviewed at: 62a503b00a5e)"
-    },
     "a8e7a7f7-f7aa-473b-b622-34e1fb415429": {
       "state": "in-progress",
       "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/38",
@@ -149,6 +138,16 @@
         "neurolabusc"
       ],
       "source_path": "examples/functional_imaging/AFNI_preprocessing_plus_glm.ipynb"
+    },
+    "5d3c6acd-b9c9-42d9-b3af-55f3458b0f52": {
+      "state": "reviewed",
+      "review_issue_url": "https://github.com/neurodesk/neurodeskedu-reviews/issues/20",
+      "reviewers": [
+        "t-michal"
+      ],
+      "reviewed_at": "2026-03-10",
+      "review_commit_sha": "cffbc39fa0b81b14dd94218d158d764803e98e0d",
+      "source_path": "examples/spectroscopy/lcmodel.ipynb"
     },
     "7b0edb6e-1f30-4116-beed-b311f3832a99": {
       "state": "reviewed",
