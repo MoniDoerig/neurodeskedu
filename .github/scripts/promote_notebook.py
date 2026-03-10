@@ -21,7 +21,28 @@ import json
 import os
 import shutil
 import sys
+import time
 from pathlib import Path
+
+
+def _retry(fn, description="operation", max_attempts=3, backoff=5):
+    """Retry a callable with exponential backoff on transient failures."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return fn()
+        except Exception as e:
+            err_str = str(e)
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            transient = status in (403, 429, 500, 502, 503, 504) or \
+                "ConnectionError" in type(e).__name__ or \
+                "Timeout" in type(e).__name__
+            if transient and attempt < max_attempts:
+                wait = backoff * (2 ** (attempt - 1))
+                print(f"    Retry {attempt}/{max_attempts} for {description} "
+                      f"(error: {err_str[:120]}), waiting {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
 
 
 # Cell-level keys that change between executions without author action
@@ -93,7 +114,10 @@ def main():
 
     # List all HF branches matching review/* pattern
     try:
-        refs = api.list_repo_refs(hf_repo, repo_type="dataset")
+        refs = _retry(
+            lambda: api.list_repo_refs(hf_repo, repo_type="dataset"),
+            description="list HF branches",
+        )
         review_branches = [
             b.name for b in refs.branches
             if b.name.startswith("review/")
@@ -113,7 +137,11 @@ def main():
 
         # Check if source snapshot exists on this branch
         try:
-            if not file_exists(hf_repo, hf_source_path, repo_type="dataset", revision=branch):
+            exists = _retry(
+                lambda b=branch: file_exists(hf_repo, hf_source_path, repo_type="dataset", revision=b),
+                description=f"check source on {branch}",
+            )
+            if not exists:
                 print(f"    No source snapshot found")
                 continue
         except Exception:
@@ -121,9 +149,12 @@ def main():
 
         # Download the source snapshot and compare
         try:
-            remote_source = hf_hub_download(
-                hf_repo, hf_source_path,
-                repo_type="dataset", revision=branch,
+            remote_source = _retry(
+                lambda b=branch: hf_hub_download(
+                    hf_repo, hf_source_path,
+                    repo_type="dataset", revision=b,
+                ),
+                description=f"download source from {branch}",
             )
         except Exception as e:
             print(f"    Could not download source: {e}")
@@ -136,13 +167,20 @@ def main():
         # Source matches! Download the outputs notebook
         print(f"    Source matches! Downloading outputs notebook...")
         try:
-            if not file_exists(hf_repo, hf_outputs_path, repo_type="dataset", revision=branch):
+            out_exists = _retry(
+                lambda b=branch: file_exists(hf_repo, hf_outputs_path, repo_type="dataset", revision=b),
+                description=f"check outputs on {branch}",
+            )
+            if not out_exists:
                 print(f"    No outputs notebook found on this branch")
                 continue
 
-            remote_outputs = hf_hub_download(
-                hf_repo, hf_outputs_path,
-                repo_type="dataset", revision=branch,
+            remote_outputs = _retry(
+                lambda b=branch: hf_hub_download(
+                    hf_repo, hf_outputs_path,
+                    repo_type="dataset", revision=b,
+                ),
+                description=f"download outputs from {branch}",
             )
             shutil.copy(remote_outputs, notebook_path)
             print(f"    Promoted from branch '{branch}' -> {notebook_path}")
