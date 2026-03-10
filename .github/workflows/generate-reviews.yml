@@ -1,13 +1,9 @@
 # Generate the review registry (reviews.json) from the reviews repo issues.
-# Runs on a schedule, on dispatch from the reviews repo, or manually.
+# Runs on dispatch from the reviews repo, or manually.
 
 name: Generate Review Registry
 
 on:
-  # Run on a schedule (e.g. every 6 hours) to keep badges fresh
-  schedule:
-    - cron: '0 */6 * * *'
-
   # Run when dispatched from the reviews repo
   repository_dispatch:
     types: [reviews-updated]
