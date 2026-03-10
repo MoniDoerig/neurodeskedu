@@ -396,13 +396,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728778",
     "website_url": "https://neurodesk.org/edu/examples/spectroscopy/lcmodel.html",
     "concept_recid": "18728778",
-    "record_id": "18922449",
+    "record_id": "18930655",
     "content_type": "notebook",
-    "checksum": "bf5edf5f2b4d3f1e04b61ba09812606f",
+    "checksum": "7aa0e9bdc34ccf57dddf8a17b4dc1a51",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-03-09T10:54:53Z"
+    "updated_at": "2026-03-10T00:31:03Z"
   },
   "books/examples/structural_imaging/FSL_course_bet.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728780",
@@ -537,13 +537,13 @@
     "doi_url": "https://doi.org/10.5281/zenodo.18728804",
     "website_url": "https://neurodesk.org/edu/examples/workflows/MRIQC.html",
     "concept_recid": "18728804",
-    "record_id": "18922454",
+    "record_id": "18930656",
     "content_type": "notebook",
-    "checksum": "2064d7b825dce845fd38bd2884d8486c",
+    "checksum": "c74dbdf3f54ea0d87130de5186fc5e81",
     "authors": [
       "Monika Doerig"
     ],
-    "updated_at": "2026-03-09T10:55:00Z"
+    "updated_at": "2026-03-10T00:31:10Z"
   },
   "books/examples/functional_imaging/AFNI_processing_task_based.ipynb": {
     "doi_url": "https://doi.org/10.5281/zenodo.18728806",
