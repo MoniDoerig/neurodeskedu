@@ -1158,7 +1158,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          cp doi-mapping.json /tmp/doi-mapping.json
+          mv doi-mapping.json /tmp/doi-mapping.json
           if git fetch origin ci-data 2>/dev/null; then
             git checkout ci-data
           else
