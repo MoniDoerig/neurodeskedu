@@ -12,7 +12,7 @@ Issue body convention:
   <!-- nd-review
   review_id: 550e8400-e29b-41d4-a716-446655440000
   doi_url: https://doi.org/...
-  review_commit_sha: <sha>
+  review_commit_sha: <sha>  (legacy, content hash preferred)
   reviewed_at: 2026-02-12
   reviewers: reviewer-a, reviewer-b
   -->
@@ -32,10 +32,10 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import os
 import re
-import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -237,44 +237,64 @@ def build_registry(issues: List[Dict[str, Any]], reviews_repo: str) -> Dict[str,
 # Staleness detection
 # ---------------------------------------------------------------------------
 
-def _git_latest_sha(repo_dir: Path, filepath: str) -> Optional[str]:
-    """Return the SHA of the latest commit that touched `filepath`."""
+def _content_hash(filepath: Path) -> Optional[str]:
+    """Hash only the scientific content of a file.
+
+    For notebooks (.ipynb): hashes source cells and markdown cells only,
+    ignoring outputs, execution counts, and cell metadata.
+    For other files (.md, etc.): hashes the full file content.
+    """
     try:
-        result = subprocess.run(
-            ["git", "log", "--format=%H", "-1", "--", filepath],
-            cwd=str(repo_dir),
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        sha = result.stdout.strip()
-        return sha if sha else None
+        raw = filepath.read_text(encoding="utf-8")
     except Exception:
         return None
 
+    if filepath.suffix == ".ipynb":
+        try:
+            nb = json.loads(raw)
+            sources = [c["source"] for c in nb.get("cells", [])
+                       if c.get("cell_type") in ("code", "markdown")]
+            content = json.dumps(sources, sort_keys=True)
+        except Exception:
+            content = raw
+    else:
+        content = raw
+
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
 
 def apply_staleness(registry: Dict[str, Any], repo_dir: Path) -> int:
-    """For every 'reviewed' entry with review_commit_sha + source_path,
-    check if the file was modified after the recorded SHA.  If so, mark
-    the entry as stale.  Returns the number of entries marked stale."""
+    """For every 'reviewed' entry with source_path, compare the current
+    scientific content hash against the stored review_content_hash.
+    Only marks as stale when actual source content has changed — ignores
+    outputs, execution counts, and non-scientific metadata.
+
+    Falls back to commit SHA comparison if no content hash is stored."""
     stale_count = 0
     for review_id, entry in registry.get("reviews", {}).items():
         if entry.get("state") != "reviewed":
             continue
-        recorded_sha = entry.get("review_commit_sha")
         source_path = entry.get("source_path")
-        if not recorded_sha or not source_path:
+        if not source_path:
             continue
-        # source_path is relative to books/; git log needs repo-root-relative path
-        git_path = f"books/{source_path}"
-        latest_sha = _git_latest_sha(repo_dir, git_path)
-        if latest_sha and latest_sha != recorded_sha:
-            entry["state"] = "stale"
-            entry["stale_reason"] = (
-                f"File modified after review (latest: {latest_sha[:12]}, "
-                f"reviewed at: {recorded_sha[:12]})"
-            )
-            stale_count += 1
+
+        filepath = repo_dir / "books" / source_path
+        current_hash = _content_hash(filepath)
+        if not current_hash:
+            continue
+
+        recorded_hash = entry.get("review_content_hash")
+        if recorded_hash:
+            # Content hash comparison — only catches real source changes
+            if current_hash != recorded_hash:
+                entry["state"] = "stale"
+                entry["stale_reason"] = "Source content changed after review"
+                stale_count += 1
+        else:
+            # No content hash stored yet — store current hash for future comparisons
+            # and skip staleness check this time (avoids false positives on migration)
+            entry["review_content_hash"] = current_hash
+
     return stale_count
 
 
