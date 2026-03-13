@@ -1,8 +1,8 @@
 ---
-title: "Neurodesk Workflows"
+title: "About Neurodesk"
 ---
 
-# Neurodesk Workflows
+# About Neurodesk
 
 Tutorial pages related to Neurodesk workflows and tool access.
 
