@@ -63,9 +63,9 @@ chapters:
 
   - file: tutorials/intro
     sections:
-      - file: tutorials/neurodesk_workflows/intro
+      - file: tutorials/about_neurodesk/intro
         sections:
-          - file: tutorials/neurodesk_workflows/accessing_neurodesk_tools
+          - file: tutorials/about_neurodesk/accessing_neurodesk_tools
 
       - file: tutorials/electrophysiology/intro
         sections:
