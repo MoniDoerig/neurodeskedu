@@ -110,7 +110,14 @@ jobs:
           if [ -n "${{ inputs.image_override }}" ]; then
             echo "neurodesk_image=${{ inputs.image_override }}" >> $GITHUB_OUTPUT
           else
-            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:2026-02-24" >> $GITHUB_OUTPUT
+            # Fetch the latest version from the neurodesk website config
+            NEURODESKTOP_VERSION=$(curl -s https://raw.githubusercontent.com/neurodesk/neurodesk.github.io/main/data/neurodesktop.toml \
+              | grep '^jupyter_neurodesk_version' | sed 's/.*= *"\(.*\)"/\1/')
+            if [ -z "$NEURODESKTOP_VERSION" ]; then
+              echo "::error::Failed to fetch Neurodesktop version from neurodesktop.toml"
+              exit 1
+            fi
+            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
           fi
           echo "Using image: $(grep neurodesk_image $GITHUB_OUTPUT | cut -d= -f2)"
 
@@ -442,6 +449,7 @@ jobs:
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
+            -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
             ${{ needs.setup.outputs.neurodesk_image }}
           
           echo "Started container: $CONTAINER_NAME"
@@ -1483,8 +1491,9 @@ jobs:
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
+            -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
             ${{ needs.setup.outputs.neurodesk_image }}
-          
+
           echo "Started container: $CONTAINER_NAME"
 
       - name: Wait for container readiness
