@@ -900,6 +900,14 @@ jobs:
           path: books/${{ matrix.notebooks }}
           retention-days: 1
 
+      - name: Upload failed notebook artifact (for debugging)
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: error-${{ env.NOTEBOOK }}
+          path: books/${{ matrix.notebooks }}
+          retention-days: 7
+
       - name: Upload source + executed notebooks to HuggingFace
         if: success()
         env:
