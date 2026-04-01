@@ -110,7 +110,14 @@ jobs:
           if [ -n "${{ inputs.image_override }}" ]; then
             echo "neurodesk_image=${{ inputs.image_override }}" >> $GITHUB_OUTPUT
           else
-            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:2026-02-24" >> $GITHUB_OUTPUT
+            # Fetch the latest version from the neurodesk website config
+            NEURODESKTOP_VERSION=$(curl -s https://raw.githubusercontent.com/neurodesk/neurodesk.github.io/main/data/neurodesktop.toml \
+              | grep '^jupyter_neurodesk_version' | sed 's/.*= *"\(.*\)"/\1/')
+            if [ -z "$NEURODESKTOP_VERSION" ]; then
+              echo "::error::Failed to fetch Neurodesktop version from neurodesktop.toml"
+              exit 1
+            fi
+            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
           fi
           echo "Using image: $(grep neurodesk_image $GITHUB_OUTPUT | cut -d= -f2)"
 
@@ -236,6 +243,10 @@ jobs:
     runs-on:
       group: arc-base
     timeout-minutes: 1500
+
+    concurrency:
+      group: notebook-${{ matrix.notebooks }}
+      cancel-in-progress: true
 
     strategy:
       fail-fast: false
@@ -443,6 +454,7 @@ jobs:
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
+            -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
             ${{ needs.setup.outputs.neurodesk_image }}
 
           echo "Started container: $CONTAINER_NAME"
@@ -709,7 +721,7 @@ jobs:
               cp "$KERNEL_JSON" "${KERNEL_JSON}.bak"
               echo "import json" > /tmp/fix_kernel.py
               echo "k = json.load(open(\"$KERNEL_JSON\"))" >> /tmp/fix_kernel.py
-              echo "k.setdefault(\"env\", {}).update({\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\"})" >> /tmp/fix_kernel.py
+              echo "k.setdefault(\"env\", {}).update({\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\", \"EGL_LOG_LEVEL\": \"fatal\", \"PYTHONWARNINGS\": \"ignore:where used without:UserWarning\"})" >> /tmp/fix_kernel.py
               echo "json.dump(k, open(\"$KERNEL_JSON\", \"w\"), indent=2)" >> /tmp/fix_kernel.py
               echo "print(\"Updated kernel.json\")" >> /tmp/fix_kernel.py
               python3 /tmp/fix_kernel.py
@@ -985,6 +997,14 @@ jobs:
       #     path: books/${{ matrix.notebooks }}
       #     retention-days: 1
       #
+      # - name: Upload failed notebook artifact (for debugging)
+      #   if: failure()
+      #   uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      #   with:
+      #     name: error-${{ env.NOTEBOOK }}
+      #     path: books/${{ matrix.notebooks }}
+      #     retention-days: 7
+      #
       # - name: Upload source + executed notebooks to HuggingFace
       #   if: success()
       #   env:
@@ -1136,9 +1156,21 @@ jobs:
     # if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' }}
     if: false
     runs-on: ubuntu-22.04
+    concurrency:
+      group: publish-dois
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Fetch doi-mapping.json from ci-data branch
+        run: |
+          if git fetch origin ci-data 2>/dev/null && git show origin/ci-data:doi-mapping.json > doi-mapping.json 2>/dev/null; then
+            echo "Loaded doi-mapping.json from ci-data branch"
+          else
+            echo "{}" > doi-mapping.json
+            echo "ci-data branch not found, starting with empty mapping"
+          fi
 
       - name: Print DOI job gating context
         run: |
@@ -1237,19 +1269,28 @@ jobs:
             exit 1
           fi
 
-      - name: Commit doi-mapping.json to main
+      - name: Push doi-mapping.json to ci-data branch
         if: github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          mv doi-mapping.json /tmp/doi-mapping.json
+          if git fetch origin ci-data 2>/dev/null; then
+            git checkout ci-data
+          else
+            git checkout --orphan ci-data
+            git rm -rf . > /dev/null 2>&1 || true
+          fi
+          cp /tmp/doi-mapping.json doi-mapping.json
           git add doi-mapping.json
           if git diff --cached --quiet; then
             echo "No changes to doi-mapping.json"
           else
-            git commit -m "chore: update doi-mapping.json [skip ci]"
-            git pull --rebase origin main
-            git push
+            git commit -m "chore: update doi-mapping.json"
+            git pull --rebase origin ci-data 2>/dev/null || true
+            git push origin ci-data
           fi
+          git checkout - 2>/dev/null || true
 
       - name: Upload updated doi-mapping artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
@@ -1524,20 +1565,15 @@ jobs:
           
           echo "================================================"
 
-      - name: Download updated doi-mapping (from publish-dois job)
-        if: needs.publish-dois.result == 'success'
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
-        with:
-          name: doi-mapping-updated
-          path: doi-mapping-artifact
-
-      - name: Use updated doi-mapping if available
+      - name: Fetch doi-mapping.json and reviews.json from ci-data branch
         run: |
-          if [ -f "doi-mapping-artifact/doi-mapping.json" ]; then
-            echo "Using updated doi-mapping.json from publish-dois job"
-            cp doi-mapping-artifact/doi-mapping.json doi-mapping.json
+          if git fetch origin ci-data 2>/dev/null; then
+            git show origin/ci-data:doi-mapping.json > doi-mapping.json 2>/dev/null || echo "{}" > doi-mapping.json
+            git show origin/ci-data:reviews.json > books/_static/reviews.json 2>/dev/null || echo "reviews.json not on ci-data yet"
+            echo "Loaded ci-data files"
           else
-            echo "No updated doi-mapping artifact found, using existing doi-mapping.json"
+            echo "{}" > doi-mapping.json
+            echo "ci-data branch not found"
           fi
 
       - name: Set container name
@@ -1568,6 +1604,7 @@ jobs:
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
+            -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
             ${{ needs.setup.outputs.neurodesk_image }}
 
           echo "Started container: $CONTAINER_NAME"

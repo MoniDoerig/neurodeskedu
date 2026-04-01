@@ -25,7 +25,27 @@ import os
 import sys
 import re
 import hashlib
+import time
 from pathlib import Path
+
+
+def _retry(fn, description="operation", max_attempts=3, backoff=5):
+    """Retry a callable with exponential backoff on transient failures."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return fn()
+        except Exception as e:
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            transient = status in (403, 429, 500, 502, 503, 504) or \
+                "ConnectionError" in type(e).__name__ or \
+                "Timeout" in type(e).__name__
+            if transient and attempt < max_attempts:
+                wait = backoff * (2 ** (attempt - 1))
+                print(f"    Retry {attempt}/{max_attempts} for {description} "
+                      f"(error: {str(e)[:120]}), waiting {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
 
 # Hugging Face configuration
 HF_REPO = os.environ.get("HF_REPO", "neurodeskorg/neurodeskedu")
@@ -46,11 +66,17 @@ def ensure_hf_branch() -> None:
     try:
         from huggingface_hub import HfApi
         api = HfApi()
-        refs = api.list_repo_refs(HF_REPO, repo_type="dataset")
+        refs = _retry(
+            lambda: api.list_repo_refs(HF_REPO, repo_type="dataset"),
+            description="list HF branches",
+        )
         existing = {b.name for b in refs.branches}
         if HF_BRANCH not in existing:
             print(f"  Creating HF branch '{HF_BRANCH}' from main...")
-            api.create_branch(HF_REPO, repo_type="dataset", branch=HF_BRANCH)
+            _retry(
+                lambda: api.create_branch(HF_REPO, repo_type="dataset", branch=HF_BRANCH),
+                description=f"create branch {HF_BRANCH}",
+            )
         _hf_branch_ensured = True
     except Exception as e:
         print(f"  WARNING: Could not ensure HF branch '{HF_BRANCH}': {e}")
@@ -138,7 +164,10 @@ def ensure_gitattributes(extensions: set[str]) -> None:
 
         # Download current .gitattributes
         try:
-            ga_path = hf_hub_download(HF_REPO, ".gitattributes", repo_type="dataset", revision=HF_BRANCH)
+            ga_path = _retry(
+                lambda: hf_hub_download(HF_REPO, ".gitattributes", repo_type="dataset", revision=HF_BRANCH),
+                description="download .gitattributes",
+            )
             current = open(ga_path).read()
         except Exception:
             current = ""
@@ -161,12 +190,15 @@ def ensure_gitattributes(extensions: set[str]) -> None:
         updated = current.rstrip() + "\n" + new_lines + "\n"
 
         api = HfApi()
-        api.create_commit(
-            repo_id=HF_REPO,
-            repo_type="dataset",
-            revision=HF_BRANCH,
-            operations=[CommitOperationAdd(path_in_repo=".gitattributes", path_or_fileobj=updated.encode())],
-            commit_message=f"Add LFS patterns for neuroimaging extensions: {', '.join(missing)}",
+        _retry(
+            lambda: api.create_commit(
+                repo_id=HF_REPO,
+                repo_type="dataset",
+                revision=HF_BRANCH,
+                operations=[CommitOperationAdd(path_in_repo=".gitattributes", path_or_fileobj=updated.encode())],
+                commit_message=f"Add LFS patterns for neuroimaging extensions: {', '.join(missing)}",
+            ),
+            description="update .gitattributes",
         )
     except Exception as e:
         print(f"  WARNING: Could not update .gitattributes: {e}")
@@ -185,19 +217,26 @@ def upload_to_hf(filepath: Path, path_in_repo: str) -> str:
 
         ensure_hf_branch()
 
-        if file_exists(HF_REPO, path_in_repo, repo_type="dataset", revision=HF_BRANCH):
+        already = _retry(
+            lambda: file_exists(HF_REPO, path_in_repo, repo_type="dataset", revision=HF_BRANCH),
+            description=f"check {path_in_repo}",
+        )
+        if already:
             print(f"  Already exists: {path_in_repo}")
             return url
 
         print(f"  Uploading: {filepath.name} -> {path_in_repo}")
 
-        upload_file(
-            path_or_fileobj=str(filepath),
-            path_in_repo=path_in_repo,
-            repo_id=HF_REPO,
-            repo_type="dataset",
-            revision=HF_BRANCH,
-            commit_message=f"Add data: {path_in_repo}",
+        _retry(
+            lambda: upload_file(
+                path_or_fileobj=str(filepath),
+                path_in_repo=path_in_repo,
+                repo_id=HF_REPO,
+                repo_type="dataset",
+                revision=HF_BRANCH,
+                commit_message=f"Add data: {path_in_repo}",
+            ),
+            description=f"upload {filepath.name}",
         )
 
         return url

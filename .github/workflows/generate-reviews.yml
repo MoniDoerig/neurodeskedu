@@ -1,13 +1,9 @@
 # Generate the review registry (reviews.json) from the reviews repo issues.
-# Runs on a schedule, on dispatch from the reviews repo, or manually.
+# Runs on dispatch from the reviews repo, or manually.
 
 name: Generate Review Registry
 
 on:
-  # Run on a schedule (e.g. every 6 hours) to keep badges fresh
-  schedule:
-    - cron: '0 */6 * * *'
-
   # Run when dispatched from the reviews repo
   repository_dispatch:
     types: [reviews-updated]
@@ -44,12 +40,24 @@ jobs:
             --out books/_static/reviews.json \
             --repo-dir .
 
-      - name: Commit updated registry
+      - name: Push reviews.json to ci-data branch
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add books/_static/reviews.json
-          git diff --cached --quiet && echo "No changes" && exit 0
-          git commit -m "chore: update review registry [skip ci]"
-          git pull --rebase origin main || true
-          git push
+          cp books/_static/reviews.json /tmp/reviews.json
+          if git fetch origin ci-data 2>/dev/null; then
+            git checkout ci-data
+          else
+            # First run: create orphan branch with no history
+            git checkout --orphan ci-data
+            git rm -rf . > /dev/null 2>&1 || true
+          fi
+          cp /tmp/reviews.json reviews.json
+          git add reviews.json
+          if git diff --cached --quiet; then
+            echo "No changes to reviews.json"
+          else
+            git commit -m "chore: update reviews.json"
+            git pull --rebase origin ci-data 2>/dev/null || true
+            git push origin ci-data
+          fi
