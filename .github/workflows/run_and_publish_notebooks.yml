@@ -82,27 +82,55 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       runner: ${{ steps.select_runner.outputs.runner }}
+      runs_on: ${{ steps.select_runner.outputs.runs_on }}
       neurodesk_image: ${{ steps.get_image.outputs.neurodesk_image }}
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Select runner 
+      - name: Select runner
         id: select_runner
         run: |
-          # For workflow_dispatch, use the use_self_hosted input
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ "${{ inputs.use_self_hosted }}" = "true" ]; then
-              echo "runner=self-hosted" >> $GITHUB_OUTPUT
-            else
-              echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
-            fi
-          # For push/PR, use self-hosted for main repo, ubuntu for forks
-          elif [ "${{ github.repository }}" = "neurodesk/neurodeskedu" ]; then
-            echo "runner=self-hosted" >> $GITHUB_OUTPUT
-          else
-            echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
-          fi
+          # =====================================================================
+          # RUNNER SELECTION — ONE decision point, everything else follows
+          # =====================================================================
+          # Uncomment ONE block below. This controls:
+          #   1. Which runner the notebook jobs land on (runs-on)
+          #   2. Whether the in-cluster registry mirror is used for image pulls
+          #   3. Any other runner-specific conditional logic downstream
+          #
+          # runner  = used by conditional logic (mirror toggle, etc.)
+          # runs_on = used by the runs-on field (handles group vs label syntax)
+          # =====================================================================
+
+          # --- ARC K8s runners (CVMFS-enabled, in-cluster mirror) ---
+          echo "runner=arc-base" >> $GITHUB_OUTPUT
+          echo 'runs_on={"group":"arc-base"}' >> $GITHUB_OUTPUT
+
+          # --- Legacy VMs (neurodeskedu-1 through -8) ---
+          # echo "runner=self-hosted" >> $GITHUB_OUTPUT
+          # echo 'runs_on="self-hosted"' >> $GITHUB_OUTPUT
+
+          # --- GitHub-hosted public runner ---
+          # echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
+          # echo 'runs_on="ubuntu-22.04"' >> $GITHUB_OUTPUT
+
+          # --- Original dynamic logic (uncomment to restore automatic selection) ---
+          # if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          #   if [ "${{ inputs.use_self_hosted }}" = "true" ]; then
+          #     echo "runner=self-hosted" >> $GITHUB_OUTPUT
+          #     echo 'runs_on="self-hosted"' >> $GITHUB_OUTPUT
+          #   else
+          #     echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
+          #     echo 'runs_on="ubuntu-22.04"' >> $GITHUB_OUTPUT
+          #   fi
+          # elif [ "${{ github.repository }}" = "neurodesk/neurodeskedu" ]; then
+          #   echo "runner=self-hosted" >> $GITHUB_OUTPUT
+          #   echo 'runs_on="self-hosted"' >> $GITHUB_OUTPUT
+          # else
+          #   echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
+          #   echo 'runs_on="ubuntu-22.04"' >> $GITHUB_OUTPUT
+          # fi
 
       - name: Determine Neurodesk image
         id: get_image
@@ -239,9 +267,7 @@ jobs:
     name: Run Notebook
     needs: [setup, select-notebooks]
     if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' && inputs.use_notebook_cache != true }}
-    # runs-on: ${{ needs.setup.outputs.runner }}
-    runs-on:
-      group: arc-base
+    runs-on: ${{ fromJson(needs.setup.outputs.runs_on) }}
     timeout-minutes: 1500
 
     concurrency:
@@ -325,6 +351,23 @@ jobs:
           IMAGE="${{ needs.setup.outputs.neurodesk_image }}"
           RUNNER_KIND="${{ needs.setup.outputs.runner }}"
 
+          # --- IMAGE PULL STRATEGY ---
+          # Mirror follows the runner selection from the setup job.
+          # ARC runners (arc-base, arc-cpu, arc-mem) have the in-cluster mirror available.
+          # Legacy VMs and GitHub-hosted runners pull directly from ghcr.io.
+          MIRROR_HOST="registry-mirror.arc-gha-system.svc.cluster.local:5000"
+          case "$RUNNER_KIND" in
+            arc-*)
+              USE_MIRROR=true
+              echo "ARC runner ($RUNNER_KIND) — will try in-cluster mirror first, ghcr.io as fallback"
+              ;;
+            *)
+              USE_MIRROR=false
+              echo "Non-ARC runner ($RUNNER_KIND) — pulling from ghcr.io directly"
+              ;;
+          esac
+          # --- END IMAGE PULL STRATEGY ---
+
           print_docker_diagnostics() {
             echo "::group::Docker diagnostics"
             sudo systemctl --no-pager -l status docker.service || true
@@ -372,8 +415,30 @@ jobs:
               fi
 
               echo "Pulling $IMAGE (attempt ${attempt}/3)..."
-              if docker pull "$IMAGE"; then
-                echo "✓ Pulled $IMAGE"
+              PULL_OK=false
+
+              # Try in-cluster mirror first (when USE_MIRROR=true)
+              if [ "$USE_MIRROR" = "true" ]; then
+                MIRROR_IMAGE="${MIRROR_HOST}/${IMAGE#ghcr.io/}"
+                echo "  → Trying mirror: $MIRROR_IMAGE"
+                if docker pull "$MIRROR_IMAGE" 2>/dev/null; then
+                  docker tag "$MIRROR_IMAGE" "$IMAGE"
+                  echo "✓ Pulled from mirror, retagged as $IMAGE"
+                  PULL_OK=true
+                else
+                  echo "  → Mirror unavailable or miss, falling back to ghcr.io"
+                fi
+              fi
+
+              # Direct pull from ghcr.io (fallback, or primary when USE_MIRROR=false)
+              if [ "$PULL_OK" = "false" ]; then
+                if docker pull "$IMAGE"; then
+                  echo "✓ Pulled $IMAGE from ghcr.io"
+                  PULL_OK=true
+                fi
+              fi
+
+              if [ "$PULL_OK" = "true" ]; then
                 break
               fi
 
