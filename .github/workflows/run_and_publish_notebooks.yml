@@ -750,6 +750,37 @@ jobs:
             echo "=== Debug complete ==="
           '
 
+      # --- PIP DIAGNOSTIC (temporary — remove after debugging) ---
+      - name: Diagnose pip installs in notebook
+        run: |
+          echo "=== pip install diagnostic ==="
+          # Write the diagnostic script to a temp file on the host, copy into container
+          cat > /tmp/pip_diag.py << 'PIPDIAG'
+          import json, subprocess, sys
+          nb = json.load(open(sys.argv[1]))
+          for cell in nb.get("cells", []):
+              if cell["cell_type"] != "code": continue
+              src = "".join(cell["source"])
+              for line in src.splitlines():
+                  line = line.strip()
+                  if line.startswith("!pip install") or line.startswith("%pip install"):
+                      cmd = line.lstrip("!%").strip()
+                      print(f"--- Testing: {cmd} ---", flush=True)
+                      result = subprocess.run(cmd.split(), capture_output=True, text=True)
+                      print(result.stdout[-500:] if result.stdout else "", flush=True)
+                      if result.returncode != 0:
+                          print(f"FAILED (exit {result.returncode})", flush=True)
+                          print(result.stderr[-1000:] if result.stderr else "(no stderr)", flush=True)
+                      else:
+                          print("OK", flush=True)
+          PIPDIAG
+          docker cp /tmp/pip_diag.py "$CONTAINER_NAME":/tmp/pip_diag.py
+          docker exec -e PIP_USER=1 "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c \
+            'export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH && python3 /tmp/pip_diag.py "/home/jovyan/workspace/books/${{ matrix.notebooks }}"' \
+            2>&1 || echo "::warning::pip diagnostic failed (non-fatal)"
+          echo "=== end pip diagnostic ==="
+      # --- END PIP DIAGNOSTIC ---
+
       - name: Execute notebook in container
         # if: steps.promote.outputs.promoted != 'true'
         timeout-minutes: 1500
@@ -775,33 +806,6 @@ jobs:
 
               # Install dependencies only if missing (use pip --user)
               pip show nbconvert >/dev/null 2>&1 || pip install --user nbconvert nbclient ipykernel
-
-              # --- PIP DIAGNOSTIC (temporary — remove after debugging) ---
-              # Scan the notebook for pip install commands and dry-run them
-              # to surface errors that %%capture would hide during execution
-              echo "=== pip install diagnostic ==="
-              echo "PIP_USER=$PIP_USER"
-              echo "pip target: $(python3 -c 'import site; print(site.getusersitepackages())' 2>/dev/null)"
-              python3 -c "
-              import json, re, subprocess, sys
-              nb = json.load(open('/home/jovyan/workspace/books/$NOTEBOOK_PATH'))
-              for cell in nb.get('cells', []):
-                  if cell['cell_type'] != 'code': continue
-                  src = ''.join(cell['source'])
-                  for line in src.splitlines():
-                      line = line.strip()
-                      if line.startswith('!pip install') or line.startswith('%pip install'):
-                          cmd = line.lstrip('!%').strip()
-                          print(f'--- Testing: {cmd} ---')
-                          result = subprocess.run(cmd.split(), capture_output=True, text=True)
-                          if result.returncode != 0:
-                              print(f'FAILED (exit {result.returncode})')
-                              print(result.stderr[-500:] if result.stderr else '(no stderr)')
-                          else:
-                              print('OK')
-              " 2>&1 || echo "Diagnostic script failed (non-fatal)"
-              echo "=== end pip diagnostic ==="
-              # --- END PIP DIAGNOSTIC ---
 
               # Pre-execution verification
               echo "=== Container Environment ==="
