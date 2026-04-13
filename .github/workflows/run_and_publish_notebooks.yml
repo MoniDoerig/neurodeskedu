@@ -502,10 +502,22 @@ jobs:
       - name: Start Neurodesktop container
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+          RUNNER_KIND: ${{ needs.setup.outputs.runner }}
         run: |
           # CVMFS: Pod-level CSI mount, bind-mounted into container.
           # rslave propagation lets CVMFS automount events from DinD flow into the container.
           # To disable: remove the --mount line below.
+
+          # --- ARC-SPECIFIC CONTAINER FLAGS ---
+          # On ARC runners, /opt/conda/ is root-owned but notebooks run as jovyan.
+          # PIP_USER=1 redirects pip installs to ~/.local/ so notebooks can pip install
+          # without hitting Permission denied on /opt/conda/.
+          ARC_FLAGS=""
+          case "$RUNNER_KIND" in
+            arc-*) ARC_FLAGS="-e PIP_USER=1" ;;
+          esac
+          # --- END ARC-SPECIFIC FLAGS ---
+
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
@@ -520,6 +532,7 @@ jobs:
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
             -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
+            $ARC_FLAGS \
             ${{ needs.setup.outputs.neurodesk_image }}
 
           echo "Started container: $CONTAINER_NAME"
