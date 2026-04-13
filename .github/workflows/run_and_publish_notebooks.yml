@@ -754,29 +754,101 @@ jobs:
       - name: Diagnose pip installs in notebook
         run: |
           echo "=== pip install diagnostic ==="
-          # Write the diagnostic script to a temp file on the host, copy into container
           cat > /tmp/pip_diag.py << 'PIPDIAG'
-          import json, subprocess, sys
+          import json, re, shlex, subprocess, sys, importlib
+
           nb = json.load(open(sys.argv[1]))
-          for cell in nb.get("cells", []):
-              if cell["cell_type"] != "code": continue
+          found_any = False
+
+          for i, cell in enumerate(nb.get("cells", [])):
+              if cell["cell_type"] != "code":
+                  continue
               src = "".join(cell["source"])
+
+              # Detect %%capture (means pip output is hidden during normal execution)
+              has_capture = src.strip().startswith("%%capture")
+
               for line in src.splitlines():
-                  line = line.strip()
-                  if line.startswith("!pip install") or line.startswith("%pip install"):
-                      cmd = line.lstrip("!%").strip()
-                      print(f"--- Testing: {cmd} ---", flush=True)
-                      result = subprocess.run(cmd.split(), capture_output=True, text=True)
-                      print(result.stdout[-500:] if result.stdout else "", flush=True)
-                      if result.returncode != 0:
-                          print(f"FAILED (exit {result.returncode})", flush=True)
-                          print(result.stderr[-1000:] if result.stderr else "(no stderr)", flush=True)
-                      else:
-                          print("OK", flush=True)
+                  stripped = line.strip()
+
+                  # Match pip install patterns:
+                  #   !pip install ...       (no space)
+                  #   ! pip install ...      (space after !)
+                  #   %pip install ...       (jupyter magic)
+                  #   pip install ...        (inside %%bash cells)
+                  pip_match = re.match(r'^[!%]\s*pip\s+install\s+(.+)', stripped)
+                  if not pip_match:
+                      # Also catch bare "pip install" in %%bash cells
+                      if "%%bash" in src and re.match(r'^pip\s+install\s+(.+)', stripped):
+                          pip_match = re.match(r'^pip\s+install\s+(.+)', stripped)
+
+                  if not pip_match:
+                      continue
+
+                  found_any = True
+                  args_str = pip_match.group(1)
+                  capture_note = " [%%capture hides output]" if has_capture else ""
+                  print(f"\n--- Cell {i}: pip install {args_str}{capture_note} ---", flush=True)
+
+                  # Build the pip command
+                  try:
+                      args = shlex.split(args_str)
+                  except ValueError:
+                      args = args_str.split()
+                  cmd = [sys.executable, "-m", "pip", "install"] + args
+
+                  print(f"Running: {' '.join(cmd)}", flush=True)
+                  result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                  # Show output (stdout has install progress, stderr has warnings)
+                  if result.stdout:
+                      for out_line in result.stdout.strip().splitlines()[-20:]:
+                          print(f"  {out_line}", flush=True)
+                  if result.returncode != 0:
+                      print(f"  FAILED (exit {result.returncode})", flush=True)
+                      if result.stderr:
+                          for err_line in result.stderr.strip().splitlines()[-20:]:
+                              print(f"  ERR: {err_line}", flush=True)
+                  else:
+                      print(f"  pip exit: OK", flush=True)
+
+                  # Verify imports for the main package (first non-flag argument)
+                  for pkg in args:
+                      if pkg.startswith("-"):
+                          continue
+                      # Extract package name from version pin (e.g., tedana==25.0.1 -> tedana)
+                      pkg_name = re.split(r'[>=<!\[]', pkg)[0].strip()
+                      if not pkg_name:
+                          continue
+                      # Some packages have different import names
+                      import_map = {
+                          "scikit-learn": "sklearn",
+                          "Pillow": "PIL",
+                          "pyyaml": "yaml",
+                          "antspyx": "ants",
+                      }
+                      import_name = import_map.get(pkg_name, pkg_name.replace("-", "_"))
+                      try:
+                          importlib.import_module(import_name)
+                          print(f"  import {import_name}: OK", flush=True)
+                      except ImportError as e:
+                          print(f"  import {import_name}: FAILED — {e}", flush=True)
+                      break  # only test the first non-flag package per command
+
+          if not found_any:
+              print("No pip install commands found in notebook", flush=True)
+
+          # Show pip config and paths for debugging
+          print("\n--- pip config ---", flush=True)
+          subprocess.run([sys.executable, "-m", "pip", "config", "list"], capture_output=False)
+          print(f"PIP_USER={__import__('os').environ.get('PIP_USER', '(not set)')}", flush=True)
+
+          import site
+          print(f"User site-packages: {site.getusersitepackages()}", flush=True)
+          print(f"User site enabled: {site.ENABLE_USER_SITE}", flush=True)
           PIPDIAG
           docker cp /tmp/pip_diag.py "$CONTAINER_NAME":/tmp/pip_diag.py
           docker exec -e PIP_USER=1 "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c \
-            'export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH && python3 /tmp/pip_diag.py "/home/jovyan/workspace/books/${{ matrix.notebooks }}"' \
+            'export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH && export PIP_USER=1 && python3 /tmp/pip_diag.py "/home/jovyan/workspace/books/${{ matrix.notebooks }}"' \
             2>&1 || echo "::warning::pip diagnostic failed (non-fatal)"
           echo "=== end pip diagnostic ==="
       # --- END PIP DIAGNOSTIC ---
