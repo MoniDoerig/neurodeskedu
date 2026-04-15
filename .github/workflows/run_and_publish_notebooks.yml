@@ -512,9 +512,14 @@ jobs:
           # On ARC runners, /opt/conda/ is root-owned but notebooks run as jovyan.
           # PIP_USER=1 redirects pip installs to ~/.local/ so notebooks can pip install
           # without hitting Permission denied on /opt/conda/.
+          # CVMFS: On ARC, /cvmfs is a pod-level CSI mount that needs explicit bind-propagation.
+          # On legacy VMs, CVMFS is already available in the container via the host mount.
           ARC_FLAGS=""
           case "$RUNNER_KIND" in
-            arc-*) ARC_FLAGS="-e PIP_USER=1" ;;
+            arc-*)
+              ARC_FLAGS="-e PIP_USER=1"
+              ARC_FLAGS="$ARC_FLAGS --mount type=bind,source=/cvmfs,target=/cvmfs,readonly,bind-propagation=rslave"
+              ;;
           esac
           # --- END ARC-SPECIFIC FLAGS ---
 
@@ -525,7 +530,6 @@ jobs:
             -v ${{ github.workspace }}:/home/jovyan/workspace \
             -v ${{ env.BASE_PATH }}/tmp:/overlay-storage \
             -v ${{ github.workspace }}/.cache/pip:/home/jovyan/.cache/pip \
-            --mount type=bind,source=/cvmfs,target=/cvmfs,readonly,bind-propagation=rslave \
             -w /home/jovyan/workspace/books \
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
@@ -754,8 +758,9 @@ jobs:
         run: |
           NOTEBOOK_PATH="${{ matrix.notebooks }}"
           NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
+          RUNNER_KIND="${{ needs.setup.outputs.runner }}"
           run_exec_in_container() {
-            docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" -e RUNNER_KIND="$RUNNER_KIND" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
               set -eo pipefail
               
               export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
@@ -795,11 +800,15 @@ jobs:
               KERNEL_JSON="/opt/conda/share/jupyter/kernels/python3/kernel.json"
               echo "Modifying kernel spec at $KERNEL_JSON"
               cp "$KERNEL_JSON" "${KERNEL_JSON}.bak"
-              echo "import json" > /tmp/fix_kernel.py
+              echo "import json, os" > /tmp/fix_kernel.py
               echo "k = json.load(open(\"$KERNEL_JSON\"))" >> /tmp/fix_kernel.py
-              echo "k.setdefault(\"env\", {}).update({\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\", \"EGL_LOG_LEVEL\": \"fatal\", \"PYTHONWARNINGS\": \"ignore:where used without:UserWarning\", \"PIP_USER\": \"1\", \"PYTHONNOUSERSITE\": \"0\"})" >> /tmp/fix_kernel.py
+              echo "env = {\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\", \"EGL_LOG_LEVEL\": \"fatal\", \"PYTHONWARNINGS\": \"ignore:where used without:UserWarning\"}" >> /tmp/fix_kernel.py
+              echo "if os.environ.get(\"RUNNER_KIND\", \"\").startswith(\"arc-\"):" >> /tmp/fix_kernel.py
+              echo "    env[\"PIP_USER\"] = \"1\"" >> /tmp/fix_kernel.py
+              echo "    env[\"PYTHONNOUSERSITE\"] = \"0\"" >> /tmp/fix_kernel.py
+              echo "k.setdefault(\"env\", {}).update(env)" >> /tmp/fix_kernel.py
               echo "json.dump(k, open(\"$KERNEL_JSON\", \"w\"), indent=2)" >> /tmp/fix_kernel.py
-              echo "print(\"Updated kernel.json\")" >> /tmp/fix_kernel.py
+              echo "print(\"Updated kernel.json (RUNNER_KIND=\" + os.environ.get(\"RUNNER_KIND\", \"unknown\") + \")\")" >> /tmp/fix_kernel.py
               python3 /tmp/fix_kernel.py
               cat "$KERNEL_JSON"
               
