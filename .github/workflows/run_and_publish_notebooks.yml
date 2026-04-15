@@ -797,7 +797,7 @@ jobs:
               cp "$KERNEL_JSON" "${KERNEL_JSON}.bak"
               echo "import json" > /tmp/fix_kernel.py
               echo "k = json.load(open(\"$KERNEL_JSON\"))" >> /tmp/fix_kernel.py
-              echo "k.setdefault(\"env\", {}).update({\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\", \"EGL_LOG_LEVEL\": \"fatal\", \"PYTHONWARNINGS\": \"ignore:where used without:UserWarning\", \"PIP_USER\": \"1\"})" >> /tmp/fix_kernel.py
+              echo "k.setdefault(\"env\", {}).update({\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\", \"EGL_LOG_LEVEL\": \"fatal\", \"PYTHONWARNINGS\": \"ignore:where used without:UserWarning\", \"PIP_USER\": \"1\", \"PYTHONNOUSERSITE\": \"0\"})" >> /tmp/fix_kernel.py
               echo "json.dump(k, open(\"$KERNEL_JSON\", \"w\"), indent=2)" >> /tmp/fix_kernel.py
               echo "print(\"Updated kernel.json\")" >> /tmp/fix_kernel.py
               python3 /tmp/fix_kernel.py
@@ -884,7 +884,7 @@ jobs:
           echo "Found ipyniivue references - checking if paths need transformation..."
 
           # Ensure huggingface_hub with Xet support is installed on the runner
-          pip install -q "huggingface_hub>=0.32.0"
+          python3 -m pip install -q "huggingface_hub>=0.32.0"
 
           # Transform paths to URLs, upload to HF, clear outputs for re-execution
           # The script prints "Cells modified: N" — only need second pass if cells were actually changed
@@ -1091,7 +1091,7 @@ jobs:
           NOTEBOOK_BASENAME: ${{ matrix.notebooks }}
           HF_SOURCE_PATH: books/${{ matrix.notebooks }}
         run: |
-          pip install -q "huggingface_hub>=0.32.0"
+          python3 -m pip install -q "huggingface_hub>=0.32.0"
 
           python3 << 'PYEOF'
           import hashlib
