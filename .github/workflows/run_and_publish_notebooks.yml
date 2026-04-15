@@ -655,7 +655,18 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
         run: |
-          pip install -q "huggingface_hub>=0.32.0"
+          # Pip bootstrap ladder + --break-system-packages — see Transform HF URLs step below
+          if python3 -m ensurepip --upgrade 2>/dev/null; then
+            echo "pip-bootstrap: ensurepip succeeded"
+          elif sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq python3-pip 2>/dev/null; then
+            echo "pip-bootstrap: apt succeeded"
+          elif curl -sSfL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && sudo python3 /tmp/get-pip.py; then
+            echo "pip-bootstrap: get-pip.py succeeded"
+          else
+            echo "::error::pip-bootstrap: all three methods failed"
+            exit 1
+          fi
+          python3 -m pip install -q --break-system-packages "huggingface_hub>=0.32.0"
           NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
 
           if python3 .github/scripts/promote_notebook.py "$NOTEBOOK_PATH"; then
@@ -901,7 +912,7 @@ jobs:
             echo "::error::pip-bootstrap: all three methods failed"
             exit 1
           fi
-          python3 -m pip install -q "huggingface_hub>=0.32.0"
+          python3 -m pip install -q --break-system-packages "huggingface_hub>=0.32.0"
 
           # Transform paths to URLs, upload to HF, clear outputs for re-execution
           # The script prints "Cells modified: N" — only need second pass if cells were actually changed
@@ -1121,7 +1132,7 @@ jobs:
             echo "::error::pip-bootstrap: all three methods failed"
             exit 1
           fi
-          python3 -m pip install -q "huggingface_hub>=0.32.0"
+          python3 -m pip install -q --break-system-packages "huggingface_hub>=0.32.0"
 
           python3 << 'PYEOF'
           import hashlib
@@ -1547,7 +1558,18 @@ jobs:
           HF_BRANCH: ${{ github.ref_name }}
         run: |
           echo "========== CACHE MODE: Downloading notebooks from HuggingFace =========="
-          pip install -q "huggingface_hub>=0.32.0"
+          # Pip bootstrap ladder + --break-system-packages — see Transform HF URLs step
+          if python3 -m ensurepip --upgrade 2>/dev/null; then
+            echo "pip-bootstrap: ensurepip succeeded"
+          elif sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq python3-pip 2>/dev/null; then
+            echo "pip-bootstrap: apt succeeded"
+          elif curl -sSfL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && sudo python3 /tmp/get-pip.py; then
+            echo "pip-bootstrap: get-pip.py succeeded"
+          else
+            echo "::error::pip-bootstrap: all three methods failed"
+            exit 1
+          fi
+          python3 -m pip install -q --break-system-packages "huggingface_hub>=0.32.0"
 
           python3 << 'PYEOF'
           import os
