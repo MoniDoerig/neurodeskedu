@@ -509,16 +509,15 @@ jobs:
           # To disable: remove the --mount line below.
 
           # --- ARC-SPECIFIC CONTAINER FLAGS ---
-          # On ARC runners, /opt/conda/ is root-owned but notebooks run as jovyan.
-          # PIP_USER=1 redirects pip installs to ~/.local/ so notebooks can pip install
-          # without hitting Permission denied on /opt/conda/.
           # CVMFS: On ARC, /cvmfs is a pod-level CSI mount that needs explicit bind-propagation.
           # On legacy VMs, CVMFS is already available in the container via the host mount.
+          # PIP_USER=1 previously set here — removed: conda Python ignores PYTHONNOUSERSITE,
+          # so ~/.local/ packages become invisible to the kernel. Installs now go to /opt/conda
+          # directly (writable by jovyan in the neurodesktop image).
           ARC_FLAGS=""
           case "$RUNNER_KIND" in
             arc-*)
-              ARC_FLAGS="-e PIP_USER=1"
-              ARC_FLAGS="$ARC_FLAGS --mount type=bind,source=/cvmfs,target=/cvmfs,readonly,bind-propagation=rslave"
+              ARC_FLAGS="--mount type=bind,source=/cvmfs,target=/cvmfs,readonly,bind-propagation=rslave"
               ;;
           esac
           # --- END ARC-SPECIFIC FLAGS ---
@@ -800,15 +799,12 @@ jobs:
               KERNEL_JSON="/opt/conda/share/jupyter/kernels/python3/kernel.json"
               echo "Modifying kernel spec at $KERNEL_JSON"
               cp "$KERNEL_JSON" "${KERNEL_JSON}.bak"
-              echo "import json, os" > /tmp/fix_kernel.py
+              echo "import json" > /tmp/fix_kernel.py
               echo "k = json.load(open(\"$KERNEL_JSON\"))" >> /tmp/fix_kernel.py
               echo "env = {\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\", \"EGL_LOG_LEVEL\": \"fatal\", \"PYTHONWARNINGS\": \"ignore:where used without:UserWarning\"}" >> /tmp/fix_kernel.py
-              echo "if os.environ.get(\"RUNNER_KIND\", \"\").startswith(\"arc-\"):" >> /tmp/fix_kernel.py
-              echo "    env[\"PIP_USER\"] = \"1\"" >> /tmp/fix_kernel.py
-              echo "    env[\"PYTHONNOUSERSITE\"] = \"0\"" >> /tmp/fix_kernel.py
               echo "k.setdefault(\"env\", {}).update(env)" >> /tmp/fix_kernel.py
               echo "json.dump(k, open(\"$KERNEL_JSON\", \"w\"), indent=2)" >> /tmp/fix_kernel.py
-              echo "print(\"Updated kernel.json (RUNNER_KIND=\" + os.environ.get(\"RUNNER_KIND\", \"unknown\") + \")\")" >> /tmp/fix_kernel.py
+              echo "print(\"Updated kernel.json\")" >> /tmp/fix_kernel.py
               python3 /tmp/fix_kernel.py
               cat "$KERNEL_JSON"
               
@@ -892,7 +888,9 @@ jobs:
 
           echo "Found ipyniivue references - checking if paths need transformation..."
 
-          # Ensure huggingface_hub with Xet support is installed on the runner
+          # Ensure pip and huggingface_hub are available on the ARC runner host
+          # (minimal pod image ships python3 but not pip)
+          python3 -m ensurepip --upgrade 2>/dev/null || sudo apt-get install -y -qq python3-pip
           python3 -m pip install -q "huggingface_hub>=0.32.0"
 
           # Transform paths to URLs, upload to HF, clear outputs for re-execution
@@ -1100,6 +1098,9 @@ jobs:
           NOTEBOOK_BASENAME: ${{ matrix.notebooks }}
           HF_SOURCE_PATH: books/${{ matrix.notebooks }}
         run: |
+          # Ensure pip and huggingface_hub are available on the ARC runner host
+          # (minimal pod image ships python3 but not pip)
+          python3 -m ensurepip --upgrade 2>/dev/null || sudo apt-get install -y -qq python3-pip
           python3 -m pip install -q "huggingface_hub>=0.32.0"
 
           python3 << 'PYEOF'
