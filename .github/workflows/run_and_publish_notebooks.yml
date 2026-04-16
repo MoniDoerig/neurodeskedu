@@ -292,9 +292,6 @@ jobs:
 
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Set notebook environment variables
-        run: echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
-
       # NOTE: Configure runner step skipped for ARC runners (no /storage, no $USER, DinD handles Docker)
       # The main branch has this step active for GitHub-hosted / legacy self-hosted runners.
       # - name: Configure runner
@@ -463,36 +460,6 @@ jobs:
       # Docker execution with CVMFS mounted
       # -------------------------------------------------------------------------
 
-      - name: Fix notebook kernelspec if needed
-        run: |
-          python3 << 'EOF'
-          import json
-          import sys
-
-          notebook_path = "books/${{ matrix.notebooks }}"
-          try:
-              with open(notebook_path, 'r') as f:
-                  notebook = json.load(f)
-
-              # Fix conda-base-py or other problematic kernels
-              if 'metadata' in notebook and 'kernelspec' in notebook['metadata']:
-                  kernel_name = notebook['metadata']['kernelspec'].get('name', '')
-                  if kernel_name == 'conda-base-py' or 'conda' in kernel_name:
-                      print(f"Fixing kernelspec in {notebook_path}: {kernel_name} -> python3")
-                      notebook['metadata']['kernelspec'] = {
-                          "display_name": "Python 3",
-                          "language": "python",
-                          "name": "python3"
-                      }
-                      with open(notebook_path, 'w') as f:
-                          json.dump(notebook, f, indent=1, ensure_ascii=False)
-                          f.write('\n')
-                  else:
-                      print(f"Kernelspec OK: {kernel_name}")
-          except Exception as e:
-              print(f"Note: Could not process notebook (may not be ipynb): {e}")
-          EOF
-
       - name: Set notebook environment variables
         run: |
           echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
@@ -636,14 +603,55 @@ jobs:
             if [ -d /home/jovyan/.cache/pip ]; then
                 chown -R "$(id -u jovyan):$(id -g jovyan)" /home/jovyan/.cache/pip
             fi
-            
+
             echo "Root-level setup complete"
+          '
+
+      - name: Install CI dependencies inside container
+        run: |
+          docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+            pip install -q "huggingface_hub>=0.32.0"
+          '
+
+      - name: Fix notebook kernelspec if needed
+        env:
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
+        run: |
+          docker exec -e NOTEBOOK_REL="$NOTEBOOK_REL" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+            python3 - "$NOTEBOOK_REL" <<'"'"'EOF'"'"'
+          import json, sys
+          notebook_path = f"/home/jovyan/workspace/books/{sys.argv[1]}"
+          try:
+              with open(notebook_path, "r") as f:
+                  notebook = json.load(f)
+              if "metadata" in notebook and "kernelspec" in notebook["metadata"]:
+                  kernel_name = notebook["metadata"]["kernelspec"].get("name", "")
+                  if kernel_name == "conda-base-py" or "conda" in kernel_name:
+                      print(f"Fixing kernelspec in {notebook_path}: {kernel_name} -> python3")
+                      notebook["metadata"]["kernelspec"] = {
+                          "display_name": "Python 3",
+                          "language": "python",
+                          "name": "python3"
+                      }
+                      with open(notebook_path, "w") as f:
+                          json.dump(notebook, f, indent=1, ensure_ascii=False)
+                          f.write("\n")
+                  else:
+                      print(f"Kernelspec OK: {kernel_name}")
+          except Exception as e:
+              print(f"Note: Could not process notebook (may not be ipynb): {e}")
+          EOF
           '
 
       - name: Save source notebook (pre-execution snapshot)
         run: |
           NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
-          SOURCE_DIR="${RUNNER_TEMP}/source-notebooks"
+          # Save into the workspace so the Neurodesk container can see it via its bind
+          # mount — the upload-to-HF step runs inside the container. This path is not
+          # tracked by git and the workspace is ephemeral for the job.
+          SOURCE_DIR="${{ github.workspace }}/.ci-temp/source-notebooks"
           mkdir -p "$SOURCE_DIR"
           cp "$NOTEBOOK_PATH" "$SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
           echo "Saved source snapshot: $SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
@@ -654,22 +662,24 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
         run: |
-          # Pip bootstrap ladder + --break-system-packages — see Transform HF URLs step below
-          if python3 -m ensurepip --upgrade 2>/dev/null; then
-            echo "pip-bootstrap: ensurepip succeeded"
-          elif sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq python3-pip 2>/dev/null; then
-            echo "pip-bootstrap: apt succeeded"
-          elif curl -sSfL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && sudo python3 /tmp/get-pip.py; then
-            echo "pip-bootstrap: get-pip.py succeeded"
-          else
-            echo "::error::pip-bootstrap: all three methods failed"
-            exit 1
-          fi
-          python3 -m pip install -q --break-system-packages "huggingface_hub>=0.32.0"
-          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+          # Runs inside the Neurodesk container — keeps python off the runner host.
+          # huggingface_hub already installed in "Install CI dependencies inside container".
+          set +e
+          docker exec \
+            -e HF_TOKEN="$HF_TOKEN" \
+            -e HF_REPO="$HF_REPO" \
+            -e NOTEBOOK_REL="$NOTEBOOK_REL" \
+            "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+              cd /home/jovyan/workspace
+              python3 .github/scripts/promote_notebook.py "books/$NOTEBOOK_REL"
+            '
+          PROMOTE_RC=$?
+          set -e
 
-          if python3 .github/scripts/promote_notebook.py "$NOTEBOOK_PATH"; then
+          if [ "$PROMOTE_RC" -eq 0 ]; then
             echo "promoted=true" >> $GITHUB_OUTPUT
             echo "Notebook promoted from cache — skipping execution"
           else
@@ -886,11 +896,11 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
           HF_BRANCH: ${{ github.ref_name }}
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
         run: |
-          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
-          WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
+          NOTEBOOK_PATH="books/$NOTEBOOK_REL"
 
-          # Skip if notebook doesn't reference ipyniivue at all
+          # Skip if notebook doesn't reference ipyniivue at all (cheap host-side grep)
           if ! grep -qE "ipyniivue|NiiVue" "$NOTEBOOK_PATH" 2>/dev/null; then
             echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
             echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
@@ -899,24 +909,21 @@ jobs:
 
           echo "Found ipyniivue references - checking if paths need transformation..."
 
-          # Ensure pip is available on the ARC runner host (minimal pod image ships python3
-          # but no pip module AND an empty apt cache). Fallback ladder: ensurepip → apt with
-          # update → get-pip.py. Echo lines identify which path won for future diagnostics.
-          if python3 -m ensurepip --upgrade 2>/dev/null; then
-            echo "pip-bootstrap: ensurepip succeeded"
-          elif sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq python3-pip 2>/dev/null; then
-            echo "pip-bootstrap: apt succeeded"
-          elif curl -sSfL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && sudo python3 /tmp/get-pip.py; then
-            echo "pip-bootstrap: get-pip.py succeeded"
-          else
-            echo "::error::pip-bootstrap: all three methods failed"
-            exit 1
-          fi
-          python3 -m pip install -q --break-system-packages "huggingface_hub>=0.32.0"
-
-          # Transform paths to URLs, upload to HF, clear outputs for re-execution
-          # The script prints "Cells modified: N" — only need second pass if cells were actually changed
-          OUTPUT=$(python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs 2>&1) || true
+          # Runs inside the Neurodesk container — keeps python off the runner host.
+          # The publish_to_hf.py script prints "Cells modified: N" — only need second
+          # pass if cells were actually changed.
+          OUTPUT=$(docker exec \
+            -e HF_TOKEN="$HF_TOKEN" \
+            -e HF_REPO="$HF_REPO" \
+            -e HF_BRANCH="$HF_BRANCH" \
+            -e NOTEBOOK_REL="$NOTEBOOK_REL" \
+            "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+              cd /home/jovyan/workspace
+              NB_PATH="books/$NOTEBOOK_REL"
+              WORKING_DIR="$(dirname "$NB_PATH")"
+              python3 .github/scripts/publish_to_hf.py "$NB_PATH" --working-dir "$WORKING_DIR" --clear-outputs 2>&1
+            ') || true
           echo "$OUTPUT"
 
           if echo "$OUTPUT" | grep -q "Cells modified: 0"; then
@@ -973,64 +980,78 @@ jobs:
 
       - name: Remove patcher cell after second execution
         if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
+        env:
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
         run: |
-          python3 .github/scripts/publish_to_hf.py "books/${{ matrix.notebooks }}" --remove-patcher
-
-      - name: Cleanup container
-        if: always()
-        run: |
-          echo "Stopping and removing container: $CONTAINER_NAME"
-          docker stop "$CONTAINER_NAME" 2>/dev/null || true
-          docker rm "$CONTAINER_NAME" 2>/dev/null || true
+          docker exec -e NOTEBOOK_REL="$NOTEBOOK_REL" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+            cd /home/jovyan/workspace
+            python3 .github/scripts/publish_to_hf.py "books/$NOTEBOOK_REL" --remove-patcher
+          '
 
       - name: Check for execution errors
         if: steps.promote.outputs.promoted != 'true'
+        env:
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
         run: |
-          # Check the notebook for errors - step/job fails (red) if errors found, but publish still runs
-          python3 << 'EOF'
+          # Runs inside the Neurodesk container — keeps python off the runner host.
+          # The notebook file is bind-mounted so either host or container can read it, but
+          # running inside keeps all python on one side. GITHUB_STEP_SUMMARY is host-only,
+          # so we write the summary to the workspace and append it from the host below.
+          SUMMARY_FILE="${{ github.workspace }}/nb-error-summary-${{ env.NOTEBOOK }}.md"
+          rm -f "$SUMMARY_FILE"
+          set +e
+          docker exec \
+            -e NOTEBOOK_REL="$NOTEBOOK_REL" \
+            -e SUMMARY_FILE_IN_CONTAINER="/home/jovyan/workspace/nb-error-summary-${{ env.NOTEBOOK }}.md" \
+            "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+              cd /home/jovyan/workspace
+              python3 - "$NOTEBOOK_REL" "$SUMMARY_FILE_IN_CONTAINER" <<'"'"'EOF'"'"'
           import json
           import os
           import re
           import sys
-          
+
           ANSI_ESCAPE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
-          
+
           def clean_text(text):
               return ANSI_ESCAPE.sub("", str(text)).replace("\r", "").strip()
-          
-          notebook_path = "books/${{ matrix.notebooks }}"
-          notebook_name = "${{ matrix.notebooks }}"
+
+          notebook_name = sys.argv[1]
+          summary_path = sys.argv[2]
+          notebook_path = f"books/{notebook_name}"
           errors_found = []
           ignored_false_positives = []
-          
+
           try:
-              with open(notebook_path, 'r') as f:
+              with open(notebook_path, "r") as f:
                   nb = json.load(f)
-              
-              for cell_idx, cell in enumerate(nb.get('cells', [])):
-                  if cell.get('cell_type') == 'code':
+
+              for cell_idx, cell in enumerate(nb.get("cells", [])):
+                  if cell.get("cell_type") == "code":
                       stream_text = "\n".join(
-                          clean_text("".join(output.get('text', '')))
-                          for output in cell.get('outputs', [])
-                          if output.get('output_type') == 'stream'
+                          clean_text("".join(output.get("text", "")))
+                          for output in cell.get("outputs", [])
+                          if output.get("output_type") == "stream"
                       )
-                      for output in cell.get('outputs', []):
-                          if output.get('output_type') == 'error':
-                              ename = clean_text(output.get('ename', 'Unknown'))
-                              evalue = clean_text(output.get('evalue', ''))
+                      for output in cell.get("outputs", []):
+                          if output.get("output_type") == "error":
+                              ename = clean_text(output.get("ename", "Unknown"))
+                              evalue = clean_text(output.get("evalue", ""))
                               evalue_lower = evalue.lower()
                               stream_text_lower = stream_text.lower()
                               traceback_lines = [
                                   clean_text(line)
-                                  for line in output.get('traceback', [])
+                                  for line in output.get("traceback", [])
                                   if clean_text(line)
                               ]
                               traceback_excerpt = "\n".join(traceback_lines[-12:]) if traceback_lines else "No traceback captured."
                               errors_found.append({
-                                  'cell': cell_idx,
-                                  'ename': ename,
-                                  'evalue': evalue[:300],
-                                  'traceback_excerpt': traceback_excerpt[:2500]
+                                  "cell": cell_idx,
+                                  "ename": ename,
+                                  "evalue": evalue[:300],
+                                  "traceback_excerpt": traceback_excerpt[:2500]
                               })
                               # Known ASLPrep false-positive: process returns non-zero
                               # although logs report successful completion.
@@ -1041,56 +1062,67 @@ jobs:
                                   and "aslprep finished successfully!" in stream_text_lower
                               ):
                                   ignored_false_positives.append(errors_found.pop())
-              
+
               if ignored_false_positives:
                   print(
                       f"::warning::Ignoring {len(ignored_false_positives)} known ASLPrep false-positive error(s) "
                       "because log output indicates successful completion."
                   )
-              
+
               if errors_found:
                   # Report as error so the step shows as failed
                   print(f"::error::Notebook {notebook_name} has {len(errors_found)} execution error(s). Please fix the notebook.")
                   for err in errors_found[:5]:
                       print(f"::error title=Notebook cell {err['cell']} failed::{err['ename']}: {err['evalue'][:180]}")
                       print(f"--- Cell {err['cell']} traceback (last lines) ---")
-                      print(err['traceback_excerpt'])
-                  
-                  # Write to job summary for visibility
+                      print(err["traceback_excerpt"])
+
+                  # Write summary to workspace file — host will append to GITHUB_STEP_SUMMARY
                   summary = f"""
-          ## ⚠️ Notebook Execution Errors
-          
+          ## Notebook Execution Errors
+
           **Notebook:** `{notebook_name}`
-          
+
           The following errors occurred during execution. The notebook has been published with error outputs visible, but the author should fix these issues:
-          
+
           | Cell | Error Type | Message |
           |------|-----------|---------|
           """
                   for err in errors_found:
                       summary += f"| {err['cell']} | `{err['ename']}` | {err['evalue'][:100]} |\n"
-                  
+
                   summary += "\n\n### Traceback Excerpts (last lines)\n"
                   for err in errors_found[:5]:
                       summary += f"\n**Cell {err['cell']} - {err['ename']}**\n\n```text\n{err['traceback_excerpt']}\n```\n"
-                  
+
                   summary += "\nPlease update the notebook to fix these errors.\n"
-                  
-                  # Write to GitHub step summary
-                  with open(os.environ.get('GITHUB_STEP_SUMMARY', '/dev/null'), 'a') as f:
+
+                  with open(summary_path, "a") as f:
                       f.write(summary)
-                  
-                  # Exit with error so step shows as failed (continue-on-error allows workflow to proceed)
+
                   sys.exit(1)
               else:
                   if ignored_false_positives:
                       print("No blocking errors found in notebook outputs (known false-positive ignored).")
                   else:
                       print("No errors found in notebook outputs")
-                  
+
+          except SystemExit:
+              raise
           except Exception as e:
               print(f"::warning::Could not check notebook for errors: {e}")
           EOF
+            '
+          CHECK_RC=$?
+          set -e
+
+          # Append any summary content to the host-side GITHUB_STEP_SUMMARY
+          if [ -s "$SUMMARY_FILE" ]; then
+            cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+            rm -f "$SUMMARY_FILE"
+          fi
+
+          exit "$CHECK_RC"
 
       - name: Upload executed notebook artifact
         if: success()  # Only upload if notebook executed without errors
@@ -1115,26 +1147,25 @@ jobs:
           HF_REPO: neurodeskorg/neurodeskedu
           HF_BRANCH: ${{ github.ref_name }}
           EXECUTED_PATH: books/${{ matrix.notebooks }}
-          SOURCE_DIR: ${{ runner.temp }}/source-notebooks
+          # Source snapshot saved into workspace so container can see it
+          SOURCE_DIR_IN_CONTAINER: /home/jovyan/workspace/.ci-temp/source-notebooks
           NOTEBOOK_BASENAME: ${{ matrix.notebooks }}
           HF_SOURCE_PATH: books/${{ matrix.notebooks }}
         run: |
-          # Ensure pip is available on the ARC runner host (minimal pod image ships python3
-          # but no pip module AND an empty apt cache). Fallback ladder: ensurepip → apt with
-          # update → get-pip.py. Echo lines identify which path won for future diagnostics.
-          if python3 -m ensurepip --upgrade 2>/dev/null; then
-            echo "pip-bootstrap: ensurepip succeeded"
-          elif sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq python3-pip 2>/dev/null; then
-            echo "pip-bootstrap: apt succeeded"
-          elif curl -sSfL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && sudo python3 /tmp/get-pip.py; then
-            echo "pip-bootstrap: get-pip.py succeeded"
-          else
-            echo "::error::pip-bootstrap: all three methods failed"
-            exit 1
-          fi
-          python3 -m pip install -q --break-system-packages "huggingface_hub>=0.32.0"
-
-          python3 << 'PYEOF'
+          # Runs inside the Neurodesk container — keeps python off the runner host.
+          # huggingface_hub already installed in "Install CI dependencies inside container".
+          docker exec \
+            -e HF_TOKEN="$HF_TOKEN" \
+            -e HF_REPO="$HF_REPO" \
+            -e HF_BRANCH="$HF_BRANCH" \
+            -e EXECUTED_PATH="$EXECUTED_PATH" \
+            -e SOURCE_DIR="$SOURCE_DIR_IN_CONTAINER" \
+            -e NOTEBOOK_BASENAME="$NOTEBOOK_BASENAME" \
+            -e HF_SOURCE_PATH="$HF_SOURCE_PATH" \
+            "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+              cd /home/jovyan/workspace
+              python3 <<'"'"'PYEOF'"'"'
           import hashlib
           import os
           import time
@@ -1156,7 +1187,7 @@ jobs:
           if hf_branch != "main":
               refs = api.list_repo_refs(hf_repo, repo_type="dataset")
               if hf_branch not in {b.name for b in refs.branches}:
-                  print(f"Creating HF branch '{hf_branch}' from main...")
+                  print(f"Creating HF branch {hf_branch!r} from main...")
                   api.create_branch(hf_repo, repo_type="dataset", branch=hf_branch)
 
           def upload_if_changed(local_path, hf_path, label):
@@ -1197,18 +1228,26 @@ jobs:
                           raise
 
           # Upload notebook with outputs to outputs/ prefix
-          print(f"Uploading outputs notebook...")
+          print("Uploading outputs notebook...")
           upload_if_changed(executed_path, hf_outputs_path, "outputs")
 
           # Upload source notebook (pre-execution snapshot for promotion comparison)
           if os.path.exists(source_path):
-              print(f"Uploading source snapshot...")
+              print("Uploading source snapshot...")
               upload_if_changed(source_path, hf_source_path, "source")
           else:
               print(f"WARNING: Source snapshot not found at {source_path}")
 
           print("Done.")
           PYEOF
+            '
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          echo "Stopping and removing container: $CONTAINER_NAME"
+          docker stop "$CONTAINER_NAME" 2>/dev/null || true
+          docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
   # ---------------------------------------------------------------------------
   # AUTO-PR: Create PR from review branch to main after successful CI
