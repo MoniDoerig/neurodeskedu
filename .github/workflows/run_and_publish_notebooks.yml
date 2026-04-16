@@ -1550,26 +1550,19 @@ jobs:
           pattern: executed-*
           path: loaded-artifacts
 
-      - name: Download cached notebooks from HuggingFace
-        if: ${{ inputs.use_notebook_cache == true }}
+      # Backfill: for any notebook WITHOUT a current-run artifact (i.e. it was not
+      # re-executed in this run), fetch the last successfully executed copy from
+      # the HuggingFace `outputs/` cache. Without this, unchanged notebooks revert
+      # to their git-committed source on every deploy — which for ipyniivue pages
+      # means losing the widget state (stored in notebook metadata, not git).
+      - name: Backfill missing notebooks from HuggingFace cache
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
           HF_BRANCH: ${{ github.ref_name }}
         run: |
-          echo "========== CACHE MODE: Downloading notebooks from HuggingFace =========="
-          # Pip bootstrap ladder + --break-system-packages — see Transform HF URLs step
-          if python3 -m ensurepip --upgrade 2>/dev/null; then
-            echo "pip-bootstrap: ensurepip succeeded"
-          elif sudo apt-get update -qq 2>/dev/null && sudo apt-get install -y -qq python3-pip 2>/dev/null; then
-            echo "pip-bootstrap: apt succeeded"
-          elif curl -sSfL https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && sudo python3 /tmp/get-pip.py; then
-            echo "pip-bootstrap: get-pip.py succeeded"
-          else
-            echo "::error::pip-bootstrap: all three methods failed"
-            exit 1
-          fi
-          python3 -m pip install -q --break-system-packages "huggingface_hub>=0.32.0"
+          echo "========== Backfilling missing notebooks from HuggingFace =========="
+          pip install -q "huggingface_hub>=0.32.0"
 
           python3 << 'PYEOF'
           import os
@@ -1585,6 +1578,13 @@ jobs:
           git_notebooks = list(Path("books").rglob("*.ipynb"))
           print(f"Found {len(git_notebooks)} notebooks in git repo")
 
+          # Notebooks already present as current-run artifacts — don't overwrite these
+          existing_artifacts = set()
+          if Path("loaded-artifacts").exists():
+              for p in Path("loaded-artifacts").rglob("*.ipynb"):
+                  existing_artifacts.add(p.name)
+          print(f"Current-run artifacts: {len(existing_artifacts)} notebook(s)")
+
           # Check which ones exist on HuggingFace (try branch first, fall back to main)
           try:
               hf_files = set(list_repo_files(hf_repo, repo_type="dataset", revision=hf_branch))
@@ -1596,12 +1596,19 @@ jobs:
 
           os.makedirs("loaded-artifacts", exist_ok=True)
           downloaded = 0
+          skipped = 0
           missing = []
 
           for nb_path in git_notebooks:
+              nb_name = nb_path.stem
+
+              # Skip if already downloaded as current-run artifact (takes priority)
+              if nb_path.name in existing_artifacts:
+                  skipped += 1
+                  continue
+
               # Outputs notebooks are stored under outputs/ prefix on HF
               hf_outputs_path = "outputs/" + str(nb_path).removeprefix("books/")
-              nb_name = nb_path.stem
 
               if hf_outputs_path not in hf_files:
                   missing.append(str(nb_path))
@@ -1612,19 +1619,21 @@ jobs:
               artifact_dir.mkdir(parents=True, exist_ok=True)
 
               local_file = artifact_dir / nb_path.name  # Save as original name for merge step
-              print(f"  Downloading: {hf_outputs_path}")
+              print(f"  Backfilling: {hf_outputs_path}")
 
               cached_file = hf_hub_download(hf_repo, hf_outputs_path, repo_type="dataset", revision=hf_branch)
               shutil.copy(cached_file, local_file)
               downloaded += 1
 
-          print(f"\nDownloaded {downloaded} notebooks from HuggingFace")
+          print(f"\nSummary:")
+          print(f"  Current-run artifacts kept: {skipped}")
+          print(f"  Backfilled from HF cache:   {downloaded}")
           if missing:
-              print(f"Missing from HF (will use source): {len(missing)} notebooks")
+              print(f"  No cache available (will use source): {len(missing)} notebook(s)")
               for m in missing[:10]:
-                  print(f"  - {m}")
+                  print(f"    - {m}")
               if len(missing) > 10:
-                  print(f"  ... and {len(missing) - 10} more")
+                  print(f"    ... and {len(missing) - 10} more")
           PYEOF
 
       - name: Save source notebooks before merge
