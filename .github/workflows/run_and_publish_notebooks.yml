@@ -1190,12 +1190,25 @@ jobs:
                   print(f"Creating HF branch {hf_branch!r} from main...")
                   api.create_branch(hf_repo, repo_type="dataset", branch=hf_branch)
 
+          def file_exists_with_retry(repo, path, repo_type, revision, retries=3):
+              """file_exists with retry — transient network timeouts are common under concurrent pod load."""
+              for attempt in range(retries):
+                  try:
+                      return file_exists(repo, path, repo_type=repo_type, revision=revision)
+                  except Exception as e:
+                      if attempt < retries - 1:
+                          wait = 2 ** attempt + random.uniform(0, 1)
+                          print(f"  [hf] file_exists timeout (attempt {attempt+1}/{retries}), retrying in {wait:.1f}s: {e}")
+                          time.sleep(wait)
+                      else:
+                          raise
+
           def upload_if_changed(local_path, hf_path, label):
               """Upload file to HF if it has changed (hash comparison)."""
               with open(local_path, "rb") as f:
                   local_hash = hashlib.sha256(f.read()).hexdigest()[:16]
 
-              if file_exists(hf_repo, hf_path, repo_type="dataset", revision=hf_branch):
+              if file_exists_with_retry(hf_repo, hf_path, repo_type="dataset", revision=hf_branch):
                   try:
                       remote_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset", revision=hf_branch)
                       with open(remote_file, "rb") as f:
@@ -1761,7 +1774,8 @@ jobs:
           # to ensure the environment (Lmod, Apptainer overlay) initializes
           # correctly without permission errors.
           # -----------------------------------------------------------------------
-          # CVMFS: Same as run-notebooks job. Remove --mount line to disable.
+          # No CVMFS mount — publish-pages runs jupyter-book build with
+          # execute_notebooks: off. No neuroimaging tools are invoked.
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
@@ -1769,7 +1783,6 @@ jobs:
             -v ${{ github.workspace }}:/home/jovyan/workspace \
             -v ${{ env.BASE_PATH }}/tmp:/overlay-storage \
             -v ${{ github.workspace }}/.cache/pip:/home/jovyan/.cache/pip \
-            --mount type=bind,source=/cvmfs,target=/cvmfs,readonly,bind-propagation=rslave \
             -w /home/jovyan/workspace/books \
             -e NB_UID="$(id -u)" \
             -e NB_GID="$(id -g)" \
