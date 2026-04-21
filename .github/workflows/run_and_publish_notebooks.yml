@@ -1142,6 +1142,13 @@ jobs:
 
       - name: Upload source + executed notebooks to HuggingFace
         if: success()
+        # ARC pods see ~2% transient HF network failures (cluster team-confirmed infra floor).
+        # Without this gate, one transient would fail the run-notebooks job and block publish-pages
+        # entirely — 49 successful notebooks would not deploy because of one failed upload.
+        # The publish-pages backfill step already handles missing HF entries gracefully
+        # (falls back to previous cache or un-executed source), so letting this fail soft is
+        # strictly better than blocking the entire deploy.
+        continue-on-error: true
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
