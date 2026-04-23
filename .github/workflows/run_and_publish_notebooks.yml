@@ -267,7 +267,12 @@ jobs:
     name: Run Notebook
     needs: [setup, select-notebooks]
     if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' && inputs.use_notebook_cache != true }}
-    runs-on: ${{ fromJson(needs.setup.outputs.runs_on) }}
+    # Per-notebook runner routing:
+    # Storage-heavy notebooks (>16 Gi work-dir need) → arc-mem (64 Gi PVC, cpu:9, mem:24Gi, maxRunners:3).
+    # Everyone else → whatever setup selected (default: arc-base).
+    # Cluster-side helm revision 17 provisioned arc-mem as the storage-heavy tier on 2026-04-23.
+    # To add another notebook to the heavy list: append its path to the array below.
+    runs-on: ${{ contains(fromJson('["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]'), matrix.notebooks) && fromJson('{"group":"arc-mem"}') || fromJson(needs.setup.outputs.runs_on) }}
     timeout-minutes: 1500
 
     concurrency:
