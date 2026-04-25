@@ -248,22 +248,82 @@ jobs:
           echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
           echo "pr_created=true" >> "$GITHUB_OUTPUT"
 
+      - name: Find PR authors for new notebooks
+        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true' && steps.check_pr.outputs.skip != 'true'
+        id: find_authors
+        uses: actions/github-script@v7
+        env:
+          RECONCILED_JSON: ${{ steps.reconcile.outputs.reconciled }}
+        with:
+          script: |
+            const { execFileSync } = require('child_process');
+            const reconciled = JSON.parse(process.env.RECONCILED_JSON);
+            const enriched = [];
+
+            for (const item of reconciled) {
+              let prAuthor = null;
+
+              if (!item.issue_exists) {
+                try {
+                  // execFileSync with an argv array — no shell parsing, no injection.
+                  const logOutput = execFileSync(
+                    'git',
+                    ['log', '--diff-filter=A', '--format=%H', '--', `books/${item.source_path}`],
+                    { encoding: 'utf-8' }
+                  ).trim();
+
+                  // git log is newest-first; the most recent add is what
+                  // triggered this workflow, so take the first line.
+                  const addedSha = logOutput
+                    .split('\n')
+                    .filter(s => s.trim())[0];
+
+                  if (addedSha) {
+                    const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      commit_sha: addedSha,
+                    });
+
+                    const pr = prs[0];
+                    if (pr && pr.user) {
+                      const login = pr.user.login;
+                      const isBot = pr.user.type === 'Bot' || login.endsWith('[bot]');
+                      if (!isBot) {
+                        prAuthor = login;
+                      } else {
+                        core.info(`Skipping bot author ${login} for ${item.source_path}`);
+                      }
+                    }
+                  } else {
+                    core.info(`No adding commit found for ${item.source_path}`);
+                  }
+                } catch (err) {
+                  core.warning(`Could not find PR author for ${item.source_path}: ${err.message}`);
+                }
+              }
+
+              enriched.push({ ...item, pr_author: prAuthor });
+            }
+
+            core.setOutput('enriched', JSON.stringify(enriched));
+
       - name: Open review issues in reviews repo
         if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true' && steps.check_pr.outputs.skip != 'true'
         uses: actions/github-script@v7
         env:
           REVIEWS_REPO_OWNER: neurodesk
           REVIEWS_REPO_NAME: neurodeskedu-reviews
-          RECONCILED_JSON: ${{ steps.reconcile.outputs.reconciled }}
+          ENRICHED_JSON: ${{ steps.find_authors.outputs.enriched }}
         with:
           github-token: ${{ secrets.REVIEWS_REPO_TOKEN }}
           script: |
-            const reconciled = JSON.parse(process.env.RECONCILED_JSON);
+            const enriched = JSON.parse(process.env.ENRICHED_JSON);
             const repoOwner = process.env.REVIEWS_REPO_OWNER;
             const repoName = process.env.REVIEWS_REPO_NAME;
             const failed = [];
 
-            for (const item of reconciled) {
+            for (const item of enriched) {
               if (item.issue_exists) {
                 core.info(
                   `Issue already exists for ${item.source_path} — ` +
@@ -298,6 +358,43 @@ jobs:
                 });
 
                 core.info(`Created issue #${issue.number} for ${item.source_path}`);
+
+                // Post welcome comment tagging the notebook's PR author
+                if (item.pr_author) {
+                  try {
+                    // Strip backticks from source_path so a malicious filename
+                    // can't break out of the inline code span.
+                    const safeSourcePath = item.source_path.replace(/`/g, '');
+                    const welcomeBody =
+                      `🎊 Congrats @${item.pr_author}! Your notebook ` +
+                      `\`${safeSourcePath}\` is now part of NeurodeskEDU! ` +
+                      `It's currently marked as unreviewed while it waits ` +
+                      `for peer review. Know anyone who'd be a good fit to ` +
+                      `review it? Someone familiar with the method or tooling ` +
+                      `used tends to work best. Drop a name (or a few) below, ` +
+                      `and we'll take it from there.`;
+
+                    await github.rest.issues.createComment({
+                      owner: repoOwner,
+                      repo: repoName,
+                      issue_number: issue.number,
+                      body: welcomeBody,
+                    });
+                    core.info(
+                      `Posted welcome comment on issue #${issue.number} ` +
+                      `tagging @${item.pr_author}`
+                    );
+                  } catch (err) {
+                    core.warning(
+                      `Welcome comment failed for issue #${issue.number}: ${err.message}`
+                    );
+                  }
+                } else {
+                  core.info(
+                    `No PR author identified for ${item.source_path} — ` +
+                    `skipping welcome comment.`
+                  );
+                }
               } catch (err) {
                 core.warning(
                   `Failed to create issue for ${item.source_path}: ${err.message}`
