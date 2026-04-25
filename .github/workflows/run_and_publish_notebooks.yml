@@ -82,27 +82,55 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       runner: ${{ steps.select_runner.outputs.runner }}
+      runs_on: ${{ steps.select_runner.outputs.runs_on }}
       neurodesk_image: ${{ steps.get_image.outputs.neurodesk_image }}
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Select runner 
+      - name: Select runner
         id: select_runner
         run: |
-          # For workflow_dispatch, use the use_self_hosted input
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ "${{ inputs.use_self_hosted }}" = "true" ]; then
-              echo "runner=self-hosted" >> $GITHUB_OUTPUT
-            else
-              echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
-            fi
-          # For push/PR, use self-hosted for main repo, ubuntu for forks
-          elif [ "${{ github.repository }}" = "neurodesk/neurodeskedu" ]; then
-            echo "runner=self-hosted" >> $GITHUB_OUTPUT
-          else
-            echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
-          fi
+          # =====================================================================
+          # RUNNER SELECTION — ONE decision point, everything else follows
+          # =====================================================================
+          # Uncomment ONE block below. This controls:
+          #   1. Which runner the notebook jobs land on (runs-on)
+          #   2. Whether the in-cluster registry mirror is used for image pulls
+          #   3. Any other runner-specific conditional logic downstream
+          #
+          # runner  = used by conditional logic (mirror toggle, etc.)
+          # runs_on = used by the runs-on field (handles group vs label syntax)
+          # =====================================================================
+
+          # --- ARC K8s runners (CVMFS-enabled, in-cluster mirror) ---
+          echo "runner=arc-base" >> $GITHUB_OUTPUT
+          echo 'runs_on={"group":"arc-base"}' >> $GITHUB_OUTPUT
+
+          # --- Legacy VMs (neurodeskedu-1 through -8) ---
+          # echo "runner=self-hosted" >> $GITHUB_OUTPUT
+          # echo 'runs_on="self-hosted"' >> $GITHUB_OUTPUT
+
+          # --- GitHub-hosted public runner ---
+          # echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
+          # echo 'runs_on="ubuntu-22.04"' >> $GITHUB_OUTPUT
+
+          # --- Original dynamic logic (uncomment to restore automatic selection) ---
+          # if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          #   if [ "${{ inputs.use_self_hosted }}" = "true" ]; then
+          #     echo "runner=self-hosted" >> $GITHUB_OUTPUT
+          #     echo 'runs_on="self-hosted"' >> $GITHUB_OUTPUT
+          #   else
+          #     echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
+          #     echo 'runs_on="ubuntu-22.04"' >> $GITHUB_OUTPUT
+          #   fi
+          # elif [ "${{ github.repository }}" = "neurodesk/neurodeskedu" ]; then
+          #   echo "runner=self-hosted" >> $GITHUB_OUTPUT
+          #   echo 'runs_on="self-hosted"' >> $GITHUB_OUTPUT
+          # else
+          #   echo "runner=ubuntu-22.04" >> $GITHUB_OUTPUT
+          #   echo 'runs_on="ubuntu-22.04"' >> $GITHUB_OUTPUT
+          # fi
 
       - name: Determine Neurodesk image
         id: get_image
@@ -239,9 +267,12 @@ jobs:
     name: Run Notebook
     needs: [setup, select-notebooks]
     if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' && inputs.use_notebook_cache != true }}
-    runs-on: ${{ needs.setup.outputs.runner }}
-    # runs-on:
-    #   group: arc-base
+    # Per-notebook runner routing:
+    # Storage-heavy notebooks (>16 Gi work-dir need) → arc-mem (64 Gi PVC, cpu:9, mem:24Gi, maxRunners:3).
+    # Everyone else → whatever setup selected (default: arc-base).
+    # Cluster-side helm revision 17 provisioned arc-mem as the storage-heavy tier on 2026-04-23.
+    # To add another notebook to the heavy list: append its path to the array below.
+    runs-on: ${{ contains(fromJson('["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]'), matrix.notebooks) && fromJson('{"group":"arc-mem"}') || fromJson(needs.setup.outputs.runs_on) }}
     timeout-minutes: 1500
 
     concurrency:
@@ -266,55 +297,53 @@ jobs:
 
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - name: Set notebook environment variables
-        run: echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
-
-      - name: Configure runner
-        if: runner.os == 'Linux'
-        run: |
-          if [ "${{ needs.setup.outputs.runner }}" == "self-hosted" ]; then
-            echo "Self-hosted runner - using defaults"
-            BASE_PATH=/storage
-          else
-             echo "Configuring GitHub-hosted runner..."
-             BASE_PATH=/storage
-          fi
-
-          echo "Using BASE_PATH=$BASE_PATH"
-          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
-
-          # Setup directories
-          sudo mkdir -p $BASE_PATH/tmp
-          sudo chown $USER $BASE_PATH/tmp
-
-          # Configure Docker data-root (only for GitHub-hosted runners)
-          if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
-            sudo mkdir -p $BASE_PATH/docker
-            echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
-            sudo systemctl restart docker
-            docker system prune -af || true
-          else
-            # Clean up stale Docker daemon.json from previous runs that may
-            # have incorrectly configured data-root for a GitHub-hosted runner
-            if [ -f /etc/docker/daemon.json ]; then
-              DATA_ROOT=$(python3 -c "import json; print(json.load(open('/etc/docker/daemon.json')).get('data-root',''))" 2>/dev/null || true)
-              if [ -n "$DATA_ROOT" ] && [ ! -d "$DATA_ROOT" ]; then
-                echo "Stale Docker data-root '$DATA_ROOT' does not exist, removing daemon.json"
-                sudo rm -f /etc/docker/daemon.json
-                sudo systemctl restart docker
-                # Wait for Docker to be ready after restart
-                for _ in $(seq 1 12); do
-                  docker info >/dev/null 2>&1 && break
-                  sleep 5
-                done
-              fi
-            fi
-          fi
-
-          # Setup tmp directory (needed for Docker volume mount)
-          sudo mkdir -p $BASE_PATH/tmp
-          sudo chown $USER $BASE_PATH/tmp
-          echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+      # NOTE: Configure runner step skipped for ARC runners (no /storage, no $USER, DinD handles Docker)
+      # The main branch has this step active for GitHub-hosted / legacy self-hosted runners.
+      # - name: Configure runner
+      #   if: runner.os == 'Linux'
+      #   run: |
+      #     if [ "${{ needs.setup.outputs.runner }}" == "self-hosted" ]; then
+      #       echo "Self-hosted runner - using defaults"
+      #       BASE_PATH=/storage
+      #     else
+      #        echo "Configuring GitHub-hosted runner..."
+      #        BASE_PATH=/storage
+      #     fi
+      #
+      #     echo "Using BASE_PATH=$BASE_PATH"
+      #     echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
+      #
+      #     # Setup directories
+      #     sudo mkdir -p $BASE_PATH/tmp
+      #     sudo chown $USER $BASE_PATH/tmp
+      #
+      #     # Configure Docker data-root (only for GitHub-hosted runners)
+      #     if [ "${{ needs.setup.outputs.runner }}" != "self-hosted" ]; then
+      #       sudo mkdir -p $BASE_PATH/docker
+      #       echo "{\"data-root\": \"$BASE_PATH/docker\"}" | sudo tee /etc/docker/daemon.json
+      #       sudo systemctl restart docker
+      #       docker system prune -af || true
+      #     else
+      #       # Clean up stale Docker daemon.json from previous runs that may
+      #       # have incorrectly configured data-root for a GitHub-hosted runner
+      #       if [ -f /etc/docker/daemon.json ]; then
+      #         DATA_ROOT=$(python3 -c "import json; print(json.load(open('/etc/docker/daemon.json')).get('data-root',''))" 2>/dev/null || true)
+      #         if [ -n "$DATA_ROOT" ] && [ ! -d "$DATA_ROOT" ]; then
+      #           echo "Stale Docker data-root '$DATA_ROOT' does not exist, removing daemon.json"
+      #           sudo rm -f /etc/docker/daemon.json
+      #           sudo systemctl restart docker
+      #           for _ in $(seq 1 12); do
+      #             docker info >/dev/null 2>&1 && break
+      #             sleep 5
+      #           done
+      #         fi
+      #       fi
+      #     fi
+      #
+      #     # Setup tmp directory (needed for Docker volume mount)
+      #     sudo mkdir -p $BASE_PATH/tmp
+      #     sudo chown $USER $BASE_PATH/tmp
+      #     echo "BASE_PATH=$BASE_PATH" >> $GITHUB_ENV
 
       # -------------------------------------------------------------------------
       # Ensure Neurodesk image available
@@ -323,6 +352,23 @@ jobs:
         run: |
           IMAGE="${{ needs.setup.outputs.neurodesk_image }}"
           RUNNER_KIND="${{ needs.setup.outputs.runner }}"
+
+          # --- IMAGE PULL STRATEGY ---
+          # Mirror follows the runner selection from the setup job.
+          # ARC runners (arc-base, arc-cpu, arc-mem) have the in-cluster mirror available.
+          # Legacy VMs and GitHub-hosted runners pull directly from ghcr.io.
+          MIRROR_HOST="registry-mirror.arc-gha-system.svc.cluster.local:5000"
+          case "$RUNNER_KIND" in
+            arc-*)
+              USE_MIRROR=true
+              echo "ARC runner ($RUNNER_KIND) — will try in-cluster mirror first, ghcr.io as fallback"
+              ;;
+            *)
+              USE_MIRROR=false
+              echo "Non-ARC runner ($RUNNER_KIND) — pulling from ghcr.io directly"
+              ;;
+          esac
+          # --- END IMAGE PULL STRATEGY ---
 
           print_docker_diagnostics() {
             echo "::group::Docker diagnostics"
@@ -371,8 +417,30 @@ jobs:
               fi
 
               echo "Pulling $IMAGE (attempt ${attempt}/3)..."
-              if docker pull "$IMAGE"; then
-                echo "✓ Pulled $IMAGE"
+              PULL_OK=false
+
+              # Try in-cluster mirror first (when USE_MIRROR=true)
+              if [ "$USE_MIRROR" = "true" ]; then
+                MIRROR_IMAGE="${MIRROR_HOST}/${IMAGE#ghcr.io/}"
+                echo "  → Trying mirror: $MIRROR_IMAGE"
+                if docker pull "$MIRROR_IMAGE" 2>/dev/null; then
+                  docker tag "$MIRROR_IMAGE" "$IMAGE"
+                  echo "✓ Pulled from mirror, retagged as $IMAGE"
+                  PULL_OK=true
+                else
+                  echo "  → Mirror unavailable or miss, falling back to ghcr.io"
+                fi
+              fi
+
+              # Direct pull from ghcr.io (fallback, or primary when USE_MIRROR=false)
+              if [ "$PULL_OK" = "false" ]; then
+                if docker pull "$IMAGE"; then
+                  echo "✓ Pulled $IMAGE from ghcr.io"
+                  PULL_OK=true
+                fi
+              fi
+
+              if [ "$PULL_OK" = "true" ]; then
                 break
               fi
 
@@ -397,36 +465,6 @@ jobs:
       # Docker execution with CVMFS mounted
       # -------------------------------------------------------------------------
 
-      - name: Fix notebook kernelspec if needed
-        run: |
-          python3 << 'EOF'
-          import json
-          import sys
-
-          notebook_path = "books/${{ matrix.notebooks }}"
-          try:
-              with open(notebook_path, 'r') as f:
-                  notebook = json.load(f)
-
-              # Fix conda-base-py or other problematic kernels
-              if 'metadata' in notebook and 'kernelspec' in notebook['metadata']:
-                  kernel_name = notebook['metadata']['kernelspec'].get('name', '')
-                  if kernel_name == 'conda-base-py' or 'conda' in kernel_name:
-                      print(f"Fixing kernelspec in {notebook_path}: {kernel_name} -> python3")
-                      notebook['metadata']['kernelspec'] = {
-                          "display_name": "Python 3",
-                          "language": "python",
-                          "name": "python3"
-                      }
-                      with open(notebook_path, 'w') as f:
-                          json.dump(notebook, f, indent=1, ensure_ascii=False)
-                          f.write('\n')
-                  else:
-                      print(f"Kernelspec OK: {kernel_name}")
-          except Exception as e:
-              print(f"Note: Could not process notebook (may not be ipynb): {e}")
-          EOF
-
       - name: Set notebook environment variables
         run: |
           echo "NOTEBOOK=$(basename -s .ipynb ${{ matrix.notebooks }})" >> $GITHUB_ENV
@@ -436,7 +474,26 @@ jobs:
       - name: Start Neurodesktop container
         env:
           GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+          RUNNER_KIND: ${{ needs.setup.outputs.runner }}
         run: |
+          # CVMFS: Pod-level CSI mount, bind-mounted into container.
+          # rslave propagation lets CVMFS automount events from DinD flow into the container.
+          # To disable: remove the --mount line below.
+
+          # --- ARC-SPECIFIC CONTAINER FLAGS ---
+          # CVMFS: On ARC, /cvmfs is a pod-level CSI mount that needs explicit bind-propagation.
+          # On legacy VMs, CVMFS is already available in the container via the host mount.
+          # PIP_USER=1 previously set here — removed: conda Python ignores PYTHONNOUSERSITE,
+          # so ~/.local/ packages become invisible to the kernel. Installs now go to /opt/conda
+          # directly (writable by jovyan in the neurodesktop image).
+          ARC_FLAGS=""
+          case "$RUNNER_KIND" in
+            arc-*)
+              ARC_FLAGS="--mount type=bind,source=/cvmfs,target=/cvmfs,readonly,bind-propagation=rslave"
+              ;;
+          esac
+          # --- END ARC-SPECIFIC FLAGS ---
+
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
@@ -450,8 +507,9 @@ jobs:
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
             -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
+            $ARC_FLAGS \
             ${{ needs.setup.outputs.neurodesk_image }}
-          
+
           echo "Started container: $CONTAINER_NAME"
 
       - name: Wait for container readiness
@@ -532,6 +590,10 @@ jobs:
               ln -sf /overlay-storage/apptainer_overlay /tmp/apptainer_overlay
             fi
 
+            # Create temp dir for Apptainer unsquash extractions (avoids FUSE in DinD)
+            mkdir -p /overlay-storage/apptainer_tmp
+            chmod 777 /overlay-storage/apptainer_tmp
+
             # Move apptainer working dir to secondary storage to save root disk space
             mkdir -p /overlay-storage/var_lib_apptainer/mnt/session
             chmod -R 777 /overlay-storage/var_lib_apptainer
@@ -546,14 +608,55 @@ jobs:
             if [ -d /home/jovyan/.cache/pip ]; then
                 chown -R "$(id -u jovyan):$(id -g jovyan)" /home/jovyan/.cache/pip
             fi
-            
+
             echo "Root-level setup complete"
+          '
+
+      - name: Install CI dependencies inside container
+        run: |
+          docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+            pip install -q "huggingface_hub>=0.32.0"
+          '
+
+      - name: Fix notebook kernelspec if needed
+        env:
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
+        run: |
+          docker exec -e NOTEBOOK_REL="$NOTEBOOK_REL" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+            python3 - "$NOTEBOOK_REL" <<'"'"'EOF'"'"'
+          import json, sys
+          notebook_path = f"/home/jovyan/workspace/books/{sys.argv[1]}"
+          try:
+              with open(notebook_path, "r") as f:
+                  notebook = json.load(f)
+              if "metadata" in notebook and "kernelspec" in notebook["metadata"]:
+                  kernel_name = notebook["metadata"]["kernelspec"].get("name", "")
+                  if kernel_name == "conda-base-py" or "conda" in kernel_name:
+                      print(f"Fixing kernelspec in {notebook_path}: {kernel_name} -> python3")
+                      notebook["metadata"]["kernelspec"] = {
+                          "display_name": "Python 3",
+                          "language": "python",
+                          "name": "python3"
+                      }
+                      with open(notebook_path, "w") as f:
+                          json.dump(notebook, f, indent=1, ensure_ascii=False)
+                          f.write("\n")
+                  else:
+                      print(f"Kernelspec OK: {kernel_name}")
+          except Exception as e:
+              print(f"Note: Could not process notebook (may not be ipynb): {e}")
+          EOF
           '
 
       - name: Save source notebook (pre-execution snapshot)
         run: |
           NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
-          SOURCE_DIR="${RUNNER_TEMP}/source-notebooks"
+          # Save into the workspace so the Neurodesk container can see it via its bind
+          # mount — the upload-to-HF step runs inside the container. This path is not
+          # tracked by git and the workspace is ephemeral for the job.
+          SOURCE_DIR="${{ github.workspace }}/.ci-temp/source-notebooks"
           mkdir -p "$SOURCE_DIR"
           cp "$NOTEBOOK_PATH" "$SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
           echo "Saved source snapshot: $SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
@@ -564,11 +667,24 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
         run: |
-          pip install -q "huggingface_hub>=0.32.0"
-          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
+          # Runs inside the Neurodesk container — keeps python off the runner host.
+          # huggingface_hub already installed in "Install CI dependencies inside container".
+          set +e
+          docker exec \
+            -e HF_TOKEN="$HF_TOKEN" \
+            -e HF_REPO="$HF_REPO" \
+            -e NOTEBOOK_REL="$NOTEBOOK_REL" \
+            "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+              cd /home/jovyan/workspace
+              python3 .github/scripts/promote_notebook.py "books/$NOTEBOOK_REL"
+            '
+          PROMOTE_RC=$?
+          set -e
 
-          if python3 .github/scripts/promote_notebook.py "$NOTEBOOK_PATH"; then
+          if [ "$PROMOTE_RC" -eq 0 ]; then
             echo "promoted=true" >> $GITHUB_OUTPUT
             echo "Notebook promoted from cache — skipping execution"
           else
@@ -576,14 +692,100 @@ jobs:
             echo "No cache match — will execute normally"
           fi
 
+      - name: Debug network and datalad inside container
+        run: |
+          echo "=== Network & datalad debug (arc-runner) ==="
+          docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            set +e
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+
+            echo "--- 1. DNS resolution ---"
+            nslookup github.com 2>&1 || echo "nslookup not found, trying host..."
+            host github.com 2>&1 || echo "host not found, trying getent..."
+            getent hosts github.com 2>&1 || echo "getent failed too"
+
+            echo ""
+            echo "--- 2. HTTPS connectivity ---"
+            curl -sI --connect-timeout 10 https://github.com 2>&1 | head -5 || echo "curl to github.com FAILED"
+            curl -sI --connect-timeout 10 https://datasets.datalad.org 2>&1 | head -5 || echo "curl to datasets.datalad.org FAILED"
+
+            echo ""
+            echo "--- 3. git & git-annex availability ---"
+            which git && git --version
+            which git-annex && git-annex version 2>&1 | head -3
+            which datalad && datalad --version
+
+            echo ""
+            echo "--- 4. Test datalad install (with verbose output) ---"
+            cd /tmp
+            rm -rf ds000102-test
+            mkdir ds000102-test && cd ds000102-test
+            datalad install -s https://github.com/OpenNeuroDatasets/ds000102.git . 2>&1
+            INSTALL_RC=$?
+            echo "datalad install exit code: $INSTALL_RC"
+
+            if [ $INSTALL_RC -eq 0 ]; then
+              echo ""
+              echo "--- 5. Test datalad get (single small file) ---"
+              datalad get sub-01/anat/sub-01_T1w.nii.gz 2>&1
+              GET_RC=$?
+              echo "datalad get exit code: $GET_RC"
+              ls -la sub-01/anat/ 2>&1 || true
+            fi
+
+            echo ""
+            echo "--- 6. Network interface info ---"
+            ip addr show 2>&1 | grep -E "inet |mtu" || ifconfig 2>&1 | grep -E "inet |mtu" || echo "no ip/ifconfig"
+
+            echo ""
+            echo "--- 7. Test Apptainer/Singularity inside container ---"
+            which apptainer 2>&1 && apptainer --version 2>&1 || echo "apptainer not found"
+            which singularity 2>&1 && singularity --version 2>&1 || echo "singularity not found"
+
+            echo ""
+            echo "--- 8. Test module load + tool execution ---"
+            source /usr/share/lmod/lmod/init/bash 2>/dev/null || true
+            export MODULEPATH=/cvmfs/neurodesk.ardc.edu.au/containers/modules
+
+            # Try loading FSL and running mcflirt
+            module load fsl/6.0.4 2>&1
+            echo "FSLDIR=$FSLDIR"
+            echo "PATH fsl entries: $(echo $PATH | tr : \\n | grep fsl || echo NONE)"
+            which mcflirt 2>&1 || echo "mcflirt NOT in PATH"
+
+            echo ""
+            echo "--- 9. Inspect mcflirt wrapper script ---"
+            MCFLIRT_PATH=$(which mcflirt 2>/dev/null)
+            if [ -n "$MCFLIRT_PATH" ]; then
+              file "$MCFLIRT_PATH" 2>&1
+              echo "--- First 20 lines of mcflirt: ---"
+              head -20 "$MCFLIRT_PATH" 2>&1
+            fi
+
+            echo ""
+            echo "--- 10. Direct apptainer exec test ---"
+            # Use known path from wrapper script (avoid slow find on CVMFS)
+            FSL_SIMG="/cvmfs/neurodesk.ardc.edu.au/containers/fsl_6.0.4_20210105/fsl_6.0.4_20210105.simg"
+            echo "FSL simg: $FSL_SIMG"
+            ls -la "$FSL_SIMG" 2>&1 || echo "simg file NOT FOUND"
+            if [ -f "$FSL_SIMG" ]; then
+              echo "Testing: apptainer exec $FSL_SIMG mcflirt -help"
+              timeout 120 apptainer exec "$FSL_SIMG" mcflirt -help 2>&1 || echo "apptainer exec FAILED with exit code $?"
+            fi
+
+            echo ""
+            echo "=== Debug complete ==="
+          '
+
       - name: Execute notebook in container
         if: steps.promote.outputs.promoted != 'true'
         timeout-minutes: 1500
         run: |
           NOTEBOOK_PATH="${{ matrix.notebooks }}"
           NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
+          RUNNER_KIND="${{ needs.setup.outputs.runner }}"
           run_exec_in_container() {
-            docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            docker exec -e NOTEBOOK_PATH="$NOTEBOOK_PATH" -e NOTEBOOK="$NOTEBOOK" -e RUNNER_KIND="$RUNNER_KIND" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
               set -eo pipefail
               
               export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
@@ -625,7 +827,8 @@ jobs:
               cp "$KERNEL_JSON" "${KERNEL_JSON}.bak"
               echo "import json" > /tmp/fix_kernel.py
               echo "k = json.load(open(\"$KERNEL_JSON\"))" >> /tmp/fix_kernel.py
-              echo "k.setdefault(\"env\", {}).update({\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\", \"EGL_LOG_LEVEL\": \"fatal\", \"PYTHONWARNINGS\": \"ignore:where used without:UserWarning\"})" >> /tmp/fix_kernel.py
+              echo "env = {\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\", \"EGL_LOG_LEVEL\": \"fatal\", \"PYTHONWARNINGS\": \"ignore:where used without:UserWarning\"}" >> /tmp/fix_kernel.py
+              echo "k.setdefault(\"env\", {}).update(env)" >> /tmp/fix_kernel.py
               echo "json.dump(k, open(\"$KERNEL_JSON\", \"w\"), indent=2)" >> /tmp/fix_kernel.py
               echo "print(\"Updated kernel.json\")" >> /tmp/fix_kernel.py
               python3 /tmp/fix_kernel.py
@@ -698,11 +901,11 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
           HF_BRANCH: ${{ github.ref_name }}
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
         run: |
-          NOTEBOOK_PATH="books/${{ matrix.notebooks }}"
-          WORKING_DIR="$(dirname "$NOTEBOOK_PATH")"
+          NOTEBOOK_PATH="books/$NOTEBOOK_REL"
 
-          # Skip if notebook doesn't reference ipyniivue at all
+          # Skip if notebook doesn't reference ipyniivue at all (cheap host-side grep)
           if ! grep -qE "ipyniivue|NiiVue" "$NOTEBOOK_PATH" 2>/dev/null; then
             echo "No ipyniivue usage in $NOTEBOOK_PATH - skipping transform"
             echo "NEEDS_SECOND_PASS=false" >> $GITHUB_ENV
@@ -711,12 +914,21 @@ jobs:
 
           echo "Found ipyniivue references - checking if paths need transformation..."
 
-          # Ensure huggingface_hub with Xet support is installed on the runner
-          pip install -q "huggingface_hub>=0.32.0"
-
-          # Transform paths to URLs, upload to HF, clear outputs for re-execution
-          # The script prints "Cells modified: N" — only need second pass if cells were actually changed
-          OUTPUT=$(python3 .github/scripts/publish_to_hf.py "$NOTEBOOK_PATH" --working-dir "$WORKING_DIR" --clear-outputs 2>&1) || true
+          # Runs inside the Neurodesk container — keeps python off the runner host.
+          # The publish_to_hf.py script prints "Cells modified: N" — only need second
+          # pass if cells were actually changed.
+          OUTPUT=$(docker exec \
+            -e HF_TOKEN="$HF_TOKEN" \
+            -e HF_REPO="$HF_REPO" \
+            -e HF_BRANCH="$HF_BRANCH" \
+            -e NOTEBOOK_REL="$NOTEBOOK_REL" \
+            "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+              cd /home/jovyan/workspace
+              NB_PATH="books/$NOTEBOOK_REL"
+              WORKING_DIR="$(dirname "$NB_PATH")"
+              python3 .github/scripts/publish_to_hf.py "$NB_PATH" --working-dir "$WORKING_DIR" --clear-outputs 2>&1
+            ') || true
           echo "$OUTPUT"
 
           if echo "$OUTPUT" | grep -q "Cells modified: 0"; then
@@ -773,64 +985,78 @@ jobs:
 
       - name: Remove patcher cell after second execution
         if: env.NEEDS_SECOND_PASS == 'true' && steps.promote.outputs.promoted != 'true'
+        env:
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
         run: |
-          python3 .github/scripts/publish_to_hf.py "books/${{ matrix.notebooks }}" --remove-patcher
-
-      - name: Cleanup container
-        if: always()
-        run: |
-          echo "Stopping and removing container: $CONTAINER_NAME"
-          docker stop "$CONTAINER_NAME" 2>/dev/null || true
-          docker rm "$CONTAINER_NAME" 2>/dev/null || true
+          docker exec -e NOTEBOOK_REL="$NOTEBOOK_REL" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+            cd /home/jovyan/workspace
+            python3 .github/scripts/publish_to_hf.py "books/$NOTEBOOK_REL" --remove-patcher
+          '
 
       - name: Check for execution errors
         if: steps.promote.outputs.promoted != 'true'
+        env:
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
         run: |
-          # Check the notebook for errors - step/job fails (red) if errors found, but publish still runs
-          python3 << 'EOF'
+          # Runs inside the Neurodesk container — keeps python off the runner host.
+          # The notebook file is bind-mounted so either host or container can read it, but
+          # running inside keeps all python on one side. GITHUB_STEP_SUMMARY is host-only,
+          # so we write the summary to the workspace and append it from the host below.
+          SUMMARY_FILE="${{ github.workspace }}/nb-error-summary-${{ env.NOTEBOOK }}.md"
+          rm -f "$SUMMARY_FILE"
+          set +e
+          docker exec \
+            -e NOTEBOOK_REL="$NOTEBOOK_REL" \
+            -e SUMMARY_FILE_IN_CONTAINER="/home/jovyan/workspace/nb-error-summary-${{ env.NOTEBOOK }}.md" \
+            "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+              cd /home/jovyan/workspace
+              python3 - "$NOTEBOOK_REL" "$SUMMARY_FILE_IN_CONTAINER" <<'"'"'EOF'"'"'
           import json
           import os
           import re
           import sys
-          
+
           ANSI_ESCAPE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
-          
+
           def clean_text(text):
               return ANSI_ESCAPE.sub("", str(text)).replace("\r", "").strip()
-          
-          notebook_path = "books/${{ matrix.notebooks }}"
-          notebook_name = "${{ matrix.notebooks }}"
+
+          notebook_name = sys.argv[1]
+          summary_path = sys.argv[2]
+          notebook_path = f"books/{notebook_name}"
           errors_found = []
           ignored_false_positives = []
-          
+
           try:
-              with open(notebook_path, 'r') as f:
+              with open(notebook_path, "r") as f:
                   nb = json.load(f)
-              
-              for cell_idx, cell in enumerate(nb.get('cells', [])):
-                  if cell.get('cell_type') == 'code':
+
+              for cell_idx, cell in enumerate(nb.get("cells", [])):
+                  if cell.get("cell_type") == "code":
                       stream_text = "\n".join(
-                          clean_text("".join(output.get('text', '')))
-                          for output in cell.get('outputs', [])
-                          if output.get('output_type') == 'stream'
+                          clean_text("".join(output.get("text", "")))
+                          for output in cell.get("outputs", [])
+                          if output.get("output_type") == "stream"
                       )
-                      for output in cell.get('outputs', []):
-                          if output.get('output_type') == 'error':
-                              ename = clean_text(output.get('ename', 'Unknown'))
-                              evalue = clean_text(output.get('evalue', ''))
+                      for output in cell.get("outputs", []):
+                          if output.get("output_type") == "error":
+                              ename = clean_text(output.get("ename", "Unknown"))
+                              evalue = clean_text(output.get("evalue", ""))
                               evalue_lower = evalue.lower()
                               stream_text_lower = stream_text.lower()
                               traceback_lines = [
                                   clean_text(line)
-                                  for line in output.get('traceback', [])
+                                  for line in output.get("traceback", [])
                                   if clean_text(line)
                               ]
                               traceback_excerpt = "\n".join(traceback_lines[-12:]) if traceback_lines else "No traceback captured."
                               errors_found.append({
-                                  'cell': cell_idx,
-                                  'ename': ename,
-                                  'evalue': evalue[:300],
-                                  'traceback_excerpt': traceback_excerpt[:2500]
+                                  "cell": cell_idx,
+                                  "ename": ename,
+                                  "evalue": evalue[:300],
+                                  "traceback_excerpt": traceback_excerpt[:2500]
                               })
                               # Known ASLPrep false-positive: process returns non-zero
                               # although logs report successful completion.
@@ -841,56 +1067,67 @@ jobs:
                                   and "aslprep finished successfully!" in stream_text_lower
                               ):
                                   ignored_false_positives.append(errors_found.pop())
-              
+
               if ignored_false_positives:
                   print(
                       f"::warning::Ignoring {len(ignored_false_positives)} known ASLPrep false-positive error(s) "
                       "because log output indicates successful completion."
                   )
-              
+
               if errors_found:
                   # Report as error so the step shows as failed
                   print(f"::error::Notebook {notebook_name} has {len(errors_found)} execution error(s). Please fix the notebook.")
                   for err in errors_found[:5]:
                       print(f"::error title=Notebook cell {err['cell']} failed::{err['ename']}: {err['evalue'][:180]}")
                       print(f"--- Cell {err['cell']} traceback (last lines) ---")
-                      print(err['traceback_excerpt'])
-                  
-                  # Write to job summary for visibility
+                      print(err["traceback_excerpt"])
+
+                  # Write summary to workspace file — host will append to GITHUB_STEP_SUMMARY
                   summary = f"""
-          ## ⚠️ Notebook Execution Errors
-          
+          ## Notebook Execution Errors
+
           **Notebook:** `{notebook_name}`
-          
+
           The following errors occurred during execution. The notebook has been published with error outputs visible, but the author should fix these issues:
-          
+
           | Cell | Error Type | Message |
           |------|-----------|---------|
           """
                   for err in errors_found:
                       summary += f"| {err['cell']} | `{err['ename']}` | {err['evalue'][:100]} |\n"
-                  
+
                   summary += "\n\n### Traceback Excerpts (last lines)\n"
                   for err in errors_found[:5]:
                       summary += f"\n**Cell {err['cell']} - {err['ename']}**\n\n```text\n{err['traceback_excerpt']}\n```\n"
-                  
+
                   summary += "\nPlease update the notebook to fix these errors.\n"
-                  
-                  # Write to GitHub step summary
-                  with open(os.environ.get('GITHUB_STEP_SUMMARY', '/dev/null'), 'a') as f:
+
+                  with open(summary_path, "a") as f:
                       f.write(summary)
-                  
-                  # Exit with error so step shows as failed (continue-on-error allows workflow to proceed)
+
                   sys.exit(1)
               else:
                   if ignored_false_positives:
                       print("No blocking errors found in notebook outputs (known false-positive ignored).")
                   else:
                       print("No errors found in notebook outputs")
-                  
+
+          except SystemExit:
+              raise
           except Exception as e:
               print(f"::warning::Could not check notebook for errors: {e}")
           EOF
+            '
+          CHECK_RC=$?
+          set -e
+
+          # Append any summary content to the host-side GITHUB_STEP_SUMMARY
+          if [ -s "$SUMMARY_FILE" ]; then
+            cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+            rm -f "$SUMMARY_FILE"
+          fi
+
+          exit "$CHECK_RC"
 
       - name: Upload executed notebook artifact
         if: success()  # Only upload if notebook executed without errors
@@ -910,18 +1147,37 @@ jobs:
 
       - name: Upload source + executed notebooks to HuggingFace
         if: success()
+        # ARC pods see ~2% transient HF network failures (cluster team-confirmed infra floor).
+        # Without this gate, one transient would fail the run-notebooks job and block publish-pages
+        # entirely — 49 successful notebooks would not deploy because of one failed upload.
+        # The publish-pages backfill step already handles missing HF entries gracefully
+        # (falls back to previous cache or un-executed source), so letting this fail soft is
+        # strictly better than blocking the entire deploy.
+        continue-on-error: true
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
           HF_BRANCH: ${{ github.ref_name }}
           EXECUTED_PATH: books/${{ matrix.notebooks }}
-          SOURCE_DIR: ${{ runner.temp }}/source-notebooks
+          # Source snapshot saved into workspace so container can see it
+          SOURCE_DIR_IN_CONTAINER: /home/jovyan/workspace/.ci-temp/source-notebooks
           NOTEBOOK_BASENAME: ${{ matrix.notebooks }}
           HF_SOURCE_PATH: books/${{ matrix.notebooks }}
         run: |
-          pip install -q "huggingface_hub>=0.32.0"
-
-          python3 << 'PYEOF'
+          # Runs inside the Neurodesk container — keeps python off the runner host.
+          # huggingface_hub already installed in "Install CI dependencies inside container".
+          docker exec \
+            -e HF_TOKEN="$HF_TOKEN" \
+            -e HF_REPO="$HF_REPO" \
+            -e HF_BRANCH="$HF_BRANCH" \
+            -e EXECUTED_PATH="$EXECUTED_PATH" \
+            -e SOURCE_DIR="$SOURCE_DIR_IN_CONTAINER" \
+            -e NOTEBOOK_BASENAME="$NOTEBOOK_BASENAME" \
+            -e HF_SOURCE_PATH="$HF_SOURCE_PATH" \
+            "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+              export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
+              cd /home/jovyan/workspace
+              python3 <<'"'"'PYEOF'"'"'
           import hashlib
           import os
           import time
@@ -943,15 +1199,28 @@ jobs:
           if hf_branch != "main":
               refs = api.list_repo_refs(hf_repo, repo_type="dataset")
               if hf_branch not in {b.name for b in refs.branches}:
-                  print(f"Creating HF branch '{hf_branch}' from main...")
+                  print(f"Creating HF branch {hf_branch!r} from main...")
                   api.create_branch(hf_repo, repo_type="dataset", branch=hf_branch)
+
+          def file_exists_with_retry(repo, path, repo_type, revision, retries=3):
+              """file_exists with retry — transient network timeouts are common under concurrent pod load."""
+              for attempt in range(retries):
+                  try:
+                      return file_exists(repo, path, repo_type=repo_type, revision=revision)
+                  except Exception as e:
+                      if attempt < retries - 1:
+                          wait = 2 ** attempt + random.uniform(0, 1)
+                          print(f"  [hf] file_exists timeout (attempt {attempt+1}/{retries}), retrying in {wait:.1f}s: {e}")
+                          time.sleep(wait)
+                      else:
+                          raise
 
           def upload_if_changed(local_path, hf_path, label):
               """Upload file to HF if it has changed (hash comparison)."""
               with open(local_path, "rb") as f:
                   local_hash = hashlib.sha256(f.read()).hexdigest()[:16]
 
-              if file_exists(hf_repo, hf_path, repo_type="dataset", revision=hf_branch):
+              if file_exists_with_retry(hf_repo, hf_path, repo_type="dataset", revision=hf_branch):
                   try:
                       remote_file = hf_hub_download(hf_repo, hf_path, repo_type="dataset", revision=hf_branch)
                       with open(remote_file, "rb") as f:
@@ -984,18 +1253,26 @@ jobs:
                           raise
 
           # Upload notebook with outputs to outputs/ prefix
-          print(f"Uploading outputs notebook...")
+          print("Uploading outputs notebook...")
           upload_if_changed(executed_path, hf_outputs_path, "outputs")
 
           # Upload source notebook (pre-execution snapshot for promotion comparison)
           if os.path.exists(source_path):
-              print(f"Uploading source snapshot...")
+              print("Uploading source snapshot...")
               upload_if_changed(source_path, hf_source_path, "source")
           else:
               print(f"WARNING: Source snapshot not found at {source_path}")
 
           print("Done.")
           PYEOF
+            '
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          echo "Stopping and removing container: $CONTAINER_NAME"
+          docker stop "$CONTAINER_NAME" 2>/dev/null || true
+          docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
   # ---------------------------------------------------------------------------
   # AUTO-PR: Create PR from review branch to main after successful CI
@@ -1245,6 +1522,7 @@ jobs:
           # Setup directories
           sudo mkdir -p $BASE_PATH/tmp
           sudo chown $USER $BASE_PATH/tmp
+
 
       - name: Ensure Neurodesk image available
         run: |
@@ -1508,6 +1786,8 @@ jobs:
           # to ensure the environment (Lmod, Apptainer overlay) initializes
           # correctly without permission errors.
           # -----------------------------------------------------------------------
+          # No CVMFS mount — publish-pages runs jupyter-book build with
+          # execute_notebooks: off. No neuroimaging tools are invoked.
           sudo docker run -d --name "$CONTAINER_NAME" \
             --shm-size=1gb \
             --privileged \
