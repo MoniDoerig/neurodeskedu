@@ -932,7 +932,7 @@ jobs:
   publish-dois:
     name: Publish DOIs to Zenodo
     needs: [run-notebooks]
-    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.run-notebooks.result == 'success' && inputs.force_deploy_pages == true }}
     runs-on: ubuntu-22.04
     concurrency:
       group: publish-dois
