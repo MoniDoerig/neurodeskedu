@@ -154,7 +154,7 @@ jobs:
         shell: bash
         run: |
           sif=/cvmfs/neurodesk.ardc.edu.au/containers/fsl_6.0.5.1_20221016/fsl_6.0.5.1_20221016.simg
-          [ -f "$sif" ] || { echo "FAIL: SIF not found — CVMFS mount issue?"; exit 1; }
+          ls -lh "$sif"
           echo "Reading 64 MB from CVMFS SIF to measure bandwidth:"
           dd if="$sif" of=/dev/null bs=1M count=64 2>&1
 
