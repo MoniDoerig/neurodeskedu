@@ -150,13 +150,15 @@ jobs:
           echo "=== Memory ===" && free -h
           echo "=== Disk ===" && df -h /tmp "$GITHUB_WORKSPACE" 2>/dev/null || df -h /tmp
 
-      - name: CVMFS sequential read bandwidth
+      - name: CVMFS catalog latency
         shell: bash
         run: |
-          sif=/cvmfs/neurodesk.ardc.edu.au/containers/fsl_6.0.5.1_20221016/fsl_6.0.5.1_20221016.simg
-          ls -lh "$sif"
-          echo "Reading 64 MB from CVMFS SIF to measure bandwidth:"
-          dd if="$sif" of=/dev/null bs=1M count=64 2>&1
+          echo "=== Container count ==="
+          ls /cvmfs/neurodesk.ardc.edu.au/containers/ | wc -l
+          echo "=== Full listing time (catalog fetch) ==="
+          time ls /cvmfs/neurodesk.ardc.edu.au/containers/ > /dev/null
+          echo "=== FSL container layout ==="
+          ls -lh /cvmfs/neurodesk.ardc.edu.au/containers/fsl_6.0.5.1_20221016/
 
       - name: /tmp write throughput
         shell: bash
