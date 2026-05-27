@@ -521,7 +521,7 @@ jobs:
         run: |
           echo "Waiting for Neurodesktop to become ready (up to 5 minutes)..."
           for i in {1..300}; do
-            if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "To access the server"; then
+            if docker logs "$CONTAINER_NAME" 2>&1 | grep -qE "To access the server|\[neurocommand\] CVMFS ready"; then
               echo "Container ready after ${i} seconds"
               exit 0
             fi
@@ -1813,7 +1813,7 @@ jobs:
         run: |
           echo "Waiting for Neurodesktop to become ready (up to 5 minutes)..."
           for i in {1..300}; do
-            if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "To access the server"; then
+            if docker logs "$CONTAINER_NAME" 2>&1 | grep -qE "To access the server|\[neurocommand\] CVMFS ready"; then
               echo "Container ready after ${i} seconds"
               exit 0
             fi
