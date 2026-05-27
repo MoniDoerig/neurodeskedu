@@ -513,7 +513,15 @@ jobs:
             -e NOTEBOOK="${NOTEBOOK}" \
             -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
             $ARC_FLAGS \
-            ${{ needs.setup.outputs.neurodesk_image }}
+            ${{ needs.setup.outputs.neurodesk_image }} \
+            sleep infinity
+          # CMD override `sleep infinity` keeps the container alive regardless of
+          # image's default CMD. neurodesktop's default starts a Jupyter server
+          # (long-running, no override needed). Slim images like neurocommand:
+          # py-stack end with `exec bash` in entrypoint, which exits immediately
+          # under `docker run -d` (no stdin/TTY). nbconvert spawns its own kernel
+          # via kernel.json, doesn't need a Jupyter server, so the override is
+          # safe across both image types.
 
           echo "Started container: $CONTAINER_NAME"
 
@@ -1832,7 +1840,9 @@ jobs:
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
-            ${{ needs.setup.outputs.neurodesk_image }}
+            ${{ needs.setup.outputs.neurodesk_image }} \
+            sleep infinity
+          # CMD override keepalive (same rationale as run-notebooks job above)
 
           echo "Started container: $CONTAINER_NAME"
 
