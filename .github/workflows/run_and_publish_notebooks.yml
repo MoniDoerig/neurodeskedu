@@ -1155,7 +1155,12 @@ jobs:
           except SystemExit:
               raise
           except Exception as e:
-              print(f"::warning::Could not check notebook for errors: {e}")
+              # Previously: silent swallow + step exits 0, hiding cell-level failures.
+              # Now: print full traceback and exit non-zero so the step fails loudly.
+              import traceback
+              print(f"::error::Notebook error-check crashed: {e}")
+              traceback.print_exc()
+              sys.exit(2)
           EOF
             '
           CHECK_RC=$?
