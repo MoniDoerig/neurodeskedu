@@ -512,6 +512,10 @@ jobs:
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
             -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
+            -e GIT_AUTHOR_NAME="Neurodesk CI" \
+            -e GIT_AUTHOR_EMAIL="ci@neurodesk.dev" \
+            -e GIT_COMMITTER_NAME="Neurodesk CI" \
+            -e GIT_COMMITTER_EMAIL="ci@neurodesk.dev" \
             $ARC_FLAGS \
             ${{ needs.setup.outputs.neurodesk_image }} \
             sleep infinity
