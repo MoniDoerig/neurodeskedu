@@ -1115,32 +1115,49 @@ jobs:
                   )
 
               if errors_found:
-                  # Report as error so the step shows as failed
-                  print(f"::error::Notebook {notebook_name} has {len(errors_found)} execution error(s). Please fix the notebook.")
+                  # Report as error so the step shows as failed.
+                  # Avoid f-strings with nested dict subscripts (PEP 701) — under some
+                  # python builds / stdin-heredoc paths the parser stumbles on the
+                  # quoted dict keys with TypeError: unhashable type: 'dict'.
+                  print("::error::Notebook {0} has {1} execution error(s). Please fix the notebook.".format(notebook_name, len(errors_found)))
                   for err in errors_found[:5]:
-                      print(f"::error title=Notebook cell {err['cell']} failed::{err['ename']}: {err['evalue'][:180]}")
-                      print(f"--- Cell {err['cell']} traceback (last lines) ---")
-                      print(err["traceback_excerpt"])
+                      cell_n = err.get("cell", "?")
+                      ename_v = err.get("ename", "?")
+                      evalue_v = str(err.get("evalue", ""))[:180]
+                      tb_v = err.get("traceback_excerpt", "")
+                      print("::error title=Notebook cell {0} failed::{1}: {2}".format(cell_n, ename_v, evalue_v))
+                      print("--- Cell {0} traceback (last lines) ---".format(cell_n))
+                      print(tb_v)
 
                   # Write summary to workspace file — host will append to GITHUB_STEP_SUMMARY
-                  summary = f"""
-          ## Notebook Execution Errors
-
-          **Notebook:** `{notebook_name}`
-
-          The following errors occurred during execution. The notebook has been published with error outputs visible, but the author should fix these issues:
-
-          | Cell | Error Type | Message |
-          |------|-----------|---------|
-          """
+                  summary_lines = []
+                  summary_lines.append("## Notebook Execution Errors")
+                  summary_lines.append("")
+                  summary_lines.append("**Notebook:** `" + str(notebook_name) + "`")
+                  summary_lines.append("")
+                  summary_lines.append("The following errors occurred during execution. The notebook has been published with error outputs visible, but the author should fix these issues:")
+                  summary_lines.append("")
+                  summary_lines.append("| Cell | Error Type | Message |")
+                  summary_lines.append("|------|-----------|---------|")
                   for err in errors_found:
-                      summary += f"| {err['cell']} | `{err['ename']}` | {err['evalue'][:100]} |\n"
-
-                  summary += "\n\n### Traceback Excerpts (last lines)\n"
+                      row = "| {0} | `{1}` | {2} |".format(
+                          err.get("cell", "?"),
+                          err.get("ename", "?"),
+                          str(err.get("evalue", ""))[:100],
+                      )
+                      summary_lines.append(row)
+                  summary_lines.append("")
+                  summary_lines.append("### Traceback Excerpts (last lines)")
                   for err in errors_found[:5]:
-                      summary += f"\n**Cell {err['cell']} - {err['ename']}**\n\n```text\n{err['traceback_excerpt']}\n```\n"
-
-                  summary += "\nPlease update the notebook to fix these errors.\n"
+                      summary_lines.append("")
+                      summary_lines.append("**Cell {0} - {1}**".format(err.get("cell", "?"), err.get("ename", "?")))
+                      summary_lines.append("")
+                      summary_lines.append("```text")
+                      summary_lines.append(str(err.get("traceback_excerpt", "")))
+                      summary_lines.append("```")
+                  summary_lines.append("")
+                  summary_lines.append("Please update the notebook to fix these errors.")
+                  summary = "\n".join(summary_lines) + "\n"
 
                   with open(summary_path, "a") as f:
                       f.write(summary)
