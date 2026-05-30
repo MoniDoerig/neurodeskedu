@@ -61,6 +61,11 @@ on:
         required: false
         type: boolean
         default: false
+      diagnostic_mode:
+        description: 'Diagnostic run: execute notebooks but skip all HuggingFace uploads (zero production side effects)'
+        required: false
+        type: boolean
+        default: false
 
 # =============================================================================
 # CONCURRENCY (disabled to allow multiple runs)
@@ -940,7 +945,7 @@ jobs:
       # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
       # 3. Second execution generates clean outputs with HF URLs
       - name: Transform notebook paths to HF URLs (post-execution)
-        if: steps.promote.outputs.promoted != 'true'
+        if: steps.promote.outputs.promoted != 'true' && inputs.diagnostic_mode != true
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
@@ -1212,7 +1217,7 @@ jobs:
           retention-days: 7
 
       - name: Upload source + executed notebooks to HuggingFace
-        if: success()
+        if: success() && inputs.diagnostic_mode != true
         # ARC pods see ~2% transient HF network failures (cluster team-confirmed infra floor).
         # Without this gate, one transient would fail the run-notebooks job and block publish-pages
         # entirely — 49 successful notebooks would not deploy because of one failed upload.
