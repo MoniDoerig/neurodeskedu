@@ -550,17 +550,7 @@ jobs:
       - name: Verify CVMFS inside container
         run: |
           echo "========== VERIFYING CVMFS IN CONTAINER ==========="
-          # DIAGNOSTIC (slim-image-readiness-wait branch): wrap the docker exec with
-          # pre/post state capture so when exit-137 happens on :py-stack we get
-          # OOMKilled flag, dmesg, and container log tail. To be removed once
-          # exit-137 root cause is understood.
-          echo "::group::pre-exec container state"
-          docker inspect "$CONTAINER_NAME" --format 'Status={{.State.Status}} OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}} Pid={{.State.Pid}}' 2>&1 || true
-          docker stats --no-stream "$CONTAINER_NAME" 2>&1 | head -3 || true
-          echo "::endgroup::"
-          EXIT_RC=0
           docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
-            set -x
             echo "Checking CVMFS mount..."
             if [ -d /cvmfs/neurodesk.ardc.edu.au ]; then
               echo "✓ /cvmfs/neurodesk.ardc.edu.au accessible"
@@ -586,24 +576,7 @@ jobs:
               mount | grep cvmfs || echo "No CVMFS mounts visible"
               exit 1
             fi
-          ' || EXIT_RC=$?
-          echo "docker_exec_EXIT_RC=$EXIT_RC"
-          if [ "$EXIT_RC" -ne 0 ]; then
-            echo "::group::post-exec diagnostic (EXIT_RC=$EXIT_RC) — capturing OOM / signal / PAM signals"
-            echo "--- container state after exec ---"
-            docker inspect "$CONTAINER_NAME" --format 'Status={{.State.Status}} OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}} Error={{.State.Error}}' 2>&1 || true
-            echo "--- docker stats ---"
-            docker stats --no-stream "$CONTAINER_NAME" 2>&1 | head -3 || true
-            echo "--- container logs (last 80 lines) ---"
-            docker logs --tail 80 "$CONTAINER_NAME" 2>&1 || true
-            echo "--- host dmesg (last 80) — look for oom-killer or killed process ---"
-            dmesg 2>&1 | tail -80 || sudo dmesg 2>&1 | tail -80 || echo "dmesg unavailable"
-            echo "--- /sys/fs/cgroup memory state (if visible) ---"
-            cat /sys/fs/cgroup/memory.peak 2>/dev/null || true
-            cat /sys/fs/cgroup/memory.events 2>/dev/null || true
-            echo "::endgroup::"
-            exit "$EXIT_RC"
-          fi
+          '
           echo "==================================================="
 
       - name: Setup container environment (as root)
