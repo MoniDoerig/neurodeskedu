@@ -111,7 +111,7 @@ jobs:
           # --- ARC K8s runners (CVMFS-enabled, in-cluster mirror) ---
           # Sydney AZ DinD scale-set (runnerScaleSetName: neurodesk-syd-arcrunner-neurodeskedu).
           # DinD/arc-base-equivalent architecture, hosted on Sydney AZ for AARNet I/O proximity.
-          # Heavy notebooks below still route to QRIS arc-mem (no Sydney arc-mem counterpart yet).
+          # Heavy notebooks route to the Sydney heavy pool (neurodesk-syd-arcrunner-neurodeskedu-heavy); see run-notebooks job.
           # Previous routing kept for one-line revert: echo 'runs_on={"group":"arc-base"}'
           echo "runner=arc-base" >> $GITHUB_OUTPUT
           echo 'runs_on="neurodesk-syd-arcrunner-neurodeskedu"' >> $GITHUB_OUTPUT
@@ -275,12 +275,13 @@ jobs:
     needs: [setup, select-notebooks]
     if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' && inputs.use_notebook_cache != true }}
     # Per-notebook runner routing:
-    # Storage-heavy notebooks (>16 Gi work-dir need) → arc-mem (QRIS, 64 Gi PVC, cpu:9, mem:24Gi, maxRunners:3).
+    # Storage-heavy notebooks (>16 Gi work-dir need) → Sydney heavy pool neurodesk-syd-arcrunner-neurodeskedu-heavy
+    #   (r3.xlarge 16 vCPU/64 GiB, 64Gi work PVC, max 3 concurrent, scale-from-zero ~3-5 min cold start).
+    #   Sydney parallel of QRIS arc-mem; moved 2026-06-08 for the ardc-syd-1 AARNet I/O advantage.
     # Everyone else → whatever setup selected (default: Sydney AZ DinD pool neurodesk-syd-arcrunner-neurodeskedu).
-    # Cluster-side helm revision 17 provisioned arc-mem as the storage-heavy tier on 2026-04-23.
-    # No Sydney arc-mem counterpart exists yet — heavy notebooks keep QRIS routing.
     # To add another notebook to the heavy list: append its path to the array below.
-    runs-on: ${{ contains(fromJson('["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]'), matrix.notebooks) && fromJson('{"group":"arc-mem"}') || fromJson(needs.setup.outputs.runs_on) }}
+    # Previous QRIS arc-mem routing kept for one-line revert: ...matrix.notebooks) && fromJson('{"group":"arc-mem"}') || ...
+    runs-on: ${{ contains(fromJson('["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]'), matrix.notebooks) && 'neurodesk-syd-arcrunner-neurodeskedu-heavy' || fromJson(needs.setup.outputs.runs_on) }}
     timeout-minutes: 1500
 
     concurrency:
