@@ -61,6 +61,11 @@ on:
         required: false
         type: boolean
         default: false
+      diagnostic_mode:
+        description: 'Diagnostic run: execute notebooks but skip all HuggingFace uploads (zero production side effects)'
+        required: false
+        type: boolean
+        default: false
 
 # =============================================================================
 # CONCURRENCY (disabled to allow multiple runs)
@@ -142,14 +147,12 @@ jobs:
           if [ -n "${{ inputs.image_override }}" ]; then
             echo "neurodesk_image=${{ inputs.image_override }}" >> $GITHUB_OUTPUT
           else
-            # Fetch the latest version from the neurodesk website config
-            NEURODESKTOP_VERSION=$(curl -s https://raw.githubusercontent.com/neurodesk/neurodesk.github.io/main/data/neurodesktop.toml \
-              | grep '^jupyter_neurodesk_version' | sed 's/.*= *"\(.*\)"/\1/')
-            if [ -z "$NEURODESKTOP_VERSION" ]; then
-              echo "::error::Failed to fetch Neurodesktop version from neurodesktop.toml"
-              exit 1
-            fi
-            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
+            # Production default: slim py-stack (validated 2026-06-08, replaces full neurodesktop).
+            # Frozen tag maintained by the image team; image_override still works for one-offs.
+            # Previous full-image default kept for one-line revert:
+            #   NEURODESKTOP_VERSION=$(curl -s https://raw.githubusercontent.com/neurodesk/neurodesk.github.io/main/data/neurodesktop.toml | grep '^jupyter_neurodesk_version' | sed 's/.*= *"\(.*\)"/\1/')
+            #   echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
+            echo "neurodesk_image=ghcr.io/neurodesk/neurocommand:py-stack" >> $GITHUB_OUTPUT
           fi
           echo "Using image: $(grep neurodesk_image $GITHUB_OUTPUT | cut -d= -f2)"
 
@@ -512,8 +515,20 @@ jobs:
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NOTEBOOK="${NOTEBOOK}" \
             -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
+            -e GIT_AUTHOR_NAME="Neurodesk CI" \
+            -e GIT_AUTHOR_EMAIL="ci@neurodesk.dev" \
+            -e GIT_COMMITTER_NAME="Neurodesk CI" \
+            -e GIT_COMMITTER_EMAIL="ci@neurodesk.dev" \
             $ARC_FLAGS \
-            ${{ needs.setup.outputs.neurodesk_image }}
+            ${{ needs.setup.outputs.neurodesk_image }} \
+            sleep infinity
+          # CMD override `sleep infinity` keeps the container alive regardless of
+          # image's default CMD. neurodesktop's default starts a Jupyter server
+          # (long-running, no override needed). Slim images like neurocommand:
+          # py-stack end with `exec bash` in entrypoint, which exits immediately
+          # under `docker run -d` (no stdin/TTY). nbconvert spawns its own kernel
+          # via kernel.json, doesn't need a Jupyter server, so the override is
+          # safe across both image types.
 
           echo "Started container: $CONTAINER_NAME"
 
@@ -521,7 +536,7 @@ jobs:
         run: |
           echo "Waiting for Neurodesktop to become ready (up to 5 minutes)..."
           for i in {1..300}; do
-            if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "To access the server"; then
+            if docker logs "$CONTAINER_NAME" 2>&1 | grep -qE "To access the server|\[neurocommand\] CVMFS"; then
               echo "Container ready after ${i} seconds"
               exit 0
             fi
@@ -901,7 +916,7 @@ jobs:
       # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
       # 3. Second execution generates clean outputs with HF URLs
       - name: Transform notebook paths to HF URLs (post-execution)
-        if: steps.promote.outputs.promoted != 'true'
+        if: steps.promote.outputs.promoted != 'true' && inputs.diagnostic_mode != true
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
@@ -1080,32 +1095,49 @@ jobs:
                   )
 
               if errors_found:
-                  # Report as error so the step shows as failed
-                  print(f"::error::Notebook {notebook_name} has {len(errors_found)} execution error(s). Please fix the notebook.")
+                  # Report as error so the step shows as failed.
+                  # Avoid f-strings with nested dict subscripts (PEP 701) — under some
+                  # python builds / stdin-heredoc paths the parser stumbles on the
+                  # quoted dict keys with TypeError: unhashable type: 'dict'.
+                  print("::error::Notebook {0} has {1} execution error(s). Please fix the notebook.".format(notebook_name, len(errors_found)))
                   for err in errors_found[:5]:
-                      print(f"::error title=Notebook cell {err['cell']} failed::{err['ename']}: {err['evalue'][:180]}")
-                      print(f"--- Cell {err['cell']} traceback (last lines) ---")
-                      print(err["traceback_excerpt"])
+                      cell_n = err.get("cell", "?")
+                      ename_v = err.get("ename", "?")
+                      evalue_v = str(err.get("evalue", ""))[:180]
+                      tb_v = err.get("traceback_excerpt", "")
+                      print("::error title=Notebook cell {0} failed::{1}: {2}".format(cell_n, ename_v, evalue_v))
+                      print("--- Cell {0} traceback (last lines) ---".format(cell_n))
+                      print(tb_v)
 
                   # Write summary to workspace file — host will append to GITHUB_STEP_SUMMARY
-                  summary = f"""
-          ## Notebook Execution Errors
-
-          **Notebook:** `{notebook_name}`
-
-          The following errors occurred during execution. The notebook has been published with error outputs visible, but the author should fix these issues:
-
-          | Cell | Error Type | Message |
-          |------|-----------|---------|
-          """
+                  summary_lines = []
+                  summary_lines.append("## Notebook Execution Errors")
+                  summary_lines.append("")
+                  summary_lines.append("**Notebook:** `" + str(notebook_name) + "`")
+                  summary_lines.append("")
+                  summary_lines.append("The following errors occurred during execution. The notebook has been published with error outputs visible, but the author should fix these issues:")
+                  summary_lines.append("")
+                  summary_lines.append("| Cell | Error Type | Message |")
+                  summary_lines.append("|------|-----------|---------|")
                   for err in errors_found:
-                      summary += f"| {err['cell']} | `{err['ename']}` | {err['evalue'][:100]} |\n"
-
-                  summary += "\n\n### Traceback Excerpts (last lines)\n"
+                      row = "| {0} | `{1}` | {2} |".format(
+                          err.get("cell", "?"),
+                          err.get("ename", "?"),
+                          str(err.get("evalue", ""))[:100],
+                      )
+                      summary_lines.append(row)
+                  summary_lines.append("")
+                  summary_lines.append("### Traceback Excerpts (last lines)")
                   for err in errors_found[:5]:
-                      summary += f"\n**Cell {err['cell']} - {err['ename']}**\n\n```text\n{err['traceback_excerpt']}\n```\n"
-
-                  summary += "\nPlease update the notebook to fix these errors.\n"
+                      summary_lines.append("")
+                      summary_lines.append("**Cell {0} - {1}**".format(err.get("cell", "?"), err.get("ename", "?")))
+                      summary_lines.append("")
+                      summary_lines.append("```text")
+                      summary_lines.append(str(err.get("traceback_excerpt", "")))
+                      summary_lines.append("```")
+                  summary_lines.append("")
+                  summary_lines.append("Please update the notebook to fix these errors.")
+                  summary = "\n".join(summary_lines) + "\n"
 
                   with open(summary_path, "a") as f:
                       f.write(summary)
@@ -1120,7 +1152,12 @@ jobs:
           except SystemExit:
               raise
           except Exception as e:
-              print(f"::warning::Could not check notebook for errors: {e}")
+              # Previously: silent swallow + step exits 0, hiding cell-level failures.
+              # Now: print full traceback and exit non-zero so the step fails loudly.
+              import traceback
+              print(f"::error::Notebook error-check crashed: {e}")
+              traceback.print_exc()
+              sys.exit(2)
           EOF
             '
           CHECK_RC=$?
@@ -1151,7 +1188,7 @@ jobs:
           retention-days: 7
 
       - name: Upload source + executed notebooks to HuggingFace
-        if: success()
+        if: success() && inputs.diagnostic_mode != true
         # ARC pods see ~2% transient HF network failures (cluster team-confirmed infra floor).
         # Without this gate, one transient would fail the run-notebooks job and block publish-pages
         # entirely — 49 successful notebooks would not deploy because of one failed upload.
@@ -1805,7 +1842,9 @@ jobs:
             -e NB_GID="$(id -g)" \
             -e GITHUB_PAT="${GITHUB_PAT}" \
             -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
-            ${{ needs.setup.outputs.neurodesk_image }}
+            ${{ needs.setup.outputs.neurodesk_image }} \
+            sleep infinity
+          # CMD override keepalive (same rationale as run-notebooks job above)
 
           echo "Started container: $CONTAINER_NAME"
 
@@ -1813,7 +1852,7 @@ jobs:
         run: |
           echo "Waiting for Neurodesktop to become ready (up to 5 minutes)..."
           for i in {1..300}; do
-            if docker logs "$CONTAINER_NAME" 2>&1 | grep -q "To access the server"; then
+            if docker logs "$CONTAINER_NAME" 2>&1 | grep -qE "To access the server|\[neurocommand\] CVMFS"; then
               echo "Container ready after ${i} seconds"
               exit 0
             fi
