@@ -282,7 +282,7 @@ jobs:
     # To add another notebook to the heavy list: append its path to the array below.
     # Previous QRIS arc-mem routing kept for one-line revert: ...matrix.notebooks) && fromJson('{"group":"arc-mem"}') || ...
     runs-on: ${{ contains(fromJson('["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]'), matrix.notebooks) && 'neurodesk-syd-arcrunner-neurodeskedu-heavy' || fromJson(needs.setup.outputs.runs_on) }}
-    timeout-minutes: 1500
+    timeout-minutes: 480
 
     concurrency:
       group: notebook-${{ matrix.notebooks }}
@@ -800,7 +800,7 @@ jobs:
 
       - name: Execute notebook in container
         if: steps.promote.outputs.promoted != 'true'
-        timeout-minutes: 1500
+        timeout-minutes: 420
         run: |
           NOTEBOOK_PATH="${{ matrix.notebooks }}"
           NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
@@ -856,7 +856,9 @@ jobs:
               cat "$KERNEL_JSON"
               
               # Run jupyter nbconvert
-              EXEC_TIMEOUT=86400
+              # Per-cell execution cap. 6h comfortably exceeds the heaviest legit notebook
+              # (Demo_fmriprep_FEAT ~4h) but catches a hung cell instead of running ~24h.
+              EXEC_TIMEOUT=21600
               echo "Using ExecutePreprocessor.timeout=${EXEC_TIMEOUT}s for $NOTEBOOK_PATH"
 
               # Keep full nbconvert output in file, and print only a focused excerpt on failure.
@@ -988,7 +990,7 @@ jobs:
 
             echo "Re-executing notebook with HF URLs: $NOTEBOOK_PATH"
 
-            EXEC_TIMEOUT=86400
+            EXEC_TIMEOUT=21600
             LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}-pass2.log"
 
             if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
@@ -1663,6 +1665,9 @@ jobs:
       # to their git-committed source on every deploy — which for ipyniivue pages
       # means losing the widget state (stored in notebook metadata, not git).
       - name: Backfill missing notebooks from HuggingFace cache
+        # Cache-warming only — a transient HF rate-limit (429) must not fail a deploy
+        # where every notebook already passed. Non-fatal by design.
+        continue-on-error: true
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
@@ -1696,8 +1701,8 @@ jobs:
           try:
               hf_files = set(list_repo_files(hf_repo, repo_type="dataset", revision=hf_branch))
               print(f"Using cached notebooks from HF branch '{hf_branch}'")
-          except Exception:
-              print(f"HF branch '{hf_branch}' not found, falling back to main")
+          except Exception as e:
+              print(f"Could not list HF branch '{hf_branch}' ({type(e).__name__}); falling back to main")
               hf_branch = "main"
               hf_files = set(list_repo_files(hf_repo, repo_type="dataset", revision="main"))
 
