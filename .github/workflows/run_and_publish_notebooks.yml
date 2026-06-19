@@ -538,16 +538,20 @@ jobs:
       - name: Wait for container readiness
         run: |
           echo "Waiting for Neurodesktop to become ready (up to 5 minutes)..."
+          # The container remaps jovyan's UID at startup (usermod -u $NB_UID) to match the runner.
+          # While that rewrites /etc/passwd, `su jovyan` transiently fails, so waiting for jovyan to
+          # merely exist is not enough. Wait until jovyan is STABLE at its final UID (== this runner's
+          # id -u, which was passed as NB_UID) AND CVMFS is visible to it, for a few consecutive
+          # checks, so no `su jovyan` step can race the remap.
+          TARGET_UID=$(id -u)
+          ok=0
           for i in {1..300}; do
-            if docker logs "$CONTAINER_NAME" 2>&1 | grep -qE "To access the server|\[neurocommand\] CVMFS"; then
-              echo "Container ready (startup log) after ${i} seconds"
-              exit 0
-            fi
-            # Image-agnostic fallback: ready once CVMFS modules are visible inside the container
-            # (full neurodesktop under `sleep infinity` may not print the slim image's log line).
-            if docker exec "$CONTAINER_NAME" test -d /cvmfs/neurodesk.ardc.edu.au/containers/modules 2>/dev/null; then
-              echo "Container ready (CVMFS mounted) after ${i} seconds"
-              exit 0
+            CUR=$(docker exec "$CONTAINER_NAME" id -u jovyan 2>/dev/null || true)
+            if [ "$CUR" = "$TARGET_UID" ] && docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c 'test -d /cvmfs/neurodesk.ardc.edu.au/containers/modules' 2>/dev/null; then
+              ok=$((ok + 1))
+              if [ "$ok" -ge 3 ]; then echo "Container ready (jovyan stable at UID $TARGET_UID + CVMFS) after ${i}s"; exit 0; fi
+            else
+              ok=0
             fi
             sleep 1
           done
@@ -574,8 +578,7 @@ jobs:
                 echo "✓ LMOD initialized"
                 echo "✓ MODULEPATH=$MODULEPATH"
                 echo ""
-                echo "Available modules:"
-                module avail 2>&1 || echo "No modules found"
+                echo "(skipping the full module-avail scan here: it can OOM-kill the container under heavy load; CVMFS and LMOD are verified above)"
               else
                 echo "✗ LMOD not found"
               fi
@@ -1865,16 +1868,20 @@ jobs:
       - name: Wait for container readiness
         run: |
           echo "Waiting for Neurodesktop to become ready (up to 5 minutes)..."
+          # The container remaps jovyan's UID at startup (usermod -u $NB_UID) to match the runner.
+          # While that rewrites /etc/passwd, `su jovyan` transiently fails, so waiting for jovyan to
+          # merely exist is not enough. Wait until jovyan is STABLE at its final UID (== this runner's
+          # id -u, which was passed as NB_UID) AND CVMFS is visible to it, for a few consecutive
+          # checks, so no `su jovyan` step can race the remap.
+          TARGET_UID=$(id -u)
+          ok=0
           for i in {1..300}; do
-            if docker logs "$CONTAINER_NAME" 2>&1 | grep -qE "To access the server|\[neurocommand\] CVMFS"; then
-              echo "Container ready (startup log) after ${i} seconds"
-              exit 0
-            fi
-            # Image-agnostic fallback: ready once CVMFS modules are visible inside the container
-            # (full neurodesktop under `sleep infinity` may not print the slim image's log line).
-            if docker exec "$CONTAINER_NAME" test -d /cvmfs/neurodesk.ardc.edu.au/containers/modules 2>/dev/null; then
-              echo "Container ready (CVMFS mounted) after ${i} seconds"
-              exit 0
+            CUR=$(docker exec "$CONTAINER_NAME" id -u jovyan 2>/dev/null || true)
+            if [ "$CUR" = "$TARGET_UID" ] && docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c 'test -d /cvmfs/neurodesk.ardc.edu.au/containers/modules' 2>/dev/null; then
+              ok=$((ok + 1))
+              if [ "$ok" -ge 3 ]; then echo "Container ready (jovyan stable at UID $TARGET_UID + CVMFS) after ${i}s"; exit 0; fi
+            else
+              ok=0
             fi
             sleep 1
           done
