@@ -606,6 +606,23 @@ jobs:
                 groupmod -g $NB_GID users
             fi
 
+            # /opt/conda is shipped owned by the image original jovyan UID (1000). The
+            # neurodesktop entrypoint remaps the jovyan ACCOUNT to the runner UID at startup
+            # but does not re-own /opt/conda, so the live jovyan cannot pip install at
+            # runtime. Re-own it to whatever UID jovyan currently has (idempotent: skipped
+            # when already correct). Runs unconditionally because the remap branch above is
+            # a no-op here (the entrypoint already did the usermod before this step).
+            JOV_UID=$(id -u jovyan); JOV_GID=$(id -g jovyan)
+            CONDA_OWNER=$(stat -c %u /opt/conda 2>/dev/null || echo unknown)
+            echo "jovyan uid=$JOV_UID gid=$JOV_GID ; /opt/conda owner uid=$CONDA_OWNER"
+            if [ "$CONDA_OWNER" != "$JOV_UID" ]; then
+                echo "Re-owning /opt/conda to jovyan ($JOV_UID:$JOV_GID)..."
+                chown -R "$JOV_UID:$JOV_GID" /opt/conda || echo "chown /opt/conda exit $?"
+                echo "after: /opt/conda owner uid=$(stat -c %u /opt/conda)"
+            else
+                echo "/opt/conda already owned by jovyan; no chown needed"
+            fi
+
             # Create apptainer overlay for modules that require it
             if [ ! -L /tmp/apptainer_overlay ]; then
               echo "Creating /tmp/apptainer_overlay symlink to /overlay-storage..."
