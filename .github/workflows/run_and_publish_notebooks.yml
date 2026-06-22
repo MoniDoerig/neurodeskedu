@@ -284,7 +284,7 @@ jobs:
     # To add another notebook to the heavy list: append its path to the array below.
     # Previous QRIS arc-mem routing kept for one-line revert: ...matrix.notebooks) && fromJson('{"group":"arc-mem"}') || ...
     runs-on: ${{ contains(fromJson('["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]'), matrix.notebooks) && 'neurodesk-syd-arcrunner-neurodeskedu-heavy' || fromJson(needs.setup.outputs.runs_on) }}
-    timeout-minutes: 480
+    timeout-minutes: 840
 
     concurrency:
       group: notebook-${{ matrix.notebooks }}
@@ -606,23 +606,6 @@ jobs:
                 groupmod -g $NB_GID users
             fi
 
-            # /opt/conda is shipped owned by the image original jovyan UID (1000). The
-            # neurodesktop entrypoint remaps the jovyan ACCOUNT to the runner UID at startup
-            # but does not re-own /opt/conda, so the live jovyan cannot pip install at
-            # runtime. Re-own it to whatever UID jovyan currently has (idempotent: skipped
-            # when already correct). Runs unconditionally because the remap branch above is
-            # a no-op here (the entrypoint already did the usermod before this step).
-            JOV_UID=$(id -u jovyan); JOV_GID=$(id -g jovyan)
-            CONDA_OWNER=$(stat -c %u /opt/conda 2>/dev/null || echo unknown)
-            echo "jovyan uid=$JOV_UID gid=$JOV_GID ; /opt/conda owner uid=$CONDA_OWNER"
-            if [ "$CONDA_OWNER" != "$JOV_UID" ]; then
-                echo "Re-owning /opt/conda to jovyan ($JOV_UID:$JOV_GID)..."
-                chown -R "$JOV_UID:$JOV_GID" /opt/conda || echo "chown /opt/conda exit $?"
-                echo "after: /opt/conda owner uid=$(stat -c %u /opt/conda)"
-            else
-                echo "/opt/conda already owned by jovyan; no chown needed"
-            fi
-
             # Create apptainer overlay for modules that require it
             if [ ! -L /tmp/apptainer_overlay ]; then
               echo "Creating /tmp/apptainer_overlay symlink to /overlay-storage..."
@@ -659,6 +642,26 @@ jobs:
             fi
 
             echo "Root-level setup complete"
+          '
+
+      - name: Re-own /opt/conda for runtime pip (skipped on heavy pool to avoid overlay copy-up)
+        # chown -R copies the whole conda tree up into the container overlay (~4 GB on
+        # metacopy=off), exhausting the heavy pool work disk and ENOSPCing the big FEAT
+        # notebooks. Those notebooks only pip-install packages already baked into the image
+        # (no-op), so they do not need a writable conda; skip the re-own for them.
+        if: ${{ !contains(fromJson('["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]'), matrix.notebooks) }}
+        run: |
+          docker exec --user root "$CONTAINER_NAME" bash -c '
+            JOV_UID=$(id -u jovyan); JOV_GID=$(id -g jovyan)
+            CONDA_OWNER=$(stat -c %u /opt/conda 2>/dev/null || echo unknown)
+            echo "jovyan uid=$JOV_UID gid=$JOV_GID ; /opt/conda owner uid=$CONDA_OWNER"
+            if [ "$CONDA_OWNER" != "$JOV_UID" ]; then
+                echo "Re-owning /opt/conda to jovyan ($JOV_UID:$JOV_GID)..."
+                chown -R "$JOV_UID:$JOV_GID" /opt/conda || echo "chown /opt/conda exit $?"
+                echo "after: /opt/conda owner uid=$(stat -c %u /opt/conda)"
+            else
+                echo "/opt/conda already owned by jovyan; no chown needed"
+            fi
           '
 
       - name: Install CI dependencies inside container
@@ -828,7 +831,7 @@ jobs:
 
       - name: Execute notebook in container
         if: steps.promote.outputs.promoted != 'true'
-        timeout-minutes: 420
+        timeout-minutes: 780
         run: |
           NOTEBOOK_PATH="${{ matrix.notebooks }}"
           NOTEBOOK=$(basename -s .ipynb "$NOTEBOOK_PATH")
@@ -884,9 +887,10 @@ jobs:
               cat "$KERNEL_JSON"
               
               # Run jupyter nbconvert
-              # Per-cell execution cap. 6h comfortably exceeds the heaviest legit notebook
-              # (Demo_fmriprep_FEAT ~4h) but catches a hung cell instead of running ~24h.
-              EXEC_TIMEOUT=21600
+              # Per-cell execution cap. 12h covers the heaviest legit notebook (fmriprep
+              # ~9.6h: one subject but full FreeSurfer recon-all) while still catching a
+              # hung cell well before a full day.
+              EXEC_TIMEOUT=43200
               echo "Using ExecutePreprocessor.timeout=${EXEC_TIMEOUT}s for $NOTEBOOK_PATH"
 
               # Keep full nbconvert output in file, and print only a focused excerpt on failure.
@@ -1018,7 +1022,7 @@ jobs:
 
             echo "Re-executing notebook with HF URLs: $NOTEBOOK_PATH"
 
-            EXEC_TIMEOUT=21600
+            EXEC_TIMEOUT=43200
             LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}-pass2.log"
 
             if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
