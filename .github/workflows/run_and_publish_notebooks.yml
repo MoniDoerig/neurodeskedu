@@ -67,6 +67,15 @@ on:
         type: boolean
         default: false
 
+  # Called by scheduled-drift-check.yml for the monthly drift health check.
+  workflow_call:
+    inputs:
+      drift_check:
+        description: 'Drift-check mode: force all notebooks, skip the HF cache-promote, and do no side effects (HF/Zenodo/Pages).'
+        required: false
+        type: boolean
+        default: false
+
 # =============================================================================
 # CONCURRENCY (disabled to allow multiple runs)
 # =============================================================================
@@ -198,8 +207,8 @@ jobs:
         id: list_notebooks
         run: |
           # Determine which notebooks to run based on trigger type
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "Mode: Scheduled run, execute ALL notebooks"
+          if [ "${{ inputs.drift_check }}" = "true" ]; then
+            echo "Mode: Drift check, execute ALL notebooks"
             changed_notebooks=$(find books -name "*.ipynb" | sed 's|^books/||')
 
           elif [ "${{ inputs.force_execution }}" == "true" ]; then
@@ -714,7 +723,9 @@ jobs:
           echo "Saved source snapshot: $SOURCE_DIR/$(basename "$NOTEBOOK_PATH")"
 
       - name: Try promoting cached notebook (main only)
-        if: github.ref == 'refs/heads/main'
+        # Skip on drift checks: re-execute for real to catch upstream drift,
+        # not a cache hit that would mask it.
+        if: github.ref == 'refs/heads/main' && inputs.drift_check != true
         id: promote
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -951,7 +962,7 @@ jobs:
       # 2. Transform uploads data to HF, rewrites paths->urls, clears outputs
       # 3. Second execution generates clean outputs with HF URLs
       - name: Transform notebook paths to HF URLs (post-execution)
-        if: steps.promote.outputs.promoted != 'true' && inputs.diagnostic_mode != true
+        if: steps.promote.outputs.promoted != 'true' && inputs.diagnostic_mode != true && inputs.drift_check != true
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
@@ -1223,7 +1234,7 @@ jobs:
           retention-days: 7
 
       - name: Upload source + executed notebooks to HuggingFace
-        if: success() && inputs.diagnostic_mode != true
+        if: success() && inputs.diagnostic_mode != true && inputs.drift_check != true
         # ARC pods see ~2% transient HF network failures (cluster team-confirmed infra floor).
         # Without this gate, one transient would fail the run-notebooks job and block publish-pages
         # entirely — 49 successful notebooks would not deploy because of one failed upload.
@@ -1408,7 +1419,7 @@ jobs:
   publish-dois:
     name: Publish DOIs to Zenodo
     needs: [run-notebooks]
-    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' && inputs.drift_check != true }}
     runs-on: ubuntu-22.04
     concurrency:
       group: publish-dois
@@ -1559,7 +1570,7 @@ jobs:
   publish-pages:
     name: Build & Publish to GitHub Pages
     needs: [run-notebooks, setup, publish-dois]
-    if: ${{ always() && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
+    if: ${{ always() && inputs.drift_check != true && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
     # Serialize publish jobs to prevent race conditions on gh-pages
     concurrency:

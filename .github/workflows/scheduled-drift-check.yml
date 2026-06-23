@@ -1,0 +1,110 @@
+# =============================================================================
+# Scheduled corpus drift check
+# =============================================================================
+# Monthly health check: re-runs the full notebook corpus on a schedule to catch
+# upstream package or image drift (e.g. a new package version breaking a
+# notebook), and opens a GitHub issue listing anything that fails.
+#
+# It reuses the corpus pipeline in run_and_publish_notebooks.yml via
+# workflow_call (drift_check: true), which forces all notebooks, skips the
+# HuggingFace cache-promote so it really re-executes, and does no side effects
+# (no HuggingFace upload, no Zenodo DOIs, no Pages deploy).
+# =============================================================================
+
+name: Scheduled corpus drift check
+
+on:
+  schedule:
+    # GitHub cron is UTC and cannot express "first Saturday", so this fires every
+    # Saturday 14:00 UTC (Sunday 00:00 Brisbane / AEST) and the guard job below
+    # runs the corpus only on the first Saturday of the month.
+    - cron: '0 14 * * 6'
+
+jobs:
+  # 1. First-Saturday guard: the cron fires weekly; run the corpus only on the
+  #    first Saturday of the month so the cadence is effectively monthly.
+  guard:
+    name: First-Saturday guard
+    runs-on: ubuntu-22.04
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        run: |
+          if [ "$(date -u +%-d)" -le 7 ]; then
+            echo "First Saturday of the month; running the corpus."
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Not the first Saturday; skipping (monthly cadence)."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # 2. Run the full corpus via the reusable workflow, in drift-check mode
+  #    (force all, no cache-promote, no side effects).
+  corpus:
+    name: Corpus
+    needs: guard
+    if: ${{ needs.guard.outputs.run == 'true' }}
+    uses: ./.github/workflows/run_and_publish_notebooks.yml
+    with:
+      drift_check: true
+    secrets: inherit
+
+  # 3. If anything failed, open or update a single rolling corpus-drift issue.
+  report:
+    name: Report drift
+    needs: [guard, corpus]
+    if: ${{ always() && needs.guard.outputs.run == 'true' && needs.corpus.result == 'failure' }}
+    runs-on: ubuntu-22.04
+    permissions:
+      issues: write
+      actions: read
+    steps:
+      - name: Open or update the corpus-drift issue
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        with:
+          script: |
+            const label = 'corpus-drift';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const today = new Date().toISOString().slice(0, 10);
+
+            // Ensure the label exists (no-op if it already does).
+            try {
+              await github.rest.issues.createLabel({ owner, repo, name: label, color: 'B60205', description: 'Scheduled corpus run found drift' });
+            } catch (e) { /* already exists */ }
+
+            // Collect the notebooks that failed in this run. Reusable-workflow jobs
+            // are named "Corpus / Run Notebook (<path>)", so match anywhere in the name.
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              owner, repo, run_id: context.runId, per_page: 100,
+            });
+            const failed = jobs
+              .filter(j => j.conclusion === 'failure' && j.name.includes('Run Notebook ('))
+              .map(j => (j.name.match(/Run Notebook \((.+)\)/) || [null, j.name])[1])
+              .sort();
+            const list = failed.length
+              ? failed.map(n => `- \`${n}\``).join('\n')
+              : '- (failure outside a notebook job, see the run log)';
+            const body = [
+              `The scheduled monthly corpus run on **${today}** found **${failed.length}** failing notebook(s):`,
+              '', list, '',
+              `Run: ${runUrl}`, '',
+              `These are usually upstream package or image drift. Investigate each, pin a known-good version, and re-run.`,
+            ].join('\n');
+            const title = 'Scheduled corpus drift: notebook(s) failing';
+
+            // Reuse one rolling open issue to avoid inbox spam.
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', labels: label, per_page: 100,
+            });
+            if (existing.length) {
+              const num = existing[0].number;
+              await github.rest.issues.update({ owner, repo, issue_number: num, body });
+              await github.rest.issues.createComment({ owner, repo, issue_number: num, body: `Re-checked **${today}**: ${failed.length} failing. ${runUrl}` });
+              core.notice(`Updated drift issue #${num}`);
+            } else {
+              const created = await github.rest.issues.create({ owner, repo, title, body, labels: [label] });
+              core.notice(`Opened drift issue #${created.data.number}`);
+            }
