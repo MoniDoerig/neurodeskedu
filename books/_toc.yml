@@ -10,6 +10,8 @@ chapters:
           - file: examples/diffusion_imaging/MRtrix_2
           - file: examples/diffusion_imaging/MRtrix_3
           - file: examples/diffusion_imaging/mrtrix3tissue
+          - file: examples/diffusion_imaging/qsiprep
+          - file: examples/diffusion_imaging/qsirecon
 
       - file: examples/electrophysiology/intro
         sections:
