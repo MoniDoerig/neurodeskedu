@@ -17,3 +17,7 @@ books/**/ds004884/
 # Agent config
 .agent/
 .DS_Store
+
+# R package library + tmp relocated onto the workspace mount by fMRI_tutorial_in_R_magic
+.r-library/
+.rtmp/
