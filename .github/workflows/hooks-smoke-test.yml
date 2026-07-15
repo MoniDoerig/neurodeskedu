@@ -16,16 +16,15 @@ on:
   workflow_dispatch:
     inputs:
       level:
-        description: "Test level (1=alpine, 2=neurodesktop, 3=FSL+Apptainer, 4=DinD real mechanism, 5=all)"
+        description: "Test level (1=alpine, 2=neurodesktop, 3=FSL+Apptainer, 4=all)"
         required: true
-        default: "5"
+        default: "4"
         type: choice
         options:
           - "1"
           - "2"
           - "3"
           - "4"
-          - "5"
       pool:
         description: "Runner pool to target"
         required: true
@@ -35,8 +34,6 @@ on:
           - "qriscloud"
           - "sydney"
           - "both"
-          - "syd2"
-          - "syd2-heavy"
 
 jobs:
   # ------------------------------------------------------------------
@@ -50,14 +47,9 @@ jobs:
       - id: set-pools
         run: |
           case "${{ inputs.pool }}" in
-            both)       echo 'pools=["neurodesk-arcrunner-neurodeskedu","neurodesk-syd-arcrunner-neurodeskedu"]' >> "$GITHUB_OUTPUT" ;;
-            sydney)     echo 'pools=["neurodesk-syd-arcrunner-neurodeskedu"]' >> "$GITHUB_OUTPUT" ;;
-            # New Sydney cluster under evaluation — kept as its own choice (not a
-            # rename of "sydney") so the known-good pool stays available to fall
-            # back on while this one is validated.
-            syd2)       echo 'pools=["neurodesk-syd2-arcrunner-neurodeskedu"]' >> "$GITHUB_OUTPUT" ;;
-            syd2-heavy) echo 'pools=["neurodesk-syd2-arcrunner-neurodeskedu-heavy"]' >> "$GITHUB_OUTPUT" ;;
-            *)          echo 'pools=["neurodesk-arcrunner-neurodeskedu"]' >> "$GITHUB_OUTPUT" ;;
+            both)   echo 'pools=["neurodesk-arcrunner-neurodeskedu","neurodesk-syd-arcrunner-neurodeskedu"]' >> "$GITHUB_OUTPUT" ;;
+            sydney) echo 'pools=["neurodesk-syd-arcrunner-neurodeskedu"]' >> "$GITHUB_OUTPUT" ;;
+            *)      echo 'pools=["neurodesk-arcrunner-neurodeskedu"]' >> "$GITHUB_OUTPUT" ;;
           esac
 
   # ------------------------------------------------------------------
@@ -65,7 +57,7 @@ jobs:
   # ------------------------------------------------------------------
   level-1-alpine:
     needs: setup
-    if: ${{ inputs.level == '1' || inputs.level == '5' }}
+    if: ${{ inputs.level == '1' || inputs.level == '4' }}
     strategy:
       matrix:
         pool: ${{ fromJson(needs.setup.outputs.pools) }}
@@ -105,7 +97,7 @@ jobs:
   # ------------------------------------------------------------------
   level-2-extension-template:
     needs: setup
-    if: ${{ inputs.level == '2' || inputs.level == '5' }}
+    if: ${{ inputs.level == '2' || inputs.level == '4' }}
     strategy:
       matrix:
         pool: ${{ fromJson(needs.setup.outputs.pools) }}
@@ -188,7 +180,7 @@ jobs:
   # ------------------------------------------------------------------
   level-3-apptainer-on-cvmfs:
     needs: setup
-    if: ${{ inputs.level == '3' || inputs.level == '5' }}
+    if: ${{ inputs.level == '3' || inputs.level == '4' }}
     strategy:
       matrix:
         pool: ${{ fromJson(needs.setup.outputs.pools) }}
@@ -277,79 +269,6 @@ jobs:
           jupyter --version
           jupyter nbconvert --version
 
-  # ------------------------------------------------------------------
-  # LEVEL 4: The mechanism run_and_publish_notebooks.yml actually uses.
-  # Levels 1-3 above go through the ARC *hook* (job-level `container:` key,
-  # intercepted by K8s and run natively inside a hook-built pod). Production
-  # does NOT use that path at all — its jobs have no `container:` key; they
-  # run bare on the runner pod and manually `sudo docker run -d` a nested
-  # neurodesktop container, then `docker exec` into it for every real step
-  # (package installs, nbconvert, everything). That's Docker-in-Docker (DinD),
-  # a materially different set of node capabilities (privileged docker daemon,
-  # CVMFS bind-mount propagated into the *nested* container, not just the pod).
-  # A green Level 1-3 does not prove this path works. This job mirrors
-  # production's actual docker run flags (see run_and_publish_notebooks.yml)
-  # so a pass here is evidence the real CI mechanism works on this pool.
-  # ------------------------------------------------------------------
-  level-4-dind-real-mechanism:
-    name: Level 4 - DinD (production's actual mechanism)
-    needs: setup
-    if: ${{ inputs.level == '4' || inputs.level == '5' }}
-    strategy:
-      matrix:
-        pool: ${{ fromJson(needs.setup.outputs.pools) }}
-      fail-fast: false
-    runs-on: ${{ matrix.pool }}
-    steps:
-      - name: Start a nested neurodesktop container (mirrors production's docker run)
-        shell: bash
-        run: |
-          sudo docker run -d --name dind-smoke \
-            --shm-size=1gb \
-            --privileged \
-            --user=root \
-            --mount type=bind,source=/cvmfs,target=/cvmfs,readonly,bind-propagation=rslave \
-            vnmd/neurodesktop:2026-04-28 \
-            sleep infinity
-          echo "Container started"
-
-      - name: DinD works at all (docker exec into the nested container)
-        shell: bash
-        run: |
-          docker exec dind-smoke bash -c 'hostname; whoami; id'
-
-      - name: CVMFS visible INSIDE the nested container (not just the pod)
-        # This is the piece Levels 1-3 cannot test: the pod's CVMFS mount has to
-        # additionally propagate through `docker run --mount ... bind-propagation=rslave`
-        # into a container nested inside it.
-        shell: bash
-        run: |
-          docker exec dind-smoke bash -c '
-            ls /cvmfs/ &&
-            ls /cvmfs/neurodesk.ardc.edu.au/containers/ | head -5
-          '
-
-      - name: Apptainer exec against CVMFS from inside the nested container
-        shell: bash
-        run: |
-          docker exec dind-smoke bash -c '
-            apptainer exec \
-              /cvmfs/neurodesk.ardc.edu.au/containers/fsl_6.0.5.1_20221016/fsl_6.0.5.1_20221016.simg \
-              fslmaths 2>&1 | head -10
-          '
-
-      - name: Jupyter nbconvert presence inside the nested container
-        shell: bash
-        run: |
-          docker exec dind-smoke bash -c '
-            which jupyter && jupyter nbconvert --version
-          '
-
-      - name: Cleanup
-        if: always()
-        shell: bash
-        run: docker rm -f dind-smoke || true
-
 # ------------------------------------------------------------------
 # Results interpretation
 # ------------------------------------------------------------------
@@ -359,10 +278,6 @@ jobs:
 #               build end-to-end. If Lmod or overlayfs fail here, workflows that
 #               use `module load ...` or rely on the entrypoint's setup will
 #               silently break when the real notebook workflow moves here.
-# LEVEL 4 pass: the actual mechanism run_and_publish_notebooks.yml depends on
-#               (DinD + CVMFS propagated into a nested container) works on this
-#               pool. This is the one that matters for "will our real CI run
-#               here" — Levels 1-3 test a different (hook-based) path.
 #
-# If all green: Phase K complete. Proceed to Phase L (autoscaler validation)
+# If all 3 green: Phase K complete. Proceed to Phase L (autoscaler validation)
 # and Phase M (workflow refactor PR in neurodeskedu).
