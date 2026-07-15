@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       image_override:
-        description: 'Override the Docker image (e.g. ghcr.io/neurodesk/neurodesktop/neurodesktop:2025-12-20)'
+        description: 'Override the Docker image (e.g. ghcr.io/neurodesk/neurodesktop:2025-12-20)'
         required: false
         type: string
       force_execution:
@@ -104,7 +104,7 @@ jobs:
               echo "::error::Failed to fetch Neurodesktop version from neurodesktop.toml"
               exit 1
             fi
-            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
+            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
           fi
           echo "Using image: $(grep neurodesk_image $GITHUB_OUTPUT | cut -d= -f2)"
 

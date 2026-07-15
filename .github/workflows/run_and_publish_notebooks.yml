@@ -34,7 +34,7 @@ on:
   workflow_dispatch:
     inputs:
       image_override:
-        description: 'Override the Docker image (e.g. ghcr.io/neurodesk/neurodesktop/neurodesktop:2025-12-20)'
+        description: 'Override the Docker image (e.g. ghcr.io/neurodesk/neurodesktop:2025-12-20)'
         required: false
         type: string
       force_execution:
@@ -161,7 +161,7 @@ jobs:
             # (no Jupyter server, via the `sleep infinity` CMD override below). image_override
             # still works for one-offs, e.g. slim py-stack benchmarking.
             NEURODESKTOP_VERSION=$(curl -s https://raw.githubusercontent.com/neurodesk/neurodesk.github.io/main/data/neurodesktop.toml | grep '^jupyter_neurodesk_version' | sed 's/.*= *"\(.*\)"/\1/')
-            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
+            echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
             # Slim py-stack default kept for one-line revert:
             #   echo "neurodesk_image=ghcr.io/neurodesk/neurocommand:py-stack" >> $GITHUB_OUTPUT
           fi
