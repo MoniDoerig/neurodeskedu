@@ -26,9 +26,11 @@ jobs:
       - name: Create review branch and post instructions
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PR-controlled values are passed via env (not interpolated into the
+          # run: script) so a crafted fork branch name cannot inject shell.
+          PR_NUM: ${{ github.event.pull_request.number }}
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
         run: |
-          PR_NUM=${{ github.event.pull_request.number }}
-          PR_HEAD=${{ github.event.pull_request.head.ref }}
           BRANCH="review/pr-${PR_NUM}"
 
           # Check if review branch already exists
