@@ -1419,7 +1419,7 @@ jobs:
   publish-dois:
     name: Publish DOIs to Zenodo
     needs: [run-notebooks]
-    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' && inputs.drift_check != true }}
+    if: ${{ needs.run-notebooks.result == 'success' && github.ref == 'refs/heads/main' && inputs.drift_check != true && inputs.diagnostic_mode != true }}
     runs-on: ubuntu-22.04
     concurrency:
       group: publish-dois
@@ -2140,7 +2140,7 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e
-        if: github.ref == 'refs/heads/main' || inputs.force_deploy_pages == true
+        if: (github.ref == 'refs/heads/main' || inputs.force_deploy_pages == true) && inputs.diagnostic_mode != true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./books/_build/html
