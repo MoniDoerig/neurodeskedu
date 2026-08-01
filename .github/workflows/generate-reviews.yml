@@ -1,9 +1,16 @@
 # Generate the review registry (reviews.json) from the reviews repo issues.
-# Runs on dispatch from the reviews repo, or manually.
+# Runs on a schedule, on dispatch from the reviews repo, or manually.
 
 name: Generate Review Registry
 
 on:
+  # Safety net: the repository_dispatch below is the only automatic path, and it
+  # fails silently when the sender's token loses access (the sender swallows the
+  # error). A periodic pull keeps the registry fresh even when that happens.
+  # Writes to the ci-data branch, so this no longer commits to main.
+  schedule:
+    - cron: '0 */6 * * *'
+
   # Run when dispatched from the reviews repo
   repository_dispatch:
     types: [reviews-updated]
