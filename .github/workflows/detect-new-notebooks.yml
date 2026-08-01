@@ -203,8 +203,19 @@ jobs:
           EXISTING=$(gh pr list --state open --json number,url,headRefName --jq '[.[] | select(.headRefName | startswith("review/auto-inject-"))][0].url // empty' 2>/dev/null || true)
           if [ -n "$EXISTING" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "An auto-inject PR is already open: $EXISTING"
-            echo "Skipping PR creation. Merge the existing PR first."
+            # Warn rather than log quietly: this skip leaves the new notebooks
+            # without an nd_review_id, so their pages render no review badge at
+            # all. Review issues still get created (that step is not gated), so
+            # the only symptom is a missing badge — which went unnoticed for two
+            # weeks while an auto-inject PR sat open.
+            echo "::warning::An auto-inject PR is already open ($EXISTING) — skipping UUID injection. New notebooks will have NO review badge until it is merged."
+            {
+              echo "### Review ID injection skipped"
+              echo ""
+              echo "An auto-inject PR is already open: $EXISTING"
+              echo ""
+              echo "Merge it, then re-run this workflow so the remaining notebooks get their \`nd_review_id\`."
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
