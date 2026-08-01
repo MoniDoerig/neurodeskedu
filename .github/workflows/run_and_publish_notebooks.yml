@@ -1862,6 +1862,41 @@ jobs:
             echo "ci-data branch not found"
           fi
 
+      - name: Refresh reviews.json from the reviews repo
+        # The review badges are rendered client-side from the deployed
+        # _static/reviews.json, so the site only ever shows what was baked in at
+        # build time. Regenerating here means every deploy ships current review
+        # states, instead of whatever happened to be on ci-data — which had gone
+        # stale for months when the upstream repository_dispatch silently failed.
+        # Writes to a temp file first, so a failed run never clobbers the ci-data
+        # copy fetched above (which stays as the fallback).
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.REVIEWS_REPO_TOKEN }}
+        run: |
+          if python3 tools/generate_reviews_registry.py \
+               --reviews-repo neurodesk/neurodeskedu-reviews \
+               --out /tmp/reviews-fresh.json \
+               --repo-dir .; then
+            count() { python3 -c "import json,sys;print(len(json.load(open(sys.argv[1])).get('reviews',{})))" "$1" 2>/dev/null || echo 0; }
+            FRESH_N=$(count /tmp/reviews-fresh.json)
+            PREV_N=$(count books/_static/reviews.json)
+            # Sanity gate. The generator returns an EMPTY registry and still exits 0
+            # if the search API answers 200 without an "items" key (rate limiting,
+            # transient oddities, incomplete_results). Publishing that would flip
+            # every badge on the site to "Unreviewed" — strictly worse than shipping
+            # the slightly older ci-data copy. Require a non-empty result that has
+            # not collapsed relative to the previous one.
+            if [ "$FRESH_N" -gt 0 ] && [ "$FRESH_N" -ge $(( PREV_N * 4 / 5 )) ]; then
+              cp /tmp/reviews-fresh.json books/_static/reviews.json
+              echo "Using freshly generated reviews.json (${FRESH_N} entries; ci-data copy had ${PREV_N})"
+            else
+              echo "::warning::Regenerated registry looks wrong (${FRESH_N} entries vs ${PREV_N} on ci-data) — keeping the ci-data copy"
+            fi
+          else
+            echo "::warning::Could not regenerate reviews.json — falling back to the ci-data copy"
+          fi
+
       - name: Set container name
         run: echo "CONTAINER_NAME=neurodesktop-publish-${{ github.run_id }}" >> $GITHUB_ENV
 
