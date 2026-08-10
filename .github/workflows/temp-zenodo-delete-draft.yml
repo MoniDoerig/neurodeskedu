@@ -99,15 +99,25 @@ jobs:
               fail(f"CHECK 2 FAILED - conceptrecid {d.get('conceptrecid')} != {EXPECT_CONCEPT}")
           print(f"  CHECK 2 ok: belongs to concept {EXPECT_CONCEPT}")
 
-          # ---- CHECK 3: it is the published record's latest_draft ----------
+          # ---- CHECK 3: the published record is intact --------------------
+          # NB: an earlier version of this check asserted that the published
+          # record's links.latest_draft == this draft. That was wrong: on a plain
+          # GET, latest_draft is the record's OWN edit URL (it returned 21285938,
+          # i.e. itself), not the next-version draft. Only the *newversion*
+          # response returns the new draft there. Replaced with a check that
+          # actually matters: the published record must still be intact, proving
+          # we are not deleting the only copy of anything.
           try:
               _, pub = call(f"{API}/{PUBLISHED_ID}")
           except urllib.error.HTTPError as e:
               fail(f"cannot read published record {PUBLISHED_ID}: HTTP {e.code}")
-          latest = str(pub.get("links", {}).get("latest_draft", "")).rstrip("/").split("/")[-1]
-          if latest and latest != dep:
-              fail(f"CHECK 3 FAILED - published record's latest_draft is {latest}, not {dep}")
-          print(f"  CHECK 3 ok: matches latest_draft of published record {PUBLISHED_ID}")
+          if pub.get("submitted") is not True or pub.get("state") != "done":
+              fail(f"CHECK 3 FAILED - published record {PUBLISHED_ID} is not intact "
+                   f"(state={pub.get('state')}, submitted={pub.get('submitted')})")
+          if str(pub.get("conceptrecid")) != EXPECT_CONCEPT:
+              fail(f"CHECK 3 FAILED - published record concept {pub.get('conceptrecid')} != {EXPECT_CONCEPT}")
+          print(f"  CHECK 3 ok: published record {PUBLISHED_ID} intact "
+                f"(state=done, submitted=True, {len(pub.get('files') or [])} file(s))")
 
           # ---- CHECK 4: exactly one draft on the concept -------------------
           drafts = []
