@@ -1,0 +1,148 @@
+# TEMPORARY one-off — delete this workflow once the draft is gone.
+#
+# Removes the orphaned, never-published new-version draft that blocks
+# `newversion` for container_paths_neurodesk (concept 20076084).
+#
+# Cause (traced to Invenio source): Zenodo's legacy newversion endpoint calls
+# new_version() then unconditionally import_files(). new_version() returns an
+# EXISTING draft if one exists, so a repeat call re-imports into a draft that
+# already has files -> ValidationError "Please remove all files first."
+#
+# SAFETY (all must pass before anything is deleted):
+#   1. target must be submitted == false AND state == "unsubmitted"
+#   2. target's conceptrecid must equal the expected concept
+#   3. target's id must match links.latest_draft of the published record
+#   4. there must be exactly ONE draft on that concept
+#   5. defaults to a DRY RUN; deleting requires apply=true
+name: TEMP zenodo draft delete
+
+on:
+  workflow_dispatch:
+    inputs:
+      deposition_id:
+        description: 'Draft deposition id to delete'
+        required: true
+        default: '21506762'
+        type: string
+      apply:
+        description: 'Actually delete (unchecked = dry run, nothing is changed)'
+        required: false
+        default: false
+        type: boolean
+
+# Never race the real publisher.
+concurrency:
+  group: publish-dois
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  delete-draft:
+    if: github.repository == 'neurodesk/neurodeskedu'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Delete orphaned draft (guarded)
+        env:
+          ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
+          DEP_ID: ${{ inputs.deposition_id }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          python3 - <<'PY'
+          import os, sys, json, urllib.request, urllib.error
+
+          tok    = os.environ["ZENODO_TOKEN"]
+          dep    = os.environ["DEP_ID"].strip()
+          apply_ = os.environ.get("APPLY", "false") == "true"
+
+          EXPECT_CONCEPT = "20076084"
+          PUBLISHED_ID   = "21285938"
+          API            = "https://zenodo.org/api/deposit/depositions"
+
+          if not dep.isdigit():
+              print(f"::error::deposition_id must be numeric, got {dep!r}")
+              sys.exit(1)
+
+          def call(url, method="GET"):
+              r = urllib.request.Request(url, method=method,
+                                         headers={"Authorization": f"Bearer {tok}"})
+              with urllib.request.urlopen(r, timeout=60) as resp:
+                  body = resp.read().decode()
+                  return resp.status, (json.loads(body) if body.strip().startswith(("{", "[")) else {})
+
+          def fail(msg):
+              print(f"::error::{msg}")
+              print("Nothing was changed.")
+              sys.exit(1)
+
+          # ---- read target -------------------------------------------------
+          try:
+              _, d = call(f"{API}/{dep}")
+          except urllib.error.HTTPError as e:
+              fail(f"cannot read deposition {dep}: HTTP {e.code}")
+
+          print("TARGET")
+          print(f"  id           : {dep}")
+          print(f"  title        : {str(d.get('title'))[:70]}")
+          print(f"  state        : {d.get('state')}   submitted: {d.get('submitted')}")
+          print(f"  conceptrecid : {d.get('conceptrecid')}")
+          print(f"  files        : {len(d.get('files') or [])}")
+          print()
+
+          # ---- CHECK 1: unpublished ---------------------------------------
+          if d.get("submitted") is not False or d.get("state") != "unsubmitted":
+              fail("CHECK 1 FAILED - not an unsubmitted draft.")
+          print("  CHECK 1 ok: unpublished draft (submitted=False, state=unsubmitted)")
+
+          # ---- CHECK 2: right concept -------------------------------------
+          if str(d.get("conceptrecid")) != EXPECT_CONCEPT:
+              fail(f"CHECK 2 FAILED - conceptrecid {d.get('conceptrecid')} != {EXPECT_CONCEPT}")
+          print(f"  CHECK 2 ok: belongs to concept {EXPECT_CONCEPT}")
+
+          # ---- CHECK 3: it is the published record's latest_draft ----------
+          try:
+              _, pub = call(f"{API}/{PUBLISHED_ID}")
+          except urllib.error.HTTPError as e:
+              fail(f"cannot read published record {PUBLISHED_ID}: HTTP {e.code}")
+          latest = str(pub.get("links", {}).get("latest_draft", "")).rstrip("/").split("/")[-1]
+          if latest and latest != dep:
+              fail(f"CHECK 3 FAILED - published record's latest_draft is {latest}, not {dep}")
+          print(f"  CHECK 3 ok: matches latest_draft of published record {PUBLISHED_ID}")
+
+          # ---- CHECK 4: exactly one draft on the concept -------------------
+          drafts = []
+          for p in range(1, 11):
+              try:
+                  _, items = call(f"{API}?size=100&page={p}")
+              except urllib.error.HTTPError:
+                  break
+              if not items:
+                  break
+              for it in items:
+                  if str(it.get("conceptrecid")) == EXPECT_CONCEPT and it.get("submitted") is False:
+                      drafts.append(str(it.get("id")))
+          if sorted(drafts) != [dep]:
+              fail(f"CHECK 4 FAILED - drafts on concept {EXPECT_CONCEPT} = {drafts}, expected exactly ['{dep}']")
+          print(f"  CHECK 4 ok: exactly one draft on the concept, and it is {dep}")
+          print()
+
+          # ---- act ---------------------------------------------------------
+          if not apply_:
+              print("DRY RUN - all checks passed. Would DELETE this draft.")
+              print("Re-run with apply=true to actually delete. Nothing was changed.")
+              sys.exit(0)
+
+          try:
+              st, _ = call(f"{API}/{dep}", method="DELETE")
+              print(f"DELETED - HTTP {st}")
+          except urllib.error.HTTPError as e:
+              fail(f"delete failed: HTTP {e.code} {e.read().decode()[:200]}")
+
+          # ---- verify ------------------------------------------------------
+          try:
+              call(f"{API}/{dep}")
+              print("::error::draft is STILL readable after delete - verify by hand")
+              sys.exit(1)
+          except urllib.error.HTTPError as e:
+              print(f"VERIFIED gone (GET now HTTP {e.code})")
+          PY
