@@ -1,0 +1,30 @@
+name: Validate DIPY download recovery
+
+on:
+  push:
+    paths:
+      - '.github/scripts/test_dipy_download.py'
+      - '.github/workflows/validate-dipy-download.yml'
+      - 'books/examples/diffusion_imaging/DIPY_1.ipynb'
+      - 'books/examples/diffusion_imaging/DIPY_2.ipynb'
+  pull_request:
+    paths:
+      - '.github/scripts/test_dipy_download.py'
+      - '.github/workflows/validate-dipy-download.yml'
+      - 'books/examples/diffusion_imaging/DIPY_1.ipynb'
+      - 'books/examples/diffusion_imaging/DIPY_2.ipynb'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  truncated-transfer:
+    name: Resume a truncated transfer
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - run: python3 .github/scripts/test_dipy_download.py

@@ -26,6 +26,13 @@ on:
     paths:
       - '**/*.ipynb'
       - 'books/**/*.md'
+      - 'books/**/*.png'
+      - 'books/**/*.PNG'
+      - 'books/**/*.jpg'
+      - 'books/**/*.jpeg'
+      - 'books/**/*.gif'
+      - 'books/**/*.svg'
+      - 'books/**/*.webp'
 
   # NOTE: create_review_branch.yml uses pull_request_target to auto-create a
   # review branch. A reviewer must merge the PR into that branch to trigger CI
@@ -2181,4 +2188,3 @@ jobs:
           publish_dir: ./books/_build/html
           keep_files: false  # Clean publish - removes old/broken notebooks
           force_orphan: true  # Reset gh-pages history on each deploy to prevent size bloat
-
