@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 import tempfile
 import threading
 import unittest
@@ -25,6 +26,15 @@ def helper_source(notebook_name):
             f"found {len(matching_cells)}"
         )
     return matching_cells[0]
+
+
+def markdown_source(notebook_name):
+    notebook = json.loads((NOTEBOOK_DIRECTORY / notebook_name).read_text())
+    return "\n".join(
+        "".join(cell.get("source", []))
+        for cell in notebook["cells"]
+        if cell.get("cell_type") == "markdown"
+    )
 
 
 def load_download_helper():
@@ -114,6 +124,62 @@ class NotebookWiringTest(unittest.TestCase):
         self.assertEqual(dipy_1_source, dipy_2_source)
         self.assertIn('headers = {"Range": f"bytes={offset}-"}', dipy_1_source)
         self.assertIn('if name == "stanford_hardi":', dipy_1_source)
+
+
+class CliDocumentationTest(unittest.TestCase):
+    expected_commands = {
+        "DIPY_1.ipynb": {
+            "dipy_brain_mask",
+            "dipy_fit_fwdti",
+            "dipy_fit_powermap",
+        },
+        "DIPY_2.ipynb": {
+            "dipy_cluster_streamlines",
+            "dipy_fit_force",
+            "dipy_fit_msmtcsd",
+        },
+    }
+
+    def test_documents_every_new_dipy_1_12_command(self):
+        command_link = re.compile(
+            r"\[`(dipy_[a-z0-9_]+)`\]"
+            r"\(https://docs\.dipy\.org/stable/reference_cmd/[^)]+\)"
+        )
+
+        for notebook_name, expected_commands in self.expected_commands.items():
+            with self.subTest(notebook=notebook_name):
+                documented_commands = set(
+                    command_link.findall(markdown_source(notebook_name))
+                )
+                self.assertTrue(
+                    expected_commands.issubset(documented_commands),
+                    f"Missing command documentation: "
+                    f"{sorted(expected_commands - documented_commands)}",
+                )
+
+    def test_links_to_the_complete_workflow_catalog(self):
+        catalog_url = "https://docs.dipy.org/stable/interfaces/index.html"
+
+        for notebook_name in self.expected_commands:
+            with self.subTest(notebook=notebook_name):
+                self.assertIn(catalog_url, markdown_source(notebook_name))
+
+    def test_msmt_example_enables_msmt(self):
+        source = markdown_source("DIPY_2.ipynb")
+
+        self.assertIn(
+            "fits standard single-shell single-tissue CSD by default", source
+        )
+        self.assertIn("Pass `--use_msmt` to fit multi-shell multi-tissue CSD", source)
+        self.assertRegex(source, r"(?m)^dipy_fit_msmtcsd .* --use_msmt(?: |$)")
+
+    def test_dipy_1_toc_matches_the_cli_section_order(self):
+        source = markdown_source("DIPY_1.ipynb")
+
+        self.assertLess(
+            source.index("[DIPY command-line workflows]"),
+            source.index("[Data Preparation]"),
+        )
 
 
 if __name__ == "__main__":
