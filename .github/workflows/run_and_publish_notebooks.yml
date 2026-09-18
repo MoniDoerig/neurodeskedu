@@ -82,6 +82,11 @@ on:
         required: false
         type: boolean
         default: false
+      image_override:
+        description: 'Override the Docker image. The drift check passes :latest so the monthly run tests the current image, which is what catches image drift.'
+        required: false
+        type: string
+        default: ''
 
 # =============================================================================
 # CONCURRENCY (disabled to allow multiple runs)
