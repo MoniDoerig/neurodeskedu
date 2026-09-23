@@ -66,6 +66,16 @@ Our example notebooks follow best practices from [Rule et al. (2019) "Ten simple
 
 ## Tips
 
+### Publication reruns
+
+CI runs notebooks containing local NiiVue files twice: once to produce results,
+then again to render viewers using hosted URLs. Tag cells that create output
+directories or perform expensive processing with `skip-on-publish` to run them
+only on the first pass. Normal interactive Run All still executes these cells.
+Keep variables needed by later cells and result-validation cells untagged, so
+the publication pass can inspect the same results in a fresh kernel. CI stops
+at the first cell error and only starts publication after a successful first pass.
+
 ### Managing Long Outputs
 
 **For cells that produce long outputs** (e.g., extensive logs, large dataframes, verbose model training), add the `scroll-output` tag to make the output scrollable when rendered on GitHub Pages.
