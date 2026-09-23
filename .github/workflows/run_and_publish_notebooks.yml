@@ -912,9 +912,7 @@ jobs:
 
               echo "Executing notebook: $NOTEBOOK_PATH"
               
-              # Execute the notebook in-place using nbconvert
-              # --allow-errors: continue even if cells error (we detect errors later)
-              # --inplace: overwrite the original notebook with outputs
+              # Stop at the first error and save partial outputs for debugging.
               # Log is saved to mounted workspace for persistence
               LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}.log"
               
@@ -933,25 +931,24 @@ jobs:
               python3 /tmp/fix_kernel.py
               cat "$KERNEL_JSON"
               
-              # Run jupyter nbconvert
+              # Run the notebook with nbclient.
               # Per-cell execution cap. 12h covers the heaviest legit notebook (fmriprep
               # ~9.6h: one subject but full FreeSurfer recon-all) while still catching a
               # hung cell well before a full day.
               EXEC_TIMEOUT=43200
-              echo "Using ExecutePreprocessor.timeout=${EXEC_TIMEOUT}s for $NOTEBOOK_PATH"
+              echo "Using per-cell timeout=${EXEC_TIMEOUT}s for $NOTEBOOK_PATH"
 
-              # Keep full nbconvert output in file, and print only a focused excerpt on failure.
-              if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
-                --ExecutePreprocessor.timeout="${EXEC_TIMEOUT}" \
-                --ExecutePreprocessor.kernel_name=python3 \
+              # Keep full execution output in file, and print only a focused excerpt on failure.
+              if python3 /home/jovyan/workspace/.github/scripts/execute_notebook.py \
+                --timeout "${EXEC_TIMEOUT}" \
                 "/home/jovyan/workspace/books/$NOTEBOOK_PATH" 2>&1 | tee "$LOG_FILE"; then
                 echo "Notebook execution complete"
               else
                 NBEXEC_RC=$?
-                echo "::error::nbconvert failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
-                echo "--- Potential failure lines from nbconvert log ---"
+                echo "::error::Notebook execution failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
+                echo "--- Potential failure lines from execution log ---"
                 grep -nEi "ERROR|Traceback|Exception|CellExecutionError|CalledProcessError|No such file|not found" "$LOG_FILE" | tail -n 80 || true
-                echo "--- Last 80 lines from nbconvert log ---"
+                echo "--- Last 80 lines from execution log ---"
                 tail -n 80 "$LOG_FILE" || true
                 exit "${NBEXEC_RC}"
               fi
@@ -1072,14 +1069,13 @@ jobs:
             EXEC_TIMEOUT=43200
             LOG_FILE="$HOME/workspace/nbconvert-${NOTEBOOK}-pass2.log"
 
-            if jupyter nbconvert --to notebook --execute --inplace --allow-errors \
-              --ExecutePreprocessor.timeout="${EXEC_TIMEOUT}" \
-              --ExecutePreprocessor.kernel_name=python3 \
+            if python3 /home/jovyan/workspace/.github/scripts/execute_notebook.py \
+              --publication-pass --timeout "${EXEC_TIMEOUT}" \
               "/home/jovyan/workspace/books/$NOTEBOOK_PATH" 2>&1 | tee "$LOG_FILE"; then
               echo "Second pass execution complete"
             else
               NBEXEC_RC=$?
-              echo "::error::Second pass nbconvert failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
+              echo "::error::Second pass execution failed for $NOTEBOOK_PATH (exit code ${NBEXEC_RC})"
               tail -n 50 "$LOG_FILE" || true
               exit "${NBEXEC_RC}"
             fi

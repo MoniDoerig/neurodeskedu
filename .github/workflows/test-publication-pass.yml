@@ -1,0 +1,34 @@
+name: Test notebook publication pass
+
+on:
+  pull_request:
+    paths:
+      - '.github/scripts/execute_notebook.py'
+      - '.github/scripts/test_publication_pass.py'
+      - '.github/workflows/run_and_publish_notebooks.yml'
+      - '.github/workflows/test-publication-pass.yml'
+      - 'books/examples/structural_imaging/freesurfer.ipynb'
+      - 'books/examples/structural_imaging/SYNcro.ipynb'
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/execute_notebook.py'
+      - '.github/scripts/test_publication_pass.py'
+      - '.github/workflows/run_and_publish_notebooks.yml'
+      - '.github/workflows/test-publication-pass.yml'
+      - 'books/examples/structural_imaging/freesurfer.ipynb'
+      - 'books/examples/structural_imaging/SYNcro.ipynb'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install nbclient nbformat ipykernel nibabel numpy
+      - run: python .github/scripts/test_publication_pass.py
