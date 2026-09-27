@@ -919,9 +919,17 @@ jobs:
               # CRITICAL: Modify the kernel.json to include MODULEPATH and LMOD_CMD
               # IPython startup scripts are not reliable - kernel may not load them
               # Modifying the kernelspec ensures the kernel process starts with correct environment
-              KERNEL_JSON="/opt/conda/share/jupyter/kernels/python3/kernel.json"
-              echo "Modifying kernel spec at $KERNEL_JSON"
-              cp "$KERNEL_JSON" "${KERNEL_JSON}.bak"
+              # Write the modified kernelspec to the USER Jupyter data dir rather than editing
+              # the system one in /opt/conda. Jupyter searches the user dir first, and jovyan
+              # always owns it - so this works even where /opt/conda is not writable (the heavy
+              # pool skips the /opt/conda re-own to avoid a ~4 GB overlay copy-up, and newer
+              # neurodesktop images no longer leave /opt/conda writable by jovyan).
+              SYS_KERNEL_JSON="/opt/conda/share/jupyter/kernels/python3/kernel.json"
+              USER_KERNEL_DIR="$(jupyter --data-dir)/kernels/python3"
+              mkdir -p "$USER_KERNEL_DIR"
+              cp "$SYS_KERNEL_JSON" "$USER_KERNEL_DIR/kernel.json"
+              KERNEL_JSON="$USER_KERNEL_DIR/kernel.json"
+              echo "Modifying kernel spec at $KERNEL_JSON (copied from $SYS_KERNEL_JSON)"
               echo "import json" > /tmp/fix_kernel.py
               echo "k = json.load(open(\"$KERNEL_JSON\"))" >> /tmp/fix_kernel.py
               echo "env = {\"MODULEPATH\": \"/cvmfs/neurodesk.ardc.edu.au/containers/modules\", \"LMOD_CMD\": \"/usr/share/lmod/lmod/libexec/lmod\", \"EGL_LOG_LEVEL\": \"fatal\", \"PYTHONWARNINGS\": \"ignore:where used without:UserWarning\"}" >> /tmp/fix_kernel.py
@@ -930,6 +938,7 @@ jobs:
               echo "print(\"Updated kernel.json\")" >> /tmp/fix_kernel.py
               python3 /tmp/fix_kernel.py
               cat "$KERNEL_JSON"
+              jupyter kernelspec list
               
               # Run the notebook with nbclient.
               # Per-cell execution cap. 12h covers the heaviest legit notebook (fmriprep
