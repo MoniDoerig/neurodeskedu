@@ -107,6 +107,7 @@ jobs:
     name: Setup Environment
     runs-on: ubuntu-22.04
     outputs:
+      heavy_notebooks: ${{ steps.select_runner.outputs.heavy_notebooks }}
       runner: ${{ steps.select_runner.outputs.runner }}
       runs_on: ${{ steps.select_runner.outputs.runs_on }}
       neurodesk_image: ${{ steps.get_image.outputs.neurodesk_image }}
@@ -134,6 +135,9 @@ jobs:
           # DinD/arc-base-equivalent architecture, hosted on Sydney AZ for AARNet I/O proximity.
           # Heavy notebooks route to the Sydney heavy pool (neurodesk-syd-arcrunner-neurodeskedu-heavy); see run-notebooks job.
           # Previous routing kept for one-line revert: echo 'runs_on={"group":"arc-base"}'
+          # Notebooks routed to the heavy pool. Single source of truth: run-notebooks reads this
+          # for both its runs-on and the /opt/conda re-own skip. To add a heavy notebook, add it here.
+          echo 'heavy_notebooks=["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]' >> $GITHUB_OUTPUT
           echo "runner=arc-base" >> $GITHUB_OUTPUT
           echo 'runs_on="neurodesk-syd-arcrunner-neurodeskedu"' >> $GITHUB_OUTPUT
 
@@ -319,13 +323,16 @@ jobs:
     needs: [setup, select-notebooks]
     if: ${{ needs.select-notebooks.outputs.notebook_list != '[]' && inputs.use_notebook_cache != true }}
     # Per-notebook runner routing:
-    # Storage-heavy notebooks (>16 Gi work-dir need) → Sydney heavy pool neurodesk-syd-arcrunner-neurodeskedu-heavy
+    # Notebooks needing >16 GiB of Docker image storage (docker-lib) -> Sydney heavy pool
+    #   neurodesk-syd-arcrunner-neurodeskedu-heavy. NOT the work dir: measured 2026-09-10, the
+    #   work dir peaked at 0.42 GiB, but Demo_FEAT_HigherLevelStats used 29 of 32 GiB docker-lib
+    #   (the regular pool only has 16 GiB). Do not remove this routing on a work-dir argument.
     #   (r3.xlarge 16 vCPU/64 GiB, 64Gi work PVC, max 3 concurrent, scale-from-zero ~3-5 min cold start).
     #   Sydney parallel of QRIS arc-mem; moved 2026-06-08 for the ardc-syd-1 AARNet I/O advantage.
     # Everyone else → whatever setup selected (default: Sydney AZ DinD pool neurodesk-syd-arcrunner-neurodeskedu).
-    # To add another notebook to the heavy list: append its path to the array below.
+    # To add another notebook to the heavy list: add it to heavy_notebooks in the setup job.
     # Previous QRIS arc-mem routing kept for one-line revert: ...matrix.notebooks) && fromJson('{"group":"arc-mem"}') || ...
-    runs-on: ${{ contains(fromJson('["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]'), matrix.notebooks) && 'neurodesk-syd-arcrunner-neurodeskedu-heavy' || fromJson(needs.setup.outputs.runs_on) }}
+    runs-on: ${{ contains(fromJson(needs.setup.outputs.heavy_notebooks), matrix.notebooks) && 'neurodesk-syd-arcrunner-neurodeskedu-heavy' || fromJson(needs.setup.outputs.runs_on) }}
     timeout-minutes: 840
 
     concurrency:
@@ -688,10 +695,10 @@ jobs:
 
       - name: Re-own /opt/conda for runtime pip (skipped on heavy pool to avoid overlay copy-up)
         # chown -R copies the whole conda tree up into the container overlay (~4 GB on
-        # metacopy=off), exhausting the heavy pool work disk and ENOSPCing the big FEAT
+        # metacopy=off), exhausting the heavy pool docker-lib disk and ENOSPCing the big FEAT
         # notebooks. Those notebooks only pip-install packages already baked into the image
         # (no-op), so they do not need a writable conda; skip the re-own for them.
-        if: ${{ !contains(fromJson('["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]'), matrix.notebooks) }}
+        if: ${{ !contains(fromJson(needs.setup.outputs.heavy_notebooks), matrix.notebooks) }}
         run: |
           docker exec --user root "$CONTAINER_NAME" bash -c '
             JOV_UID=$(id -u jovyan); JOV_GID=$(id -g jovyan)
