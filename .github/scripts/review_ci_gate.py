@@ -10,8 +10,9 @@ On main that job also succeeds when it promotes a cached copy instead of
 executing, but the cache only holds notebooks that passed on a review branch
 with identical source, so that still counts as a pass.
 
-Anything else is held back: no issue, no nd_review_id, just a warning and a line
-in the step summary. A held notebook still lacks an nd_review_id, so a later run
+Anything else is held back: no issue, no nd_review_id, just a warning, a line in
+the step summary and an entry in the workflow's rolling "review-held" notice
+issue. A held notebook still lacks an nd_review_id, so a later run
 picks it up again once CI passes on main: after its failed job is re-run, or after
 a push that changes it. Dispatched CI runs do not count.
 
@@ -25,7 +26,8 @@ Env:
   TRIGGER_RUN_ID   the CI run that triggered this workflow (optional)
   GITHUB_REPOSITORY, GITHUB_API_URL, GITHUB_OUTPUT, GITHUB_STEP_SUMMARY (set by Actions)
 
-Writes gated=<JSON list of candidates that may go ahead> and count=<n> to GITHUB_OUTPUT.
+Writes to GITHUB_OUTPUT: gated=<JSON list of candidates that may go ahead>,
+count=<n>, and held=<JSON list of {source_path, reason, url}> (url may be null).
 """
 
 import json
@@ -95,8 +97,11 @@ def skip_listed():
         return set()
 
 
+CONCLUSIONS = {'failure': 'CI failed', 'timed_out': 'CI timed out', 'cancelled': 'CI cancelled'}
+
+
 def evaluate(candidates, runs, jobs_of, blob_at, head='HEAD', skipped=frozenset()):
-    """Split candidates into (gated, held); held is a list of (candidate, reason)."""
+    """Split candidates into (gated, held); held items are {source_path, reason, url}."""
     need = {c['source_path'] for c in candidates if not c.get('issue_exists')}
     newest = {}  # path -> (run, job) of the newest CI job for that notebook
     for run in runs:
@@ -107,22 +112,27 @@ def evaluate(candidates, runs, jobs_of, blob_at, head='HEAD', skipped=frozenset(
                 newest[path] = (run, job)
 
     gated, held = [], []
+    hold = lambda path, reason, url=None: held.append(
+        {'source_path': path, 'reason': reason, 'url': url})
     for c in candidates:
         path = c['source_path']
         if c.get('issue_exists'):
             gated.append(c)  # already has a review issue: only the ID injection is left
         elif path not in newest:
             if path in skipped:
-                held.append((c, 'it is in .github/skip-notebooks.txt, so CI never runs it'))
+                hold(path, 'skip-listed: in .github/skip-notebooks.txt, so CI never runs it')
             else:
-                held.append((c, f'no CI result for it in the last {len(runs)} main CI runs'))
+                hold(path, f'no finished CI result in the last {len(runs)} main runs '
+                           '(still running, or not run)')
         else:
             run, job = newest[path]
             if blob_at(run['head_sha'], path) != blob_at(head, path):
-                held.append((c, 'CI has not finished on its current version yet '
-                                 f'(newest result is for an older version: {run["html_url"]})'))
+                hold(path, 'stale: changed since CI last ran it; waiting for CI on this version',
+                     run['html_url'])
             elif job['conclusion'] != 'success':
-                held.append((c, f'CI {job["conclusion"] or job["status"]}: {job["html_url"]}'))
+                reason = CONCLUSIONS.get(job['conclusion']) or (
+                    f'CI {job["conclusion"]}' if job['conclusion'] else 'CI still running')
+                hold(path, reason, job['html_url'])
             else:
                 gated.append(c)
     return gated, held
@@ -144,9 +154,9 @@ def main():
     for c in gated:
         why = 'review issue already exists' if c.get('issue_exists') else 'passed CI'
         print(f"Go ahead: {c['source_path']} ({why})")
-    for c, why in held:
-        print(f"::warning::Review issue held back for {c['source_path']}: {why} "
-              "(see the run summary for how to unblock it)")
+    for h in held:
+        print(f"::warning::Review issue held back for {h['source_path']}: {h['reason']}"
+              + (f" ({h['url']})" if h['url'] else '') + '. See the run summary to unblock it.')
 
     if held:
         lines = [
@@ -158,16 +168,18 @@ def main():
             'fix to the notebook. This workflow runs again when that CI run finishes. A '
             'manually dispatched CI run does not count.',
             '',
-            '| Notebook | Reason |',
-            '|---|---|',
+            '| Notebook | Reason | CI |',
+            '|---|---|---|',
         ]
-        lines += [f"| `{c['source_path']}` | {why} |" for c, why in held]
+        lines += [f"| `{h['source_path']}` | {h['reason']} | "
+                  + (f"[link]({h['url']})" if h['url'] else '') + ' |' for h in held]
         with open(os.environ.get('GITHUB_STEP_SUMMARY', os.devnull), 'a', encoding='utf-8') as f:
             f.write('\n'.join(lines) + '\n')
 
     with open(os.environ.get('GITHUB_OUTPUT', os.devnull), 'a', encoding='utf-8') as f:
         f.write(f'gated={json.dumps(gated)}\n')
         f.write(f'count={len(gated)}\n')
+        f.write(f'held={json.dumps(held)}\n')
 
 
 if __name__ == '__main__':
