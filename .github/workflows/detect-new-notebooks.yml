@@ -3,6 +3,14 @@
 #   2. Write it into the notebook/page metadata (via PR)
 #   3. Open a review issue in the reviews repo with the UUID already set
 #
+# CI gate: this runs after "Run Notebooks & Publish" finishes on main, not on
+# the push itself, and only notebooks whose current version passed CI get
+# steps 1-3 (see .github/scripts/review_ci_gate.py). A notebook that failed,
+# was cancelled or has not run yet is held back with a warning. It keeps
+# lacking an nd_review_id, so the first run after CI passes on main picks it
+# up (re-run its failed job on that main run, or push a fix; dispatched CI
+# runs do not count).
+#
 # This is self-contained — no round-trip dispatch needed.
 # Only requires one cross-repo token: REVIEWS_REPO_TOKEN (to create issues
 # in the reviews repository).
@@ -10,31 +18,51 @@
 name: Detect new notebooks
 
 on:
-  push:
+  # After CI finishes on main, so the gate can see each notebook's result.
+  workflow_run:
+    workflows: ['Run Notebooks & Publish']
+    types: [completed]
     branches: [main]
-    paths:
-      - 'books/**/*.ipynb'
+
+  # Previous trigger, which filed review issues without waiting for CI:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'books/**/*.ipynb'
 
   workflow_dispatch:
     inputs:
       dry_run:
         description: 'List files without creating issues or PRs'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
+# A queued run can be replaced by a newer one. That is harmless: the gate looks
+# back over recent CI runs, not only the one that triggered it.
 concurrency:
   group: detect-new-notebooks
   cancel-in-progress: false
 
 jobs:
   detect:
+    # Only CI runs triggered by a push to main of this repo count, not dispatched
+    # or fork runs.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
+      actions: read  # the CI gate reads job results of "Run Notebooks & Publish"
 
     steps:
+      # On workflow_run this checks out the tip of main, not the CI run's head_sha.
+      # That is deliberate: the gate compares each notebook here with the version CI
+      # ran, so a notebook changed or deleted since is not filed on an old result,
+      # and the auto-inject PR starts from current main.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -91,8 +119,10 @@ jobs:
               f.write(f"count={len(missing)}\n")
           PYEOF
 
+      # dry_run is a boolean input, so compare against true, not 'true': a boolean
+      # never equals a string in expressions, so dry runs used to act for real.
       - name: Verify cross-repo token
-        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != true
         env:
           HAS_TOKEN: ${{ secrets.REVIEWS_REPO_TOKEN != '' }}
         run: |
@@ -102,7 +132,7 @@ jobs:
           fi
 
       - name: Reconcile UUIDs with existing review issues
-        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != true
         id: reconcile
         uses: actions/github-script@v7
         env:
@@ -159,16 +189,31 @@ jobs:
 
             core.setOutput('reconciled', JSON.stringify(reconciled));
 
+      # CI gate: every step below works only on what this lets through. A notebook
+      # with no review issue yet must have passed CI on its current version; if it
+      # has not, it gets neither an issue nor an nd_review_id (an ID without an
+      # issue would hide it from every later scan). Notebooks that already have
+      # an issue go through for ID injection. On dry runs the reconcile step is
+      # skipped, so this sees the plain scan list and just reports.
+      - name: Hold back notebooks that have not passed CI
+        if: fromJSON(steps.scan.outputs.count) > 0
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATES_JSON: ${{ steps.reconcile.outputs.reconciled || steps.scan.outputs.missing }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: python .github/scripts/review_ci_gate.py
+
       - name: Inject UUIDs and create PR
-        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        if: steps.gate.outputs.count > 0 && inputs.dry_run != true
         id: inject
         env:
-          RECONCILED_JSON: ${{ steps.reconcile.outputs.reconciled }}
+          GATED_JSON: ${{ steps.gate.outputs.gated }}
         run: |
           python - <<'PYEOF'
           import json, os, re
 
-          missing = json.loads(os.environ['RECONCILED_JSON'])
+          missing = json.loads(os.environ['GATED_JSON'])
           modified = []
 
           for item in missing:
@@ -195,7 +240,7 @@ jobs:
           PYEOF
 
       - name: Check for existing auto-inject PR
-        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        if: steps.gate.outputs.count > 0 && inputs.dry_run != true
         id: check_pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -214,14 +259,14 @@ jobs:
               echo ""
               echo "An auto-inject PR is already open: $EXISTING"
               echo ""
-              echo "Merge it, then re-run this workflow so the remaining notebooks get their \`nd_review_id\`."
+              echo "Merge it, then run this workflow manually (Actions > Detect new notebooks > Run workflow) so the remaining notebooks get their \`nd_review_id\`. Re-running this run would reuse its old checkout."
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit and push branch
-        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true' && steps.check_pr.outputs.skip != 'true'
+        if: steps.gate.outputs.count > 0 && inputs.dry_run != true && steps.check_pr.outputs.skip != 'true'
         id: pr
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -240,7 +285,7 @@ jobs:
             exit 0
           fi
 
-          COUNT=$(echo '${{ steps.scan.outputs.missing }}' | python -c "import sys,json; print(len(json.load(sys.stdin)))")
+          COUNT="${{ steps.gate.outputs.count }}"
 
           git commit -m "Add nd_review_id to ${COUNT} new notebook(s)
 
@@ -261,19 +306,20 @@ jobs:
 
       # Intentionally NOT gated on steps.check_pr.outputs.skip: an open inject
       # PR blocks PR creation (to avoid stacking) but must NOT block issue
-      # creation or its prerequisite author lookup. The reconcile step handles
+      # creation or its prerequisite author lookup (these are gated on CI only,
+      # via the gate step's list). The reconcile step handles
       # UUID reuse if a later inject run finds an existing issue for the same
       # source_path.
       - name: Find PR authors for new notebooks
-        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        if: steps.gate.outputs.count > 0 && inputs.dry_run != true
         id: find_authors
         uses: actions/github-script@v7
         env:
-          RECONCILED_JSON: ${{ steps.reconcile.outputs.reconciled }}
+          GATED_JSON: ${{ steps.gate.outputs.gated }}
         with:
           script: |
             const { execFileSync } = require('child_process');
-            const reconciled = JSON.parse(process.env.RECONCILED_JSON);
+            const reconciled = JSON.parse(process.env.GATED_JSON);
             const enriched = [];
 
             for (const item of reconciled) {
@@ -288,8 +334,8 @@ jobs:
                     { encoding: 'utf-8' }
                   ).trim();
 
-                  // git log is newest-first; the most recent add is what
-                  // triggered this workflow, so take the first line.
+                  // git log is newest-first; the most recent add is the one
+                  // being filed now, so take the first line.
                   const addedSha = logOutput
                     .split('\n')
                     .filter(s => s.trim())[0];
@@ -325,7 +371,7 @@ jobs:
             core.setOutput('enriched', JSON.stringify(enriched));
 
       - name: Open review issues in reviews repo
-        if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != 'true'
+        if: steps.gate.outputs.count > 0 && inputs.dry_run != true
         uses: actions/github-script@v7
         env:
           REVIEWS_REPO_OWNER: neurodesk
