@@ -1333,7 +1333,9 @@ jobs:
         with:
           name: executed-${{ env.NOTEBOOK }}
           path: books/${{ matrix.notebooks }}
-          retention-days: 1
+          # 7 days (matching failed-notebook artifacts) so executed outputs from a recent run
+          # can still be inspected when something breaks later. Public repo: no storage cost.
+          retention-days: 7
 
       - name: Upload failed notebook artifact (for debugging)
         if: failure()
