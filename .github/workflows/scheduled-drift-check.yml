@@ -218,5 +218,9 @@ jobs:
 
           This bumps NEURODESKTOP_VERSION from $PIN to $TAG.
 
-          Evidence: $RUN_URL"
+          Evidence: $RUN_URL
+
+          cc @micmas"
           gh pr create --base main --head "$BRANCH" --title "chore: bump neurodesktop pin to $TAG" --body "$BODY"
+          # Request reviews separately so a reviewer problem can never block opening the PR.
+          gh pr edit "$BRANCH" --add-reviewer micmas || echo "::warning::Could not request reviewers; they are still tagged in the PR body."
