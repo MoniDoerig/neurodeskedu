@@ -186,11 +186,11 @@ jobs:
             # this with neurodesktop:latest, so image drift is still caught. To adopt a newer tag:
             # dispatch "Scheduled corpus drift check" with image_override set to that dated tag;
             # if the corpus passes, bump the line below.
-            # HELD AT 2026-07-11 (rolled back 2026-09-28). Images built from neurodesktop d518a7bd
-            # (2026-08-27) onward patch ipyniivue so each viewer loads its code from the running
-            # JupyterLab server. That works on Play but breaks every NiiVue widget on the static
-            # site (no server). Do not bump past 2026-07-11 until CI restores the self-contained
-            # viewer at publish time.
+            # Images built from neurodesktop d518a7bd (2026-08-27) onward patch ipyniivue so each
+            # NiiVue viewer loads its code from a live JupyterLab server, which breaks the viewers
+            # on our static site. "Restore self-contained ipyniivue for the static site" undoes
+            # that before execution and "Check widgets render on the static site" fails anything
+            # that slips through. Keep both steps when bumping this pin.
             # Previous auto-lookup kept for one-line revert:
             #   NEURODESKTOP_VERSION=$(curl -s https://raw.githubusercontent.com/neurodesk/neurodesk.github.io/main/data/neurodesktop.toml | grep '^jupyter_neurodesk_version' | sed 's/.*= *"\(.*\)"/\1/')
             NEURODESKTOP_VERSION="2026-07-11"
@@ -721,6 +721,33 @@ jobs:
           docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
             export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
             pip install -q "huggingface_hub>=0.32.0"
+          '
+
+      # neurodesktop images built from 2026-08-27 (neurodesktop d518a7bd) patch ipyniivue so
+      # each NiiVue widget loads its ~5 MB viewer from the running JupyterLab server. That is
+      # fine on Play, but our pages are static HTML with no server, so those viewers fail to
+      # render there. Reinstall the upstream wheel (same version) so saved notebooks embed the
+      # full viewer. No-op on images without the patch. Fails soft: the static-render check
+      # below fails any notebook that would still publish a broken viewer.
+      - name: Restore self-contained ipyniivue for the static site
+        run: |
+          docker exec --user root "$CONTAINER_NAME" bash -c '
+            export PATH=/opt/conda/bin:$PATH
+            JS=$(python -c "import ipyniivue, pathlib; print(pathlib.Path(ipyniivue.__file__).parent / \"static\" / \"widget.js\")" 2>/dev/null) \
+              || { echo "ipyniivue not installed; nothing to restore"; exit 0; }
+            # Stub detection: the marker, or a widget.js far smaller than the real ~5 MB viewer
+            # (so a renamed marker cannot silently skip the restore).
+            if ! grep -q neurodesktop-ipyniivue-shared-bundle "$JS" && [ "$(wc -c < "$JS")" -ge 1000000 ]; then
+              echo "ipyniivue already self-contained; nothing to restore"; exit 0
+            fi
+            VER=$(python -c "import importlib.metadata as m; print(m.version(\"ipyniivue\"))")
+            echo "Image ships server-dependent ipyniivue $VER; reinstalling the upstream wheel"
+            if python -m pip install -q --no-deps --force-reinstall --no-cache-dir "ipyniivue==$VER" \
+               && ! grep -q neurodesktop-ipyniivue-shared-bundle "$JS" && [ "$(wc -c < "$JS")" -ge 1000000 ]; then
+              echo "ipyniivue $VER restored: $(wc -c < "$JS") bytes of self-contained viewer"
+            else
+              echo "::warning::Could not restore upstream ipyniivue $VER; notebooks with NiiVue viewers will fail the static-render check"
+            fi
           '
 
       - name: Fix notebook kernelspec if needed
@@ -1264,6 +1291,41 @@ jobs:
           fi
 
           exit "$CHECK_RC"
+
+      # A notebook can execute cleanly yet save widgets that cannot render on the static site
+      # (for example, widget code that loads from a live Jupyter server). Fail those here so
+      # nothing below publishes them and the site keeps its last good copy.
+      - name: Check widgets render on the static site
+        env:
+          NOTEBOOK_REL: ${{ matrix.notebooks }}
+        run: |
+          docker exec -e NOTEBOOK_REL="$NOTEBOOK_REL" "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
+            export PATH=/opt/conda/bin:$PATH
+            python - <<"EOF"
+          import json, os, sys
+          path = os.path.join("/home/jovyan/workspace/books", os.environ["NOTEBOOK_REL"])
+          nb = json.load(open(path, encoding="utf-8"))
+          state = (nb.get("metadata", {}).get("widgets", {})
+                   .get("application/vnd.jupyter.widget-state+json", {}).get("state", {}))
+          bad = []
+          for k, v in state.items():
+              st = v.get("state", {})
+              name = v.get("model_name")
+              esm = st.get("_esm") or ""
+              code = esm + (st.get("_css") or "")
+              if "jupyter-config-data" in code or "neurodesktop-ipyniivue" in code:
+                  bad.append(f"{name} {k} loads its code from a live Jupyter server")
+              # Positive check: a real NiiVue viewer embeds its ~5 MB bundle. A small one is a
+              # stub or loader, whatever it is called, and will not render on the static site.
+              elif st.get("_anywidget_id") == "ipyniivue.widget.NiiVue" and len(esm) < 1000000:
+                  bad.append(f"NiiVue viewer {k} embeds only {len(esm)} bytes of viewer code, expected about 5 MB")
+          for msg in bad:
+              print(f"::error::{msg}; it will not render on the static site")
+          if bad:
+              sys.exit(1)
+          print(f"Static-render check OK ({len(state)} widget models)")
+          EOF
+          '
 
       - name: Upload executed notebook artifact
         if: success()  # Only upload if notebook executed without errors
