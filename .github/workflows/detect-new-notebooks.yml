@@ -9,8 +9,9 @@
 # was cancelled or has not run yet is held back with a warning. It keeps
 # lacking an nd_review_id, so the first run after CI passes on main picks it
 # up (re-run its failed job on that main run, or push a fix; dispatched CI
-# runs do not count). Held notebooks are listed, with their authors and the
-# editor tagged, in one rolling "review-held" issue in this repo (last step).
+# runs do not count). Held notebooks are listed in one rolling "review-held"
+# issue in this repo (notice job); only real CI failures tag the author and
+# the editor. Skip-listed notebooks are filed as before, without CI.
 #
 # This is self-contained — no round-trip dispatch needed.
 # Only requires one cross-repo token: REVIEWS_REPO_TOKEN (to create issues
@@ -39,12 +40,6 @@ on:
         default: false
         type: boolean
 
-# A queued run can be replaced by a newer one. That is harmless: the gate looks
-# back over recent CI runs, not only the one that triggered it.
-concurrency:
-  group: detect-new-notebooks
-  cancel-in-progress: false
-
 jobs:
   detect:
     # Only CI runs triggered by a push to main of this repo count, not dispatched
@@ -53,20 +48,33 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_repository.full_name == github.repository)
+    # Job-level, so runs skipped by the if above (e.g. after a dispatched CI run)
+    # never take a place in the queue. A waiting run can still be replaced by a
+    # newer real one, which covers it: it checks out the current default branch
+    # and looks back over recent CI runs.
+    concurrency:
+      group: detect-new-notebooks
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
       actions: read  # the CI gate reads job results of "Run Notebooks & Publish"
-      issues: write  # only for the rolling review-held notice (last step)
+    outputs:
+      # Read by the notice job. held_known is false when the gate could not run
+      # (e.g. an API error), so the notice is left as it was.
+      held: ${{ steps.find_authors.outputs.held || steps.gate.outputs.held || '[]' }}
+      held_known: ${{ steps.gate.outcome == 'success' || steps.scan.outputs.count == '0' }}
 
     steps:
-      # On workflow_run this checks out the tip of main, not the CI run's head_sha.
-      # That is deliberate: the gate compares each notebook here with the version CI
-      # ran, so a notebook changed or deleted since is not filed on an old result,
-      # and the auto-inject PR starts from current main.
+      # On workflow_run, check out the current default branch, not the CI run's
+      # head_sha nor github.sha (both fixed when the event fired). The gate compares
+      # each notebook here with the version CI ran, so a notebook changed or deleted
+      # since is not filed on an old result, and the auto-inject PR starts from
+      # current main.
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.repository.default_branch || '' }}
           fetch-depth: 0
 
       - uses: actions/setup-python@v5
@@ -148,19 +156,32 @@ jobs:
             const repoOwner = process.env.REVIEWS_REPO_OWNER;
             const repoName = process.env.REVIEWS_REPO_NAME;
             const reconciled = [];
+            // Paths an issue is actually about: its nd-review block's source_path,
+            // or the value under the issue form's "Source path" heading. A body that
+            // merely mentions the path does not count.
+            const pathsOf = (body) => {
+              const block = (body.match(/<!--\s*nd-review\s*\n([\s\S]*?)-->/) || [])[1] || '';
+              return [
+                (block.match(/source_path:\s*(.+)/) || [])[1],
+                (body.match(/###\s*Source path \(relative to books\/\)\s*\n+\s*([^\n]+)/) || [])[1],
+              ].filter(Boolean).map(p => p.replace(/`/g, '').trim().replace(/^books\//, ''));
+            };
 
             for (const item of missing) {
               let useId = item.review_id;
               let issueExists = false;
+              let issueOpen = false;
 
               try {
                 const results = await github.rest.search.issuesAndPullRequests({
                   q: `repo:${repoOwner}/${repoName} "${item.source_path}" in:body is:issue`,
                 });
 
-                if (results.data.total_count > 0) {
+                const match = results.data.items.find(i => pathsOf(i.body || '').includes(item.source_path));
+                if (match) {
                   issueExists = true;
-                  const existingBody = results.data.items[0].body || '';
+                  issueOpen = match.state === 'open';  // only an open issue skips the CI gate
+                  const existingBody = match.body || '';
                   const m = existingBody.match(
                     /<!--\s*nd-review\s*\n([\s\S]*?)-->/
                   );
@@ -185,6 +206,7 @@ jobs:
                 source_path: item.source_path,
                 review_id: useId,
                 issue_exists: issueExists,
+                issue_open: issueOpen,
               });
               await new Promise(r => setTimeout(r, 500));
             }
@@ -194,9 +216,10 @@ jobs:
       # CI gate: every step below works only on what this lets through. A notebook
       # with no review issue yet must have passed CI on its current version; if it
       # has not, it gets neither an issue nor an nd_review_id (an ID without an
-      # issue would hide it from every later scan). Notebooks that already have
-      # an issue go through for ID injection. On dry runs the reconcile step is
-      # skipped, so this sees the plain scan list and just reports.
+      # issue would hide it from every later scan). Notebooks with an open review
+      # issue go through for ID injection, and skip-listed ones are filed as before.
+      # On dry runs the reconcile step is skipped, so this sees the plain scan list
+      # and just reports.
       - name: Hold back notebooks that have not passed CI
         if: fromJSON(steps.scan.outputs.count) > 0
         id: gate
@@ -312,9 +335,10 @@ jobs:
       # via the gate step's list). The reconcile step handles
       # UUID reuse if a later inject run finds an existing issue for the same
       # source_path. Also looks up authors of held notebooks for the notice
-      # step, so it runs on dry runs too (read-only).
+      # job, so it runs on dry runs, and even if inject/PR steps failed (it only
+      # reads; filing below still needs every earlier step to succeed).
       - name: Find PR authors for new notebooks
-        if: steps.gate.outcome == 'success'
+        if: ${{ !cancelled() && steps.gate.outcome == 'success' }}
         id: find_authors
         uses: actions/github-script@v7
         env:
@@ -409,6 +433,7 @@ jobs:
                   `### Notes`,
                   ``,
                   `Automatically opened by the detect-new-notebooks workflow.`,
+                  ...(item.ci_skipped ? [``, `This notebook is in .github/skip-notebooks.txt, so CI does not execute it.`] : []),
                   ``,
                   ``,
                   `<!-- nd-review`,
@@ -479,65 +504,97 @@ jobs:
               );
             }
 
-      # One rolling issue in THIS repo (label review-held) listing every held
-      # notebook, so its author and the editor hear about it. Opened when the
-      # first notebook is held, body kept current, a comment only when a notebook
-      # is newly held (mentions in edited bodies notify nobody), closed when
-      # nothing is held. Runs last, so it can never stop a passing notebook from
-      # being filed above. Not continue-on-error: a broken notice should turn the
-      # run red, and re-running is safe (filed issues are found and skipped).
-      # Runs only when the held set is known: the gate ran, or there was nothing
-      # to check. If the gate failed, the notice is left as it was.
-      - name: Update the review-held notice
-        if: ${{ !cancelled() && (steps.gate.outcome == 'success' || steps.scan.outputs.count == '0') }}
+  # One rolling issue in THIS repo (label review-held) listing held notebooks.
+  # It is open while at least one notebook is held because CI failed, was
+  # cancelled or timed out; those tag their author and the editor. Notebooks
+  # merely waiting for CI are listed without tagging anyone. A comment goes out
+  # only when a notebook is newly held for a failure (mentions in edited bodies
+  # notify nobody), posted before the body is updated so a failed comment is
+  # retried next run. Own job, so a failure here never touches filing and a
+  # re-run repeats only this job. Skipped when the held set is unknown (the gate
+  # could not run), leaving the notice as it was.
+  notice:
+    name: Update the review-held notice
+    needs: detect
+    if: ${{ !cancelled() && needs.detect.outputs.held_known == 'true' }}
+    concurrency:
+      group: review-held-notice
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update or close the notice
         uses: actions/github-script@v7
         env:
-          HELD_JSON: ${{ steps.find_authors.outputs.held || steps.gate.outputs.held || '[]' }}
+          HELD_JSON: ${{ needs.detect.outputs.held }}
           DRY_RUN: ${{ inputs.dry_run == true }}
         with:
           script: |
             const label = 'review-held';
             const editor = 'micmas';
+            const bot = 'github-actions[bot]';
             const { owner, repo } = context.repo;
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const dryRun = process.env.DRY_RUN === 'true';
             const held = JSON.parse(process.env.HELD_JSON)
               .sort((a, b) => a.source_path.localeCompare(b.source_path));
-            const paths = held.map(h => h.source_path);
+            const failing = held.filter(h => h.notify);
+            const cell = s => String(s).replace(/\|/g, '\\|');
             const code = s => '`' + s.replace(/`/g, '') + '`';
-            const who = h => (h.pr_author ? `@${h.pr_author}` : '');
+            const who = h => (h.notify && h.pr_author ? `@${h.pr_author}` : '');
             const act = msg => core.notice((dryRun ? 'Dry run, would ' : '') + msg);
             if (dryRun) core.info('Dry run: existing review issues were not checked, so this may list notebooks a real run would not hold.');
 
+            // The marker records which notebooks have been announced. URI-encoded so no
+            // path can end the HTML comment early; unreadable means "do not comment".
+            const MARK = /<!-- review-held: (\S*) -->/;
+            const announced = (body) => {
+              try {
+                const v = JSON.parse(decodeURIComponent((body || '').match(MARK)[1]));
+                return Array.isArray(v) && v.every(p => typeof p === 'string') ? v : null;
+              } catch (e) { return null; }
+            };
             const body = [
-              `<!-- review-held: ${JSON.stringify(paths)} -->`,
-              'These notebooks have no review issue yet because CI has not passed on their current version on main. Each gets its review issue automatically once it does.',
+              `<!-- review-held: ${encodeURIComponent(JSON.stringify(failing.map(h => h.source_path)))} -->`,
+              'These notebooks have no review issue yet because CI has not passed on their current version on main. Each gets its review issue automatically once it does. Notebooks still waiting for CI are listed without tagging anyone.',
               '',
               '| Notebook | Author | Why | CI |',
               '|---|---|---|---|',
-              ...held.map(h => `| ${code(h.source_path)} | ${who(h)} | ${h.reason} | ${h.url ? `[link](${h.url})` : ''} |`),
+              ...held.map(h => `| ${cell(code(h.source_path))} | ${who(h)} | ${cell(h.reason)} | ${h.url ? `[link](${h.url})` : ''} |`),
               '',
               'To unblock one: push a fix to main, or if it was a flake, re-run its failed job on that main run (possible for 30 days). Dispatched CI runs do not count.',
               '',
               `cc @${editor}`,
             ].join('\n');
+            const comment = (n, text) => github.rest.issues.createComment({ owner, repo, issue_number: n, body: text });
+            const update = (n, fields) => github.rest.issues.update({ owner, repo, issue_number: n, ...fields });
 
-            const [issue] = await github.paginate(github.rest.issues.listForRepo, {
-              owner, repo, state: 'open', labels: label, per_page: 100,
-            });
+            // Only issues this workflow opened count: not PRs, not anyone else's issue.
+            const notices = (await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'all', labels: label, per_page: 100,
+            })).filter(i => !i.pull_request && i.user && i.user.login === bot && MARK.test(i.body || ''))
+              .sort((a, b) => b.number - a.number);
+            const [notice, ...extras] = notices;
+            for (const x of extras.filter(x => x.state === 'open')) {
+              act(`close duplicate notice #${x.number}`);
+              if (!dryRun) {
+                await comment(x.number, `Duplicate of #${notice.number}. Closing.`);
+                await update(x.number, { state: 'closed', state_reason: 'not_planned' });
+              }
+            }
 
-            if (!held.length) {
-              if (!issue) return core.info('Nothing held, no open notice.');
-              act(`close notice #${issue.number}: nothing is held any more`);
+            if (!failing.length) {
+              if (!notice || notice.state !== 'open') return core.info('No notebook held for a CI failure; nothing to do.');
+              act(`close notice #${notice.number}`);
               if (dryRun) return;
-              await github.rest.issues.createComment({ owner, repo, issue_number: issue.number,
-                body: `Nothing is held any more: each notebook listed here has passed CI and been filed, or was removed. Closing. ${runUrl}` });
-              await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: 'closed', state_reason: 'completed' });
+              await comment(notice.number, `No notebook is held for a CI failure any more. Closing. ${runUrl}`);
+              await update(notice.number, { body, state: 'closed', state_reason: 'completed' });
               return;
             }
 
-            if (!issue) {
-              act(`open a notice for ${paths.length} held notebook(s)`);
+            if (!notice) {
+              act(`open a notice for ${failing.length} failing notebook(s)`);
               if (dryRun) return core.info(body);
               try {
                 await github.rest.issues.createLabel({ owner, repo, name: label, color: 'FBCA04', description: 'Review issue held until the notebook passes CI on main' });
@@ -547,16 +604,16 @@ jobs:
               return core.notice(`Opened notice #${data.number}`);
             }
 
-            let before = [];
-            try { before = JSON.parse((issue.body || '').match(/<!-- review-held: (.*?) -->/)[1]); } catch (e) { /* treat as empty */ }
-            const added = held.filter(h => !before.includes(h.source_path));
-            if (issue.body !== body) {
-              act(`update notice #${issue.number}`);
-              if (!dryRun) await github.rest.issues.update({ owner, repo, issue_number: issue.number, body });
-            }
+            const before = announced(notice.body);
+            if (!before) core.warning(`Notice #${notice.number} has an unreadable marker; not commenting this run.`);
+            const added = before ? failing.filter(h => !before.includes(h.source_path)) : [];
             if (added.length) {
               const mentions = [...new Set(added.map(who).filter(Boolean)), `@${editor}`].join(' ');
-              act(`comment on notice #${issue.number}: newly held ${added.map(h => h.source_path).join(', ')}`);
-              if (!dryRun) await github.rest.issues.createComment({ owner, repo, issue_number: issue.number,
-                body: `Newly held: ${added.map(h => code(h.source_path)).join(', ')}. ${mentions} ${runUrl}` });
+              act(`comment on notice #${notice.number}: newly held ${added.map(h => h.source_path).join(', ')}`);
+              if (!dryRun) await comment(notice.number,
+                `Newly held: ${added.map(h => code(h.source_path)).join(', ')}. ${mentions} ${runUrl}`);
+            }
+            if (notice.state !== 'open' || notice.body !== body) {
+              act(`${notice.state !== 'open' ? 'reopen' : 'update'} notice #${notice.number}`);
+              if (!dryRun) await update(notice.number, notice.state === 'open' ? { body } : { body, state: 'open' });
             }
