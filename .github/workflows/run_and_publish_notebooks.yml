@@ -184,8 +184,9 @@ jobs:
             # Do NOT repoint at neurodesk/play (frozen at 2025-12-03) or at the archived hugo repo.
             # Pinned so contributors' pushes are reproducible. The monthly drift check tests the
             # newest dated neurodesktop tag instead, and if the whole corpus passes it opens a PR
-            # bumping the line below. Merge that PR to adopt the new image. Validation evidence is
-            # linked in the PR; git log on this line shows when each version was adopted.
+            # bumping .github/neurodesktop-version. Merge that PR to adopt the new image.
+            # Validation evidence is linked in the PR; git log on that file shows when each
+            # version was adopted.
             # Images built from neurodesktop d518a7bd (2026-08-27) onward patch ipyniivue so each
             # NiiVue viewer loads its code from a live JupyterLab server, which breaks the viewers
             # on our static site. "Restore self-contained ipyniivue for the static site" undoes
@@ -193,7 +194,19 @@ jobs:
             # that slips through. Keep both steps when bumping this pin.
             # Previous auto-lookup kept for one-line revert:
             #   NEURODESKTOP_VERSION=$(curl -s https://raw.githubusercontent.com/neurodesk/neurodesk.github.io/main/data/neurodesktop.toml | grep '^jupyter_neurodesk_version' | sed 's/.*= *"\(.*\)"/\1/')
-            NEURODESKTOP_VERSION="2026-09-28"
+            # The pin lives in a plain (non-workflow) file, .github/neurodesktop-version, because
+            # GITHUB_TOKEN can never update workflow files (no `workflows` permission), so the
+            # scheduled drift check's auto-bump PR has to edit a plain file instead of this one.
+            PIN_FILE=".github/neurodesktop-version"
+            if [ ! -f "$PIN_FILE" ]; then
+              echo "::error::$PIN_FILE is missing. It must contain a single dated neurodesktop tag (YYYY-MM-DD)."
+              exit 1
+            fi
+            NEURODESKTOP_VERSION=$(tr -d '[:space:]' < "$PIN_FILE")
+            if ! [[ "$NEURODESKTOP_VERSION" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
+              echo "::error::$PIN_FILE contains '${NEURODESKTOP_VERSION}', which is not a YYYY-MM-DD dated tag."
+              exit 1
+            fi
             echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
             # Slim py-stack default kept for one-line revert:
             #   echo "neurodesk_image=ghcr.io/neurodesk/neurocommand:py-stack" >> $GITHUB_OUTPUT
