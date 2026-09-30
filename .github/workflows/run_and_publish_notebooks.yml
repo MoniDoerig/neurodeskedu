@@ -193,7 +193,7 @@ jobs:
             # that slips through. Keep both steps when bumping this pin.
             # Previous auto-lookup kept for one-line revert:
             #   NEURODESKTOP_VERSION=$(curl -s https://raw.githubusercontent.com/neurodesk/neurodesk.github.io/main/data/neurodesktop.toml | grep '^jupyter_neurodesk_version' | sed 's/.*= *"\(.*\)"/\1/')
-            NEURODESKTOP_VERSION="2026-07-11"
+            NEURODESKTOP_VERSION="2026-09-28"
             echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
             # Slim py-stack default kept for one-line revert:
             #   echo "neurodesk_image=ghcr.io/neurodesk/neurocommand:py-stack" >> $GITHUB_OUTPUT
