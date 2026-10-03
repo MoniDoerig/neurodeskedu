@@ -1,0 +1,31 @@
+name: Validate MRtrix download recovery
+
+on:
+  push:
+    paths:
+      - '.github/scripts/test_mrtrix_download.py'
+      - '.github/workflows/validate-mrtrix-download.yml'
+      - 'books/examples/diffusion_imaging/MRtrix_2.ipynb'
+      - 'books/examples/diffusion_imaging/MRtrix_3.ipynb'
+  pull_request:
+    paths:
+      - '.github/scripts/test_mrtrix_download.py'
+      - '.github/workflows/validate-mrtrix-download.yml'
+      - 'books/examples/diffusion_imaging/MRtrix_2.ipynb'
+      - 'books/examples/diffusion_imaging/MRtrix_3.ipynb'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  download-recovery:
+    name: Reject invalid cached and downloaded files
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - run: python3 -m pip install numpy
+      - run: python3 .github/scripts/test_mrtrix_download.py
