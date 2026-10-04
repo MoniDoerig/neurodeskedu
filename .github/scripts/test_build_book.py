@@ -198,7 +198,12 @@ class BookBuildTests(unittest.TestCase):
                                                        "slug": route.replace("/", ".")}))
         (built / route).mkdir(parents=True)
         (built / route / "index.html").write_text("<html><head></head><body>saved output</body></html>")
+        for copy in [built / "_static/widgets/w.html", built / "build/_static/widgets/w.html"]:
+            copy.parent.mkdir(parents=True)
+            copy.write_text("widget")
         finish(stage, self.book, output, pages, self.settings)
+        self.assertTrue((output / "_static/widgets/w.html").exists())
+        self.assertFalse((output / "build/_static").exists())
         self.assertEqual((output / "_sources" / self.source).read_bytes(), (self.book / self.source).read_bytes())
         self.assertIn('name="citation_author" content="Example Author"', (output / route / "index.html").read_text())
         alias = (output / "old/page.html").read_text()
