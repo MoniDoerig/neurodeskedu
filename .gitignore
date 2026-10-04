@@ -1,5 +1,6 @@
 # Jupyter Book build output
 books/_build/
+.venv-book/
 
 # Python cache
 __pycache__/

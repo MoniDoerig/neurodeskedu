@@ -1,0 +1,16 @@
+repository: https://github.com/neurodesk/neurodeskedu
+branch: main
+base_url: /edu
+hubs:
+  - text: Run in Australia
+    url: https://play.neurodesk.cloud.edu.au
+  - text: Run in Europe
+    url: https://play-europe.neurodesk.org
+  - text: Run in America
+    url: https://play-america.neurodesk.org
+  - text: Run in Global Server 1
+    url: https://play-europe.neurodesk.org
+  - text: Run in Global Server 2
+    url: https://edu.neurodesk.org
+redirects:
+  examples/workflows/RISE_slideshow: tutorials/about_neurodesk/RISE_slideshow.ipynb
