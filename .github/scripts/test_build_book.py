@@ -227,6 +227,7 @@ class BookBuildTests(unittest.TestCase):
         self.assertEqual((output / "_sources" / self.source).read_bytes(), (self.book / self.source).read_bytes())
         self.assertIn('name="citation_author" content="Example Author"', (output / route / "index.html").read_text())
         self.assertIn('location.replace("https://neurodesk.org/edu/"', (output / route / "index.html").read_text())
+        self.assertIn('<script src="/edu/_static/launch-menu.js" defer>', (output / route / "index.html").read_text())
         alias = (output / "old/page.html").read_text()
         self.assertIn("../examples/topic/test-one/", alias)
         self.assertIn("location.search + location.hash", alias)
