@@ -221,9 +221,11 @@ class BookBuildTests(unittest.TestCase):
         for copy in [built / "_static/widgets/w.html", built / "build/_static/widgets/w.html"]:
             copy.parent.mkdir(parents=True)
             copy.write_text("widget")
+        (built / "build/Test_one-0123.ipynb").write_text("{}")
         finish(stage, self.book, output, pages, self.settings)
         self.assertTrue((output / "_static/widgets/w.html").exists())
         self.assertFalse((output / "build/_static").exists())
+        self.assertEqual(list((output / "build").glob("*.ipynb")), [])
         self.assertEqual((output / "_sources" / self.source).read_bytes(), (self.book / self.source).read_bytes())
         self.assertIn('name="citation_author" content="Example Author"', (output / route / "index.html").read_text())
         self.assertIn('location.replace("https://neurodesk.org/edu/"', (output / route / "index.html").read_text())
