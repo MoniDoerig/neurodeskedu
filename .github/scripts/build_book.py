@@ -157,6 +157,25 @@ def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> N
     del notebook["metadata"]["widgets"]
 
 
+def merge_streams(outputs: list[dict]) -> list[dict]:
+    """Join each cell's stdout and stderr into one block apiece, as Jupyter Book 1 did (nb_merge_streams)."""
+    merged, streams = [], {}
+    for output in outputs:
+        if output["output_type"] != "stream":
+            merged.append(output)
+        elif output["name"] in streams:
+            stream = streams[output["name"]]
+            stream["text"] = "".join(stream["text"]) + "".join(output["text"])
+        else:
+            streams[output["name"]] = output
+            merged.append(output)
+    for stream in streams.values():
+        if "\r" in "".join(stream["text"]):
+            # Keep only the final state of lines redrawn with carriage returns (progress bars).
+            stream["text"] = re.sub(r".*\r(?=[^\n])", "", "".join(stream["text"]).replace("\r\n", "\n"))
+    return merged
+
+
 def controls(source: Path, review_id: str | None, reviews: dict, settings: dict) -> str:
     blocks = []
     if review_id:
@@ -239,6 +258,8 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
             for cell in cells:
                 if cell["cell_type"] == "markdown":
                     cell["source"] = adapt_markdown("".join(cell["source"]), headings).splitlines(keepends=True)
+                elif cell["cell_type"] == "code":
+                    cell["outputs"] = merge_streams(cell.get("outputs", []))
             if first is not None:
                 first["source"] = text.splitlines(keepends=True)
             else:
