@@ -221,7 +221,11 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
             meta["doi"] = doi.removeprefix("https://doi.org/")
         repo_path = "books/" + quote(source.as_posix())
         meta["github"] = f"{settings['repository']}/blob/{settings['branch']}/{repo_path}"
-        meta["edit_url"] = f"{settings['repository']}/edit/{settings['branch']}/{repo_path}"
+        # GitHub's web editor shows executed notebooks (often several MB of outputs) as an empty
+        # document; github.dev opens them in VS Code's notebook editor instead.
+        editor = (settings["repository"].replace("://github.com/", "://github.dev/") + "/blob"
+                  if notebook is not None else settings["repository"] + "/edit")
+        meta["edit_url"] = f"{editor}/{settings['branch']}/{repo_path}"
         meta["downloads"] = [{
             "url": settings["base_url"] + "/_sources/" + quote(source.as_posix()),
             "title": "Download source notebook" if notebook is not None else "Download source",

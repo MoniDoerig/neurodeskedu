@@ -81,6 +81,11 @@ class BookBuildTests(unittest.TestCase):
         self.assertIn("doi: 10.5281/zenodo.12345", text)
         self.assertIn("execute:\n  skip: true", text)
         self.assertIn("/edu/_sources/examples/topic/Test_one.ipynb", text)
+        meta = yaml.safe_load(text.split("---\n")[1])
+        self.assertEqual(meta["edit_url"],
+                         "https://github.dev/neurodesk/neurodeskedu/blob/main/books/examples/topic/Test_one.ipynb")
+        self.assertEqual(yaml.safe_load((stage / "intro.md").read_text().split("---\n")[1])["edit_url"],
+                         "https://github.com/neurodesk/neurodeskedu/edit/main/books/intro.md")
         self.assertIn("{admonition} Unreviewed", text)
         self.assertEqual(text.count("/hub/user-redirect/git-pull?"), 5)
 
@@ -246,7 +251,7 @@ class BookBuildTests(unittest.TestCase):
         page = output / "examples/topic/test-one/index.html"
         self.assertIn("saved output", page.read_text())
         self.assertIn(
-            f"{self.settings['repository']}/edit/{self.settings['branch']}/books/{self.source}",
+            f"https://github.dev/neurodesk/neurodeskedu/blob/{self.settings['branch']}/books/{self.source}",
             PageLinks(page.read_text()).links,
         )
         self.assertEqual((output / "_sources" / self.source).read_bytes(), (self.book / self.source).read_bytes())
