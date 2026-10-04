@@ -1923,7 +1923,9 @@ jobs:
         # publish_to_hf.py only rewrites literal paths, so volumes loaded through variables,
         # f-strings or temporary files are saved inside the widget state. Serve those from
         # HuggingFace too. Uploads are content-addressed, so unchanged data is never re-sent.
+        # Non-fatal: a notebook whose upload fails keeps its data embedded and still renders.
         if: inputs.diagnostic_mode != true
+        continue-on-error: true
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: neurodeskorg/neurodeskedu
