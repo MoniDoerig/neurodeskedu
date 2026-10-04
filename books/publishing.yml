@@ -1,6 +1,8 @@
 repository: https://github.com/neurodesk/neurodeskedu
 branch: main
 base_url: /edu
+# Canonical host; copies of the site served under another path forward here.
+site_url: https://neurodesk.org
 hubs:
   - text: Run in Australia
     url: https://play.neurodesk.cloud.edu.au

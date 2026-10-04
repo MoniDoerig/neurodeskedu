@@ -263,6 +263,12 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
             routes[source] = route
     if set(routes) != {p.as_posix() for p in pages}:
         raise ValueError(f"Missing exported pages: {set(map(str, pages)) - set(routes)}")
+    # MyST pages only work under base_url. Copies served elsewhere (neurodesk.github.io/neurodeskedu,
+    # neurodesk.org/example-notebooks) forward to the same page on the canonical site.
+    base = settings["base_url"] + "/"
+    guard = (f"<script>if (!location.pathname.startsWith({json.dumps(base)})) location.replace("
+             f"{json.dumps(settings['site_url'] + base)} + location.pathname.split('/').slice(2).join('/')"
+             " + location.search + location.hash);</script>")
     for source in pages:
         page = built / routes[source.as_posix()] / "index.html"
         text = page.read_text()
@@ -271,6 +277,7 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
         if authors:
             names = html.escape(", ".join(authors), quote=True)
             tags += [f'<meta name="author" content="{names}">', f'<meta property="article:author" content="{names}">']
+        text = re.sub(r"<head[^>]*>", lambda head: head[0] + guard, text, count=1)
         page.write_text(text.replace("</head>", "".join(tags) + "</head>", 1))
         target = built / "_sources" / source
         target.parent.mkdir(parents=True, exist_ok=True)
