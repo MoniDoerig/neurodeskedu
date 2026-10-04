@@ -300,6 +300,9 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
         )
     # MyST publishes static_files at the site root and again under build/; pages only use the root copy.
     shutil.rmtree(built / "build/_static", ignore_errors=True)
+    # MyST also exports every notebook to build/; the Downloads menu serves the raw source from _sources.
+    for export in (built / "build").glob("*.ipynb"):
+        export.unlink()
     (built / ".nojekyll").touch()
     (built / "neurodesk-pages.json").write_text(json.dumps(routes, indent=2) + "\n")
     oversized = [str(p.relative_to(built)) for p in built.rglob("*") if p.is_file() and p.stat().st_size >= 100 * 1024**2]
