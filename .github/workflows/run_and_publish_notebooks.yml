@@ -32,6 +32,8 @@ on:
       - '.github/scripts/test_build_book.py'
       - '.github/scripts/verify_book.py'
       - '.github/scripts/notebook_metadata.py'
+      - '.github/scripts/offload_widget_volumes.py'
+      - '.github/scripts/publish_to_hf.py'
       - '.github/workflows/run_and_publish_notebooks.yml'
       - 'books/**/*.md'
       - 'books/**/*.png'
@@ -1916,6 +1918,21 @@ jobs:
           find books -name "*.ipynb" -type f -mmin -5 -exec ls -lh {} \; 2>/dev/null | head -10 || true
           
           echo "================================================"
+
+      - name: Move embedded NiiVue data to HuggingFace
+        # publish_to_hf.py only rewrites literal paths, so volumes loaded through variables,
+        # f-strings or temporary files are saved inside the widget state. Serve those from
+        # HuggingFace too. Uploads are content-addressed, so unchanged data is never re-sent.
+        # Non-fatal: a notebook whose upload fails keeps its data embedded and still renders.
+        if: inputs.diagnostic_mode != true
+        continue-on-error: true
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+          HF_BRANCH: ${{ github.ref_name }}
+        run: |
+          pip install -q "huggingface_hub>=0.32.0"
+          python3 .github/scripts/offload_widget_volumes.py --book books
 
       - name: Fetch doi-mapping.json and reviews.json from ci-data branch
         run: |
