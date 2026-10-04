@@ -251,6 +251,11 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
             "filename": source.name, "static": False,
         }]
         extra = controls(source, review_id, reviews, settings)
+        if doi:
+            # The theme only prints the frontmatter DOI as faint text under the authors. MyST turns
+            # doi.org links into citations, so link to Zenodo's resolver, where doi.org redirects.
+            target = "https://zenodo.org/doi/" + meta["doi"]
+            extra = f":::{{div}}\n:class: nd-doi\n\n**DOI:** {link(doi, target)}\n:::\n\n{extra}".rstrip()
         body = adapt_markdown(body, headings)
         heading = re.match(r"(\s*# [^\n]+(?:\n|\Z))(.*)", body, re.S)
         if heading:

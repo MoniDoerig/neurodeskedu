@@ -63,3 +63,24 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.nd-doi {
+  display: inline-block;
+  margin: 0.5rem 0;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--nd-review-border);
+  background: #024b74;
+  color: #ffffff;
+}
+
+.nd-doi a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.nd-doi p {
+  margin: 0;
+}
