@@ -143,6 +143,26 @@ class BookBuildTests(unittest.TestCase):
         self.assertIn("/edu/_static/widgets/" + assets[0].name, output)
         self.assertNotIn("widgets", self.notebook["metadata"])
 
+    def test_widget_javascript_is_stored_once_and_referenced(self):
+        mime = "application/vnd.jupyter.widget-view+json"
+        esm = "export default {}; // " + "x" * 2000
+        self.notebook["cells"][1]["outputs"] = [{"output_type": "display_data", "data": {mime: {"model_id": m}}}
+                                                for m in ["first", "second"]]
+        models = {m: {"state": {"_esm": esm, "volume": m}} for m in ["first", "second"]}
+        self.notebook["metadata"]["widgets"] = {"application/vnd.jupyter.widget-state+json": {
+            "version_major": 2, "version_minor": 0, "state": models,
+        }}
+        stage = self.root / "stage"
+        embed_widgets(self.notebook, stage, self.source, "/edu")
+        folder = stage / "_static/widgets"
+        [shared] = folder.glob("esm-*.js")
+        self.assertEqual(shared.read_text(), esm)
+        for page in folder.glob("*.html"):
+            state = json.loads(self.widget_state(page))["state"]
+            [model] = state.values()
+            self.assertEqual(model["state"]["_esm"], "nd-esm:" + shared.name)
+            self.assertNotIn(esm, self.widget_state(page))
+
     def test_widget_views_without_saved_state_keep_the_text_fallback(self):
         self.notebook["metadata"].pop("widgets")
         data = {"application/vnd.jupyter.widget-view+json": {"model_id": "missing"},

@@ -87,6 +87,8 @@ def adapt_markdown(text: str, headings: set[str]) -> str:
 
 # GitHub Pages rejects files of 100 MB or more, so widget state is split into parts.
 WIDGET_PART_SIZE = 50 * 1024**2
+# Widget JavaScript (about 5 MB for each NiiVue viewer) is stored once per site and fetched by reference.
+ESM_REFERENCE = "nd-esm:"
 
 
 def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> None:
@@ -117,6 +119,12 @@ def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> N
             continue
         stem = hashlib.sha256(f"{source}:{view['model_id']}".encode()).hexdigest()[:24]
         filename = stem + ".html"
+        for model_id, model in selected.items():
+            esm = model.get("state", {}).get("_esm")
+            if isinstance(esm, str) and len(esm) >= 1000:
+                name = "esm-" + hashlib.sha256(esm.encode()).hexdigest()[:24] + ".js"
+                (folder / name).write_text(esm)
+                selected[model_id] = {**model, "state": {**model["state"], "_esm": ESM_REFERENCE + name}}
         widget_state = json.dumps({**state, "state": selected})
         parts = []
         for start in range(0, len(widget_state), WIDGET_PART_SIZE):
@@ -128,10 +136,15 @@ def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> N
             '<style>body{margin:0}.jupyter-widgets{max-width:100%}</style></head><body>'
             '<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>'
             f'<script type="{mime}">{widget_view}</script>'
-            '<script>Promise.all(' + json.dumps(parts) + '.map(part => fetch(part).then(response => {'
-            'if (!response.ok) throw new Error(part + ": " + response.status); return response.text();'
-            '}))).then(texts => {const state = document.createElement("script");'
-            'state.type = "application/vnd.jupyter.widget-state+json"; state.textContent = texts.join("");'
+            '<script>const load = path => fetch(path).then(response => {'
+            'if (!response.ok) throw new Error(path + ": " + response.status); return response.text();});'
+            'Promise.all(' + json.dumps(parts) + '.map(load)).then(async texts => {'
+            'const data = JSON.parse(texts.join(""));'
+            'await Promise.all(Object.values(data.state).map(async model => {const esm = model.state?._esm;'
+            f'if (typeof esm === "string" && esm.startsWith("{ESM_REFERENCE}")) '
+            f'model.state._esm = await load(esm.slice({len(ESM_REFERENCE)}));}}));'
+            'const state = document.createElement("script");'
+            'state.type = "application/vnd.jupyter.widget-state+json"; state.textContent = JSON.stringify(data);'
             'document.body.append(state); const embed = document.createElement("script");'
             'embed.src = "https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@1.0.14/dist/embed-amd.js";'
             'document.body.append(embed);}).catch(error => {document.body.textContent = '
