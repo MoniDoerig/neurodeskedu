@@ -132,11 +132,7 @@ def extract_authors_from_notebook(notebook_obj: dict) -> List[str]:
         source = cell.get("source", [])
         cell_source = "".join(source) if isinstance(source, list) else str(source)
         match = _FRONT_MATTER_RE.match(cell_source)
-        if match:
-            authors = _extract_authors_from_front_matter(match.group(1))
-            cell_source = cell_source[match.end():]
-        else:
-            authors = []
+        authors = _extract_authors_from_front_matter(match.group(1)) if match else []
         authors = authors or extract_authors_from_first_cell_source(cell_source)
         if authors:
             return authors
@@ -164,7 +160,8 @@ def _extract_authors_from_front_matter(front_matter: str) -> List[str]:
         return []
     if not isinstance(data, dict):
         return []
-    value = data.get("authors", data.get("author"))
+    keys = {str(key).lower(): value for key, value in data.items()}
+    value = keys.get("authors", keys.get("author"))
     entries = value if isinstance(value, list) else [value]
     names: List[str] = []
     for entry in entries:

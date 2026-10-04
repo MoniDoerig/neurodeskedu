@@ -119,6 +119,11 @@ def test_front_matter_string_and_list_authors():
         "Jane Doe", "John Smith"]
 
 
+def test_front_matter_that_yaml_cannot_read_still_yields_authors():
+    assert extract_authors_from_notebook(_md("---\ntitle: Intro: part 1\nauthor: Jane Doe\n---\n")) == ["Jane Doe"]
+    assert extract_authors_from_notebook(_md("---\nAuthor: Jane Doe\n---\n")) == ["Jane Doe"]
+
+
 def test_no_author_returns_empty():
     nb = _md("# Just a title\n", "Some description with no author line.\n")
     assert extract_authors_from_notebook(nb) == []
