@@ -56,7 +56,7 @@ def discover(book: Path) -> tuple[list[Path], list[dict]]:
 
 
 def frontmatter(text: str) -> tuple[dict, str]:
-    match = re.match(r"\A---\r?\n(.*?)\r?\n---\r?\n", text, re.S)
+    match = re.match(r"\A---\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", text, re.S)
     if not match:
         return {}, text
     return yaml.safe_load(match[1]) or {}, text[match.end():]
@@ -103,8 +103,14 @@ def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> N
             model_id = pending.pop()
             if model_id in selected:
                 continue
+            if model_id not in models:
+                selected = None
+                break
             selected[model_id] = models[model_id]
             pending.extend(re.findall(r'"IPY_MODEL_([^"\\]+)"', json.dumps(models[model_id])))
+        if selected is None:
+            del output["data"][mime]
+            continue
         filename = hashlib.sha256(f"{source}:{view['model_id']}".encode()).hexdigest()[:24] + ".html"
         widget_state = json.dumps({**state, "state": selected}).replace("<", "\\u003c")
         widget_view = json.dumps(view).replace("<", "\\u003c")
@@ -195,9 +201,9 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
         }]
         extra = controls(source, review_id, reviews, settings)
         body = adapt_markdown(body, headings)
-        heading = re.match(r"(\s*# [^\n]+\n)(.*)", body, re.S)
+        heading = re.match(r"(\s*# [^\n]+(?:\n|\Z))(.*)", body, re.S)
         if heading:
-            body = heading[1] + "\n" + extra + "\n\n" + heading[2]
+            body = heading[1].rstrip("\n") + "\n\n" + extra + "\n\n" + heading[2]
         else:
             body = extra + "\n\n" + body
         text = "---\n" + yaml.safe_dump(meta, sort_keys=False) + "---\n" + body
@@ -259,7 +265,14 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
         )
     (built / ".nojekyll").touch()
     (built / "neurodesk-pages.json").write_text(json.dumps(routes, indent=2) + "\n")
-    oversized = [str(p.relative_to(built)) for p in built.rglob("*") if p.is_file() and p.stat().st_size >= 100 * 1024**2]
+    limit = 100 * 1024**2
+    for widget in (built / "_static/widgets").glob("*.html"):
+        if widget.stat().st_size >= limit:
+            print(f"::warning::Replacing oversized widget output: {widget.name}")
+            widget.write_text('<!doctype html><html><head><meta charset="utf-8"></head><body>'
+                              "<p>This interactive output is too large to publish online. "
+                              "Run the notebook to explore it.</p></body></html>\n")
+    oversized = [str(p.relative_to(built)) for p in built.rglob("*") if p.is_file() and p.stat().st_size >= limit]
     if oversized:
         raise ValueError(f"Files exceed the GitHub Pages publication limit: {oversized}")
     if output.exists():

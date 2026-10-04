@@ -82,6 +82,24 @@ class BookBuildTests(unittest.TestCase):
         self.assertIn("{admonition} Unreviewed", text)
         self.assertEqual(text.count("/hub/user-redirect/git-pull?"), 5)
 
+    def test_frontmatter_cell_without_trailing_newline_keeps_its_metadata(self):
+        self.notebook["cells"][0]["source"] = "---\ntitle: Front Title\nsubtitle: Sub\n---"
+        (self.book / self.source).write_text(json.dumps(self.notebook))
+        pages, toc = discover(self.book)
+        prepare(self.book, self.root / "stage", pages, toc, self.settings, {})
+        text = "".join(json.loads((self.root / "stage" / self.source).read_text())["cells"][0]["source"])
+        meta = yaml.safe_load(text.split("---\n")[1])
+        self.assertEqual((meta["title"], meta["subtitle"]), ("Front Title", "Sub"))
+        self.assertEqual(text.count("---\n"), 2)
+
+    def test_controls_follow_a_title_only_first_cell(self):
+        self.notebook["cells"][0]["source"] = "# Example"
+        (self.book / self.source).write_text(json.dumps(self.notebook))
+        pages, toc = discover(self.book)
+        prepare(self.book, self.root / "stage", pages, toc, self.settings, {})
+        text = "".join(json.loads((self.root / "stage" / self.source).read_text())["cells"][0]["source"])
+        self.assertLess(text.index("# Example"), text.index("{dropdown} Run this notebook"))
+
     def test_launch_urls_identify_original_notebook_and_branch(self):
         text = controls(self.source, None, {}, self.settings)
         for line in text.splitlines():
@@ -132,6 +150,34 @@ class BookBuildTests(unittest.TestCase):
         self.notebook["cells"][1]["outputs"] = [{"output_type": "display_data", "data": data}]
         embed_widgets(self.notebook, self.root / "stage", self.source, "/edu")
         self.assertEqual(self.notebook["cells"][1]["outputs"][0]["data"], data)
+
+    def test_widget_views_with_unsaved_models_keep_the_text_fallback(self):
+        mime = "application/vnd.jupyter.widget-view+json"
+        data = {mime: {"model_id": "closed"}, "text/plain": "Progress"}
+        self.notebook["cells"][1]["outputs"] = [{"output_type": "display_data", "data": dict(data)}]
+        self.notebook["metadata"]["widgets"] = {"application/vnd.jupyter.widget-state+json": {
+            "version_major": 2, "version_minor": 0, "state": {},
+        }}
+        embed_widgets(self.notebook, self.root / "stage", self.source, "/edu")
+        self.assertEqual(self.notebook["cells"][1]["outputs"][0]["data"], {"text/plain": "Progress"})
+
+    def test_oversized_widget_assets_are_replaced_instead_of_blocking_publication(self):
+        stage = self.root / "stage"
+        built = stage / "_build/html"
+        content = stage / "_build/site/content"
+        content.mkdir(parents=True)
+        route = "examples/topic/test-one"
+        (content / "page.json").write_text(json.dumps({"location": "/" + str(self.source),
+                                                       "slug": route.replace("/", ".")}))
+        (built / route).mkdir(parents=True)
+        (built / route / "index.html").write_text("<html><head></head><body></body></html>")
+        widget = built / "_static/widgets/big.html"
+        widget.parent.mkdir(parents=True)
+        with widget.open("wb") as f:
+            f.truncate(100 * 1024**2)
+        output = self.root / "output"
+        finish(stage, self.book, output, [self.source], self.settings)
+        self.assertIn("too large", (output / "_static/widgets/big.html").read_text())
 
     def test_export_requires_every_page_and_preserves_raw_downloads_and_aliases(self):
         stage = self.root / "stage"
