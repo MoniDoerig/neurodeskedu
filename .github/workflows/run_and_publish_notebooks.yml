@@ -1986,7 +1986,7 @@ jobs:
             du -sh books/_build/html
             echo ""
             echo "Top-level files:"
-            ls -lh books/_build/html/ | head -20
+            ls -lh books/_build/html/ | head -20 || true
             echo ""
             echo "Recently modified HTML files:"
             find books/_build/html -name "*.html" -type f -mmin -10 2>/dev/null | head -10 || true
