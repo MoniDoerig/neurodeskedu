@@ -44,7 +44,7 @@ def verify(book: Path, raw: Path) -> None:
             query = parse_qs(urlparse(url).query)
             assert query["repo"] == [settings["repository"]], source
             assert query["branch"] == [settings["branch"]], source
-            assert query["urlpath"] == [f"lab/tree/neurodeskedu/books/{source.as_posix()}"], source
+            assert query["urlpath"] == [f"lab/tree/{settings['repository'].rsplit('/', 1)[1]}/books/{source.as_posix()}"], source
         assert (output / "_sources" / source).read_bytes() == (raw / source).read_bytes(), source
         if source.suffix == ".ipynb":
             original = json.loads((book / source).read_text())

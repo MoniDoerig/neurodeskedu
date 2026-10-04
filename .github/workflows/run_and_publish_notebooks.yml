@@ -31,6 +31,7 @@ on:
       - '.github/scripts/build_book.py'
       - '.github/scripts/test_build_book.py'
       - '.github/scripts/verify_book.py'
+      - '.github/scripts/notebook_metadata.py'
       - '.github/workflows/run_and_publish_notebooks.yml'
       - 'books/**/*.md'
       - 'books/**/*.png'
