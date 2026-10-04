@@ -168,7 +168,8 @@ def _extract_authors_from_front_matter(front_matter: str) -> List[str]:
         if isinstance(entry, dict):
             entry = entry.get("name")
         if isinstance(entry, str):
-            names.extend(name for name in _split_authors(entry) if name not in names)
+            for line in entry.splitlines():
+                names.extend(name for name in _split_authors(line) if name not in names)
     return names
 
 
