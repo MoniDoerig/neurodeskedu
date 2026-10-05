@@ -109,6 +109,23 @@ class BookBuildTests(unittest.TestCase):
         ])
         self.assertEqual(merge_streams([]), [])
 
+    def test_progress_bar_cleanup_matches_carriage_return_semantics_in_linear_time(self):
+        import random, re, time
+        def clean(text):
+            return merge_streams([{"output_type": "stream", "name": "stdout", "text": text}])[0]["text"]
+        rng = random.Random(0)
+        for _ in range(2000):
+            text = "".join(rng.choice("ab\r\n") for _ in range(rng.randint(1, 12)))
+            expected = re.sub(r".*\r(?=[^\n])", "", text.replace("\r\n", "\n")) if "\r" in text else text
+            self.assertEqual(clean(text), expected, repr(text))
+        start = time.monotonic()
+        self.assertEqual(clean("0%\r50%\r100%" + "x" * 1_000_000), "100%" + "x" * 1_000_000)
+        self.assertLess(time.monotonic() - start, 2)
+        chunks = [{"output_type": "stream", "name": "stdout", "text": "y" * 100 + "\n"} for _ in range(20_000)]
+        start = time.monotonic()
+        self.assertEqual(merge_streams(chunks)[0]["text"], ("y" * 100 + "\n") * 20_000)
+        self.assertLess(time.monotonic() - start, 2)
+
     def test_frontmatter_cell_without_trailing_newline_keeps_its_metadata(self):
         self.notebook["cells"][0]["source"] = "---\ntitle: Front Title\nsubtitle: Sub\n---"
         (self.book / self.source).write_text(json.dumps(self.notebook))
