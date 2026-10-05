@@ -121,6 +121,10 @@ class BookBuildTests(unittest.TestCase):
         start = time.monotonic()
         self.assertEqual(clean("0%\r50%\r100%" + "x" * 1_000_000), "100%" + "x" * 1_000_000)
         self.assertLess(time.monotonic() - start, 2)
+        chunks = [{"output_type": "stream", "name": "stdout", "text": "y" * 100 + "\n"} for _ in range(20_000)]
+        start = time.monotonic()
+        self.assertEqual(merge_streams(chunks)[0]["text"], ("y" * 100 + "\n") * 20_000)
+        self.assertLess(time.monotonic() - start, 2)
 
     def test_frontmatter_cell_without_trailing_newline_keeps_its_metadata(self):
         self.notebook["cells"][0]["source"] = "---\ntitle: Front Title\nsubtitle: Sub\n---"

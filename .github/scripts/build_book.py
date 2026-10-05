@@ -159,17 +159,20 @@ def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> N
 
 def merge_streams(outputs: list[dict]) -> list[dict]:
     """Join each cell's stdout and stderr into one block apiece, as Jupyter Book 1 did (nb_merge_streams)."""
-    merged, streams = [], {}
+    merged, streams, parts = [], {}, {}
     for output in outputs:
         if output["output_type"] != "stream":
             merged.append(output)
         elif output["name"] in streams:
-            stream = streams[output["name"]]
-            stream["text"] = "".join(stream["text"]) + "".join(output["text"])
+            # Join once at the end: appending to a growing string is quadratic for chatty cells.
+            parts[output["name"]].append("".join(output["text"]))
         else:
             streams[output["name"]] = output
+            parts[output["name"]] = ["".join(output["text"])]
             merged.append(output)
-    for stream in streams.values():
+    for name, stream in streams.items():
+        if len(parts[name]) > 1:
+            stream["text"] = "".join(parts[name])
         if "\r" in "".join(stream["text"]):
             # Keep only the final state of lines redrawn with carriage returns (progress bars).
             # Per line, keep what follows the last carriage return that is not the line's final
