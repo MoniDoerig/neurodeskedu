@@ -22,22 +22,23 @@
   border: 1px solid var(--nd-review-border);
 }
 
-.nd-review-badge--reviewed {
+/* Doubled class beats the theme's dark:bg-myst-bg-secondary on admonitions. */
+.nd-review-badge.nd-review-badge--reviewed {
   background: var(--nd-review-reviewed-bg);
   color: var(--nd-review-reviewed-fg);
 }
 
-.nd-review-badge--in-progress {
+.nd-review-badge.nd-review-badge--in-progress {
   background: var(--nd-review-inprogress-bg);
   color: var(--nd-review-inprogress-fg);
 }
 
-.nd-review-badge--unreviewed {
+.nd-review-badge.nd-review-badge--unreviewed {
   background: var(--nd-review-unreviewed-bg);
   color: var(--nd-review-unreviewed-fg);
 }
 
-.nd-review-badge--stale {
+.nd-review-badge.nd-review-badge--stale {
   background: var(--nd-review-stale-bg);
   color: var(--nd-review-stale-fg);
 }
