@@ -14,13 +14,13 @@ Anything else is held back: no issue, no nd_review_id, just a warning, a line in
 the step summary and an entry in the workflow's rolling "review-held" notice
 issue. A held notebook still lacks an nd_review_id, so a later run
 picks it up again once CI passes on main: after its failed job is re-run, or after
-a push that changes it. Dispatched CI runs do not count. Only a failed, cancelled
-or timed-out job marks a hold for notification; a notebook still waiting for CI
-(running, changed since, or no result yet) is held quietly.
+a push that changes it. Dispatched CI runs do not count. Only a failed or
+timed-out job marks a hold for notification; a notebook still waiting for CI
+(running, cancelled, changed since, or no result yet) is held quietly.
 
-Notebooks with an open review issue (issue_exists and issue_open, set by the
-reconcile step) always go ahead: only their ID injection is left, and that sends
-nothing new to reviewers. Notebooks in .github/skip-notebooks.txt also go ahead,
+Notebooks that already have a review issue, open or closed (issue_exists, set by
+the reconcile step), always go ahead: only their ID injection is left, and that
+sends nothing new to reviewers. Notebooks in .github/skip-notebooks.txt also go ahead,
 as before this gate, since CI never runs them.
 
 Env:
@@ -40,7 +40,7 @@ import subprocess
 import urllib.request
 
 CI_WORKFLOW = 'run_and_publish_notebooks.yml'
-LOOKBACK_RUNS = 30  # newest completed main-push CI runs searched for a notebook's result
+LOOKBACK_RUNS = 300  # newest completed main-push CI runs searched, fetched a page at a time
 JOB_NAME = re.compile(r'^Run Notebook \((.+)\)$')
 SKIP_LIST = '.github/skip-notebooks.txt'
 
@@ -56,15 +56,23 @@ def get_json(path):
 
 
 def ci_runs(repo, trigger_run_id=None):
-    """Completed main-push runs of the CI workflow, newest first."""
-    runs = get_json(
-        f'repos/{repo}/actions/workflows/{CI_WORKFLOW}/runs'
-        f'?branch=main&event=push&status=completed&per_page={LOOKBACK_RUNS}'
-    )['workflow_runs']
-    # The run that triggered us should already be listed; add it if the list lags.
-    if trigger_run_id and all(str(r['id']) != str(trigger_run_id) for r in runs):
-        runs.append(get_json(f'repos/{repo}/actions/runs/{trigger_run_id}'))
-    return sorted(runs, key=lambda r: r['created_at'], reverse=True)
+    """Completed main-push runs of the CI workflow, newest first, fetched lazily."""
+    # The run that triggered us may not be listed yet; it is the newest, so yield it first.
+    seen = set()
+    if trigger_run_id:
+        seen.add(str(trigger_run_id))
+        yield get_json(f'repos/{repo}/actions/runs/{trigger_run_id}')
+    for page in range(1, LOOKBACK_RUNS // 100 + 1):
+        runs = get_json(
+            f'repos/{repo}/actions/workflows/{CI_WORKFLOW}/runs'
+            f'?branch=main&event=push&status=completed&per_page=100&page={page}'
+        )['workflow_runs']
+        for run in runs:
+            if str(run['id']) not in seen:
+                seen.add(str(run['id']))
+                yield run
+        if len(runs) < 100:
+            return
 
 
 def notebook_jobs(repo, run_id):
@@ -100,31 +108,33 @@ def skip_listed():
         return set()
 
 
-# Only these ping anyone. Anything else (still running, stale, not run) is CI pending.
-CONCLUSIONS = {'failure': 'CI failed', 'timed_out': 'CI timed out', 'cancelled': 'CI cancelled'}
+# Only these ping anyone. Anything else (still running, stale, not run) is CI pending. A
+# cancelled job is not the author's failure (a newer run or a person stopped it), so it waits.
+CONCLUSIONS = {'failure': 'CI failed', 'timed_out': 'CI timed out'}
 BAD_PATH = re.compile(r'[\s\x00-\x1f\x7f]')  # CI splits its notebook list on whitespace
 
 
-def has_open_issue(c):
-    # Only an open review issue lets a notebook skip the gate (reconcile sets both flags).
-    return bool(c.get('issue_exists') and c.get('issue_open'))
+def has_issue(c):
+    # With an existing review issue, open or closed, only the ID injection is left: no new
+    # issue is filed and reviewers are not notified, so the gate does not apply.
+    return bool(c.get('issue_exists'))
 
 
 def needs_ci(c, skipped):
     path = c['source_path']
-    return not has_open_issue(c) and path not in skipped and not BAD_PATH.search(path)
+    return not has_issue(c) and path not in skipped and not BAD_PATH.search(path)
 
 
 def evaluate(candidates, runs, jobs_of, blob_at, head='HEAD', skipped=frozenset()):
     """Split candidates into (gated, held).
 
     held items are {source_path, reason, url, notify}. notify is True only when CI
-    failed, was cancelled or timed out; a notebook merely waiting for CI pings nobody.
+    failed or timed out; a notebook merely waiting for CI pings nobody.
     Skip-listed notebooks pass as before (CI never runs them), flagged ci_skipped.
     """
     need = {c['source_path'] for c in candidates if needs_ci(c, skipped)}
     newest = {}  # path -> (run, job) of the newest CI job for that notebook
-    for run in runs:
+    for run in runs if need else ():
         if need <= newest.keys():
             break
         for path, job in jobs_of(run).items():
@@ -136,18 +146,20 @@ def evaluate(candidates, runs, jobs_of, blob_at, head='HEAD', skipped=frozenset(
         {'source_path': path, 'reason': reason, 'url': url, 'notify': notify})
     for c in candidates:
         path = c['source_path']
-        if has_open_issue(c):
+        if has_issue(c):
             gated.append(c)  # already has a review issue: only the ID injection is left
         elif path in skipped:
             gated.append({**c, 'ci_skipped': True})
         elif BAD_PATH.search(path):
             hold(path, 'path contains whitespace or control characters, which CI cannot run')
         elif path not in newest:
-            hold(path, f'waiting for CI: no finished result in the last {len(runs)} main runs')
+            hold(path, f'waiting for CI: no finished result in the last {LOOKBACK_RUNS} main runs')
         else:
             run, job = newest[path]
             if blob_at(run['head_sha'], path) != blob_at(head, path):
                 hold(path, 'waiting for CI: changed since CI last ran it', run['html_url'])
+            elif job['conclusion'] == 'cancelled':
+                hold(path, 'waiting for CI: its job was cancelled; re-run it', job['html_url'])
             elif job['conclusion'] in CONCLUSIONS:
                 hold(path, CONCLUSIONS[job['conclusion']], job['html_url'], notify=True)
             elif job['conclusion'] != 'success':
@@ -171,13 +183,13 @@ def main():
         print(f'Triggered by CI run {trigger}')
 
     skipped = skip_listed()
-    runs = ci_runs(repo, trigger) if any(needs_ci(c, skipped) for c in candidates) else []
+    runs = ci_runs(repo, trigger)
     gated, held = evaluate(
         candidates, runs, lambda run: notebook_jobs(repo, run['id']), blob, skipped=skipped,
     )
 
     for c in gated:
-        why = ('review issue already exists' if has_open_issue(c) else
+        why = ('review issue already exists' if has_issue(c) else
                'skip-listed, filed without CI' if c.get('ci_skipped') else 'passed CI')
         print(f"Go ahead: {c['source_path']} ({why})")
     for h in held:
