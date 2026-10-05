@@ -2,6 +2,7 @@
 """Check the exported site's page coverage, launch links, and raw downloads."""
 
 import argparse
+import copy
 from html.parser import HTMLParser
 import json
 from pathlib import Path
@@ -9,7 +10,7 @@ from urllib.parse import parse_qs, quote, urlparse
 
 import yaml
 
-from build_book import discover
+from build_book import discover, merge_streams
 
 
 class PageLinks(HTMLParser):
@@ -36,7 +37,9 @@ def verify(book: Path, raw: Path) -> None:
     assert len(set(routes.values())) == len(pages), "Page routes collide"
     for source in pages:
         page = PageLinks((output / routes[source.as_posix()] / "index.html").read_text())
-        edit_url = f"{settings['repository']}/edit/{settings['branch']}/books/{quote(source.as_posix())}"
+        editor = (settings["repository"].replace("://github.com/", "://github.dev/") + "/blob"
+                  if source.suffix == ".ipynb" else settings["repository"] + "/edit")
+        edit_url = f"{editor}/{settings['branch']}/books/{quote(source.as_posix())}"
         assert edit_url in page.links, f"Incorrect source edit link: {source}"
         hubs = [url for url in page.links if "/hub/user-redirect/git-pull?" in url]
         assert len(hubs) == (len(settings["hubs"]) if source.suffix == ".ipynb" else 0), source
@@ -59,8 +62,9 @@ def verify(book: Path, raw: Path) -> None:
                 assert {k: v for k, v in before.items() if k != "outputs"} == {
                     k: v for k, v in after.items() if k != "outputs"
                 }, source
-                assert len(before.get("outputs", [])) == len(after.get("outputs", [])), source
-                for old_output, new_output in zip(before.get("outputs", []), after.get("outputs", [])):
+                expected = merge_streams(copy.deepcopy(before.get("outputs", [])))
+                assert len(expected) == len(after.get("outputs", [])), source
+                for old_output, new_output in zip(expected, after.get("outputs", [])):
                     if "widgets" in original["metadata"] and "application/vnd.jupyter.widget-view+json" in old_output.get("data", {}):
                         assert "_static/widgets/" in new_output["data"]["text/html"], source
                     else:

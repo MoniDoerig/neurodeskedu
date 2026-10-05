@@ -75,6 +75,10 @@
   color: #ffffff;
 }
 
+.nd-doi strong {
+  color: inherit;
+}
+
 .nd-doi a {
   color: inherit;
   text-decoration: underline;
