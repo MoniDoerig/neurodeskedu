@@ -59,6 +59,8 @@ def verify(book: Path, raw: Path) -> None:
             staged_cells = [c for c in staged["cells"] if c["cell_type"] != "markdown"]
             assert len(original_cells) == len(staged_cells), source
             for before, after in zip(original_cells, staged_cells):
+                if "scroll-output" in before.get("metadata", {}).get("tags", []):
+                    before = {**before, "metadata": {**before["metadata"], "class": "nd-scroll-output"}}
                 assert {k: v for k, v in before.items() if k != "outputs"} == {
                     k: v for k, v in after.items() if k != "outputs"
                 }, source

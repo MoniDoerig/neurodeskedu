@@ -106,6 +106,15 @@ class BookBuildTests(unittest.TestCase):
         ])
         self.assertEqual(merge_streams([]), [])
 
+    def test_scroll_output_tag_marks_the_cell_for_the_scroll_style(self):
+        self.notebook["cells"][1]["metadata"]["tags"].append("scroll-output")
+        (self.book / self.source).write_text(json.dumps(self.notebook))
+        pages, toc = discover(self.book)
+        prepare(self.book, self.root / "stage", pages, toc, self.settings, {})
+        cell = json.loads((self.root / "stage" / self.source).read_text())["cells"][1]
+        self.assertEqual(cell["metadata"]["class"], "nd-scroll-output")
+        self.assertIn(".nd-scroll-output", Path("books/_static/review-badge.css").read_text())
+
     def test_progress_bar_cleanup_matches_carriage_return_semantics_in_linear_time(self):
         import random, re, time
         def clean(text):
