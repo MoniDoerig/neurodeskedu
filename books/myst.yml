@@ -1,0 +1,18 @@
+version: 1
+project:
+  title: Neurodesk
+  github: https://github.com/neurodesk/neurodeskedu
+  static_files:
+    - _static
+site:
+  template: book-theme
+  nav:
+    - title: Return to neurodesk.org
+      url: https://neurodesk.org
+  options:
+    logo: images/neurodesk_logo.svg
+    favicon: images/neurodesk_logo.svg
+    logo_text: NeurodeskEDU
+    analytics_google: G-4Z9774J59Y
+    folders: true
+    style: _static/review-badge.css

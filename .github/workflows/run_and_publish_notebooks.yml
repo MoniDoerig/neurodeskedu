@@ -25,6 +25,16 @@ on:
     branches: ['**']
     paths:
       - '**/*.ipynb'
+      - 'books/**/*.yml'
+      - 'books/_static/**'
+      - 'requirements-book.txt'
+      - '.github/scripts/build_book.py'
+      - '.github/scripts/test_build_book.py'
+      - '.github/scripts/verify_book.py'
+      - '.github/scripts/notebook_metadata.py'
+      - '.github/scripts/offload_widget_volumes.py'
+      - '.github/scripts/publish_to_hf.py'
+      - '.github/workflows/run_and_publish_notebooks.yml'
       - 'books/**/*.md'
       - 'books/**/*.png'
       - 'books/**/*.PNG'
@@ -182,10 +192,11 @@ jobs:
             # newer Astro repo took over the neurodesk.github.io name; it never had a data/
             # directory. Broke between 2026-08-28 and 2026-09-05.
             # Do NOT repoint at neurodesk/play (frozen at 2025-12-03) or at the archived hugo repo.
-            # Pinned so contributors' pushes are reproducible. The monthly drift check overrides
-            # this with neurodesktop:latest, so image drift is still caught. To adopt a newer tag:
-            # dispatch "Scheduled corpus drift check" with image_override set to that dated tag;
-            # if the corpus passes, bump the line below.
+            # Pinned so contributors' pushes are reproducible. The monthly drift check tests the
+            # newest dated neurodesktop tag instead, and if the whole corpus passes it opens a PR
+            # bumping .github/neurodesktop-version. Merge that PR to adopt the new image.
+            # Validation evidence is linked in the PR; git log on that file shows when each
+            # version was adopted.
             # Images built from neurodesktop d518a7bd (2026-08-27) onward patch ipyniivue so each
             # NiiVue viewer loads its code from a live JupyterLab server, which breaks the viewers
             # on our static site. "Restore self-contained ipyniivue for the static site" undoes
@@ -193,7 +204,19 @@ jobs:
             # that slips through. Keep both steps when bumping this pin.
             # Previous auto-lookup kept for one-line revert:
             #   NEURODESKTOP_VERSION=$(curl -s https://raw.githubusercontent.com/neurodesk/neurodesk.github.io/main/data/neurodesktop.toml | grep '^jupyter_neurodesk_version' | sed 's/.*= *"\(.*\)"/\1/')
-            NEURODESKTOP_VERSION="2026-07-11"
+            # The pin lives in a plain (non-workflow) file, .github/neurodesktop-version, because
+            # GITHUB_TOKEN can never update workflow files (no `workflows` permission), so the
+            # scheduled drift check's auto-bump PR has to edit a plain file instead of this one.
+            PIN_FILE=".github/neurodesktop-version"
+            if [ ! -f "$PIN_FILE" ]; then
+              echo "::error::$PIN_FILE is missing. It must contain a single dated neurodesktop tag (YYYY-MM-DD)."
+              exit 1
+            fi
+            NEURODESKTOP_VERSION=$(tr -d '[:space:]' < "$PIN_FILE")
+            if ! [[ "$NEURODESKTOP_VERSION" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}$ ]]; then
+              echo "::error::$PIN_FILE contains '${NEURODESKTOP_VERSION}', which is not a YYYY-MM-DD dated tag."
+              exit 1
+            fi
             echo "neurodesk_image=ghcr.io/neurodesk/neurodesktop:${NEURODESKTOP_VERSION}" >> $GITHUB_OUTPUT
             # Slim py-stack default kept for one-line revert:
             #   echo "neurodesk_image=ghcr.io/neurodesk/neurocommand:py-stack" >> $GITHUB_OUTPUT
@@ -213,14 +236,14 @@ jobs:
         uses: actions/cache@v5.0.1
         with:
           path: ${{ github.workspace }}/.cache/pip
-          key: pip-book-${{ hashFiles('books/_config.yml') }}
+          key: pip-book-${{ hashFiles('requirements-book.txt', 'books/myst.yml', 'books/publishing.yml') }}
 
       - name: Install Dependencies (Warm Cache)
         env:
           PIP_CACHE_DIR: ${{ github.workspace }}/.cache/pip
         run: |
           mkdir -p ${{ github.workspace }}/.cache/pip
-          pip install "jupyter-book<2.0.0" ghp-import "huggingface_hub>=0.32.0"
+          pip install -r requirements-book.txt "huggingface_hub>=0.32.0"
 
   # ---------------------------------------------------------------------------
   # SELECT NOTEBOOKS: Determine which notebooks to run (changed or manually selected)
@@ -1562,6 +1585,9 @@ jobs:
           pattern: executed-*
           path: executed-artifacts
 
+      - name: Install Zenodo publisher dependencies
+        run: python3 -m pip install --user pyyaml
+
       - name: Publish notebooks and tutorials to Zenodo
         env:
           ZENODO_TOKEN: ${{ secrets.ZENODO_TOKEN }}
@@ -1646,6 +1672,17 @@ jobs:
             exit 1
           fi
 
+      - name: Drop DOI entries for pages that no longer exist
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          mapping = json.load(open("doi-mapping.json"))
+          stale = sorted(key for key in mapping if not os.path.isfile(key))
+          for key in stale:
+              print(f"Removing stale DOI entry: {key} ({mapping.pop(key).get('doi_url')})")
+          json.dump(mapping, open("doi-mapping.json", "w"), indent=2)
+          EOF
+
       - name: Push doi-mapping.json to ci-data branch
         if: github.ref == 'refs/heads/main'
         run: |
@@ -1684,9 +1721,11 @@ jobs:
     needs: [run-notebooks, setup, publish-dois]
     if: ${{ always() && inputs.drift_check != true && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
-    # Serialize publish jobs to prevent race conditions on gh-pages
+    # Serialize publish jobs per branch to prevent race conditions on gh-pages. GitHub keeps
+    # one pending job per group and cancels the older one, so a shared group let any branch
+    # build drop a queued main deploy. Only main deploys; a newer main run includes older commits.
     concurrency:
-      group: publish-pages
+      group: publish-pages-${{ github.ref }}
       cancel-in-progress: false  # Queue instead of cancel
 
     steps:
@@ -1724,85 +1763,11 @@ jobs:
           sudo chown $USER $BASE_PATH/tmp
 
 
-      - name: Ensure Neurodesk image available
-        run: |
-          IMAGE="${{ needs.setup.outputs.neurodesk_image }}"
-          RUNNER_KIND="${{ needs.setup.outputs.runner }}"
-
-          print_docker_diagnostics() {
-            echo "::group::Docker diagnostics"
-            sudo systemctl --no-pager -l status docker.service || true
-            sudo systemctl --no-pager -l status containerd.service || true
-            sudo journalctl --no-pager -u docker.service -n 120 || true
-            echo "::endgroup::"
-          }
-
-          ensure_docker_ready() {
-            if docker info >/dev/null 2>&1; then
-              return 0
-            fi
-
-            echo "::warning::Docker daemon unavailable. Attempting recovery..."
-            sudo systemctl start containerd >/dev/null 2>&1 || true
-            if [ "$RUNNER_KIND" = "self-hosted" ]; then
-              sudo systemctl start docker >/dev/null 2>&1 || true
-            else
-              sudo systemctl restart docker >/dev/null 2>&1 || true
-            fi
-
-            for _ in $(seq 1 12); do
-              if docker info >/dev/null 2>&1; then
-                return 0
-              fi
-              sleep 5
-            done
-
-            echo "::error::Docker daemon is still unavailable after recovery attempts."
-            print_docker_diagnostics
-            return 1
-          }
-
-          if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-            echo "✓ Image already exists locally"
-          else
-            for attempt in 1 2 3; do
-              if ! ensure_docker_ready; then
-                if [ "$attempt" -eq 3 ]; then
-                  echo "::error::Failed to recover Docker daemon after 3 attempts"
-                  exit 1
-                fi
-                sleep $((attempt * 10))
-                continue
-              fi
-
-              echo "Pulling $IMAGE (attempt ${attempt}/3)..."
-              if docker pull "$IMAGE"; then
-                echo "✓ Pulled $IMAGE"
-                break
-              fi
-
-              if [ "$attempt" -eq 3 ]; then
-                echo "::error::Failed to pull $IMAGE after 3 attempts"
-                print_docker_diagnostics
-                exit 1
-              fi
-
-              echo "::warning::Pull attempt ${attempt} failed. Cleaning local state and retrying..."
-              if docker info >/dev/null 2>&1; then
-                docker image rm -f "$IMAGE" >/dev/null 2>&1 || true
-                docker builder prune -af >/dev/null 2>&1 || true
-              else
-                echo "::warning::Docker daemon became unavailable after pull failure."
-              fi
-              sleep $((attempt * 10))
-            done
-          fi
-
       - name: Restore Conda/Python dependencies cache
         uses: actions/cache@v5.0.1
         with:
           path: ${{ github.workspace }}/.cache/pip
-          key: pip-book-${{ hashFiles('books/_config.yml') }}
+          key: pip-book-${{ hashFiles('requirements-book.txt', 'books/myst.yml', 'books/publishing.yml') }}
           restore-keys: |
             pip-book-
 
@@ -1935,9 +1900,13 @@ jobs:
               echo "Processing: $nb_file"
               echo "  Notebook: $nb_name ($(du -h "$nb_file" | cut -f1))"
               
-              # Find target in books/
-              target=$(find books -name "$nb_name" -type f | head -1)
-              
+              mapfile -t targets < <(find books -name "$nb_name" -type f ! -path '*/_build/*')
+              if [ "${#targets[@]}" -gt 1 ]; then
+                echo "::error::Ambiguous notebook artifact: $nb_name matches multiple source paths"
+                exit 1
+              fi
+              target="${targets[0]:-}"
+
               if [ -n "$target" ]; then
                 echo "  Target: $target"
                 echo "  Before: $(du -h "$target" | cut -f1)"
@@ -1962,6 +1931,21 @@ jobs:
           find books -name "*.ipynb" -type f -mmin -5 -exec ls -lh {} \; 2>/dev/null | head -10 || true
           
           echo "================================================"
+
+      - name: Move embedded NiiVue data to HuggingFace
+        # publish_to_hf.py only rewrites literal paths, so volumes loaded through variables,
+        # f-strings or temporary files are saved inside the widget state. Serve those from
+        # HuggingFace too. Uploads are content-addressed, so unchanged data is never re-sent.
+        # Non-fatal: a notebook whose upload fails keeps its data embedded and still renders.
+        if: inputs.diagnostic_mode != true
+        continue-on-error: true
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: neurodeskorg/neurodeskedu
+          HF_BRANCH: ${{ github.ref_name }}
+        run: |
+          pip install -q "huggingface_hub>=0.32.0"
+          python3 .github/scripts/offload_widget_volumes.py --book books
 
       - name: Fetch doi-mapping.json and reviews.json from ci-data branch
         run: |
@@ -2009,211 +1993,21 @@ jobs:
             echo "::warning::Could not regenerate reviews.json — falling back to the ci-data copy"
           fi
 
-      - name: Set container name
-        run: echo "CONTAINER_NAME=neurodesktop-publish-${{ github.run_id }}" >> $GITHUB_ENV
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Start Neurodesktop container
-        env:
-          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Jupyter Book 2 from saved notebook outputs
         run: |
-          # Ensure pip cache directory exists
-          mkdir -p ${{ github.workspace }}/.cache/pip
-
-          # -----------------------------------------------------------------------
-          # NOTE: We use the exact same Docker startup settings as run-notebooks
-          # to ensure the environment (Lmod, Apptainer overlay) initializes
-          # correctly without permission errors.
-          # -----------------------------------------------------------------------
-          # No CVMFS mount — publish-pages runs jupyter-book build with
-          # execute_notebooks: off. No neuroimaging tools are invoked.
-          sudo docker run -d --name "$CONTAINER_NAME" \
-            --shm-size=1gb \
-            --privileged \
-            --user=root \
-            -v ${{ github.workspace }}:/home/jovyan/workspace \
-            -v ${{ env.BASE_PATH }}/tmp:/overlay-storage \
-            -v ${{ github.workspace }}/.cache/pip:/home/jovyan/.cache/pip \
-            -w /home/jovyan/workspace/books \
-            -e NB_UID="$(id -u)" \
-            -e NB_GID="$(id -g)" \
-            -e GITHUB_PAT="${GITHUB_PAT}" \
-            -e NEURODESKTOP_VERSION="$(echo '${{ needs.setup.outputs.neurodesk_image }}' | awk -F: '{print $NF}')" \
-            ${{ needs.setup.outputs.neurodesk_image }} \
-            sleep infinity
-          # CMD override keepalive (same rationale as run-notebooks job above)
-
-          echo "Started container: $CONTAINER_NAME"
-
-      - name: Wait for container readiness
-        run: |
-          echo "Waiting for Neurodesktop to become ready (up to 5 minutes)..."
-          # The container remaps jovyan's UID at startup (usermod -u $NB_UID) to match the runner.
-          # While that rewrites /etc/passwd, `su jovyan` transiently fails, so waiting for jovyan to
-          # merely exist is not enough. Wait until jovyan is STABLE at its final UID (== this runner's
-          # id -u, which was passed as NB_UID) AND CVMFS is visible to it, for a few consecutive
-          # checks, so no `su jovyan` step can race the remap.
-          TARGET_UID=$(id -u)
-          ok=0
-          for i in {1..300}; do
-            CUR=$(docker exec "$CONTAINER_NAME" id -u jovyan 2>/dev/null || true)
-            if [ "$CUR" = "$TARGET_UID" ] && docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c 'test -d /cvmfs/neurodesk.ardc.edu.au/containers/modules' 2>/dev/null; then
-              ok=$((ok + 1))
-              if [ "$ok" -ge 3 ]; then echo "Container ready (jovyan stable at UID $TARGET_UID + CVMFS) after ${i}s"; exit 0; fi
-            else
-              ok=0
-            fi
-            sleep 1
-          done
-          echo "::error::Container did not become ready within 5 minutes"
-          echo "=== Container logs ==="
-          docker logs "$CONTAINER_NAME"
-          exit 1
-
-      - name: Setup container environment (as root)
-        run: |
-          docker exec --user root "$CONTAINER_NAME" bash -c '
-            # Remap jovyan UID/GID to match runner user
-            if [ -n "$NB_UID" ] && [ "$NB_UID" != "$(id -u jovyan)" ]; then
-                echo "Remapping jovyan UID to $NB_UID..."
-                usermod -u $NB_UID jovyan
-                find /home/jovyan -user 1000 -exec chown -h $NB_UID {} \; 2>/dev/null || true
-            fi
-            if [ -n "$NB_GID" ] && [ "$NB_GID" != "$(id -g jovyan)" ]; then
-                echo "Remapping users group GID to $NB_GID..."
-                groupmod -g $NB_GID users
-            fi
-            
-            # Fix pip cache permissions
-            if [ -d /home/jovyan/.cache/pip ]; then
-                chown -R "$(id -u jovyan):$(id -g jovyan)" /home/jovyan/.cache/pip
-            fi
-            
-            echo "Root-level setup complete"
-          '
-
-      - name: Build Jupyter Book in container
-        run: |
-          docker exec "$CONTAINER_NAME" su --preserve-environment jovyan -s /bin/bash -c '
-            set -e
-            export PATH=/opt/conda/bin:$HOME/.local/bin:$PATH
-
-            # Install dependencies
-            # We use pip --user to take advantage of the mounted .cache/pip
-            pip install --user "jupyter-book<2.0.0" ghp-import
-
-            # Generate table of contents
-            /bin/bash ../.github/scripts/write-toc-entry.sh
-
-            # Disable notebook execution (already executed in run-notebooks job)
-            sed -i "s/execute_notebooks: .*/execute_notebooks: off/" _config.yml
-            
-            # Build the book
-            jupyter-book build .
-          '
-
-      - name: Cleanup container
-        if: always()
-        run: |
-          echo "Stopping and removing container: $CONTAINER_NAME"
-          docker stop "$CONTAINER_NAME" 2>/dev/null || true
-          docker rm "$CONTAINER_NAME" 2>/dev/null || true
-
-      - name: Replace _sources with raw source notebooks
-        run: |
-          # _sources has executed notebooks (huge with outputs). Swap in the raw sources.
-          cp -a "$RUNNER_TEMP/source-books/"* books/_build/html/_sources/ 2>/dev/null || echo "No _sources to replace"
-
-      - name: Deduplicate _esm in HTML files
-        run: |
-          echo "Deduplicating _esm JavaScript modules in HTML files..."
-          python3 .github/scripts/deduplicate_esm.py --dir books/_build/html
-          echo ""
-          echo "Large HTML files after deduplication:"
-          find books/_build/html -name "*.html" -size +5M -exec ls -lh {} \; || echo "No files over 5MB"
-
-      - name: Inject DOI buttons and author metadata
-        run: |
-          if [ -f doi-mapping.json ]; then
-            ENTRY_COUNT=$(python3 -c "import json; print(len(json.load(open('doi-mapping.json'))))")
-          else
-            ENTRY_COUNT=0
-            echo "No doi-mapping.json found, DOI links will be skipped"
-          fi
-          echo "DOI mapping entries available: $ENTRY_COUNT"
-
-          echo "Installing jsdom for DOI/author metadata injection..."
-          npm install --no-save jsdom
-
-          echo "Injecting metadata into built content pages..."
-          python3 << 'PYEOF'
-          import glob
-          import json
-          import os
-          import subprocess
-          import sys
-
-          sys.path.insert(0, os.path.join(os.getcwd(), ".github", "scripts"))
-          from notebook_metadata import extract_authors_from_content
-
-          mapping = {}
-          if os.path.isfile("doi-mapping.json"):
-              with open("doi-mapping.json", encoding="utf-8") as f:
-                  mapping = json.load(f)
-
-          notebook_paths = [
-              path for path in glob.glob("books/**/*.ipynb", recursive=True)
-              if "/_build/" not in path and not path.startswith("books/_build/")
-          ]
-          tutorial_paths = [
-              path for path in glob.glob("books/tutorials/**/*.md", recursive=True)
-              if "/_build/" not in path and not path.startswith("books/_build/")
-          ]
-          mapped_paths = [path for path in mapping.keys() if path.startswith("books/")]
-          content_paths = sorted(set(notebook_paths + tutorial_paths + mapped_paths))
-
-          injected = 0
-          skipped_missing_html = 0
-          skipped_no_metadata = 0
-
-          for content_path in content_paths:
-              html_rel = content_path.replace("books/", "", 1).rsplit(".", 1)[0] + ".html"
-              html_path = os.path.join("books/_build/html", html_rel)
-
-              if not os.path.isfile(html_path):
-                  skipped_missing_html += 1
-                  continue
-
-              doi_url = (mapping.get(content_path) or {}).get("doi_url", "")
-              authors = extract_authors_from_content(content_path) if os.path.isfile(content_path) else []
-              if not doi_url and not authors:
-                  skipped_no_metadata += 1
-                  continue
-
-              result = subprocess.run(
-                  [
-                      "node",
-                      ".github/scripts/add-doi-button.js",
-                      doi_url,
-                      html_path,
-                      json.dumps(authors),
-                  ],
-                  capture_output=True, text=True
-              )
-              if result.returncode != 0:
-                  print(f"Warning: metadata injection failed for {html_rel}: {result.stderr.strip()}")
-                  continue
-
-              if result.stdout.strip():
-                  print(result.stdout.strip())
-              injected += 1
-
-          print("")
-          print("Content metadata injection summary:")
-          print(f"  HTML files updated: {injected}")
-          print(f"  Skipped (HTML missing): {skipped_missing_html}")
-          print(f"  Skipped (no DOI and no author metadata): {skipped_no_metadata}")
-          print(f"  DOI mapping entries available: {len(mapping)}")
-          PYEOF
+          python -m venv "$RUNNER_TEMP/book-venv"
+          source "$RUNNER_TEMP/book-venv/bin/activate"
+          pip install -r requirements-book.txt
+          python .github/scripts/build_book.py --raw-books "$RUNNER_TEMP/source-books"
+          python .github/scripts/verify_book.py --raw-books "$RUNNER_TEMP/source-books"
 
       - name: Verify build output
         run: |
@@ -2226,7 +2020,7 @@ jobs:
             du -sh books/_build/html
             echo ""
             echo "Top-level files:"
-            ls -lh books/_build/html/ | head -20
+            ls -lh books/_build/html/ | head -20 || true
             echo ""
             echo "Recently modified HTML files:"
             find books/_build/html -name "*.html" -type f -mmin -10 2>/dev/null | head -10 || true
@@ -2238,52 +2032,6 @@ jobs:
           fi
           
           echo "============================================"
-
-      - name: Check and remove oversized HTML files
-        run: |
-          echo "Checking for oversized HTML files..."
-          OVERSIZED_FILES=()
-          WARNING_FILES=()
-
-          # Find files over 50MB for warnings
-          while IFS= read -r file; do
-            if [ -n "$file" ]; then
-              SIZE_MB=$(du -m "$file" | cut -f1)
-              if [ "$SIZE_MB" -ge 100 ]; then
-                # Over 100MB - must remove (GitHub hard limit)
-                OVERSIZED_FILES+=("$file ($SIZE_MB MB)")
-                echo "::error::Removing oversized file (>100MB): $file ($SIZE_MB MB)"
-                rm -f "$file"
-              else
-                # 50-100MB - warn but keep
-                WARNING_FILES+=("$file ($SIZE_MB MB)")
-                echo "::warning::Large file (>50MB): $file ($SIZE_MB MB)"
-              fi
-            fi
-          done < <(find books/_build/html -name "*.html" -size +50M 2>/dev/null)
-
-          echo ""
-          if [ ${#WARNING_FILES[@]} -gt 0 ]; then
-            echo "${#WARNING_FILES[@]} file(s) over 50MB (warning):"
-            for f in "${WARNING_FILES[@]}"; do
-              echo "  - $f"
-            done
-          fi
-
-          if [ ${#OVERSIZED_FILES[@]} -gt 0 ]; then
-            echo ""
-            echo "${#OVERSIZED_FILES[@]} file(s) over 100MB removed:"
-            for f in "${OVERSIZED_FILES[@]}"; do
-              echo "  - $f"
-            done
-            echo ""
-            echo "These notebooks need HF URL transform to reduce widget data size."
-            echo "Continuing with publish for remaining files..."
-          fi
-
-          if [ ${#WARNING_FILES[@]} -eq 0 ] && [ ${#OVERSIZED_FILES[@]} -eq 0 ]; then
-            echo "✓ No oversized files found"
-          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e

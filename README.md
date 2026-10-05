@@ -66,6 +66,56 @@ Our example notebooks follow best practices from [Rule et al. (2019) "Ten simple
 
 ## Tips
 
+### Build the website locally
+
+The website uses Jupyter Book 2 and the MyST book theme. Install Python 3.12
+and Node.js 22, then run these commands from the repository root:
+
+```bash
+python -m venv .venv-book
+source .venv-book/bin/activate
+pip install -r requirements-book.txt
+python .github/scripts/build_book.py --base-url ''
+python .github/scripts/verify_book.py
+python -m http.server --directory books/_build/html 8000
+```
+
+Open `http://localhost:8000`. The build reads saved notebook outputs and never
+executes code cells. CI executes notebooks separately before it builds the site.
+
+Edit `books/myst.yml` for theme options and `books/publishing.yml` for launch
+servers, the deployment path, and redirects. The build discovers Markdown files
+and notebooks automatically. Each content directory needs an `intro.md` landing
+page. Generated configuration and page metadata stay in `books/_build/myst-source`.
+
+CI passes a snapshot of the original sources through `--raw-books` so that
+downloads exclude executed outputs and generated publication controls. Reviews
+come from the registry refreshed before publication. DOI links come from
+`doi-mapping.json`. Legacy `.html` links redirect to the new MyST page routes.
+
+Run the migration tests from the repository root:
+
+```bash
+python -m unittest discover -s .github/scripts -p test_build_book.py
+```
+
+Set `BOOK_INTEGRATION_TEST=1` to include an actual engine build that checks saved
+outputs without running notebook code.
+
+For browser checks, install `requirements-book-browser.txt`, run
+`playwright install chromium`, and serve the site as above. Then run
+`python .github/scripts/verify_book_browser.py http://localhost:8000`.
+This checks the launch menu, source download, page navigation, and the RISE
+redirect. Add `--widgets` when the build contains the published brain extraction
+notebook's five saved NiiVue viewers.
+
+The build renders saved Jupyter widgets in separate HTML frames because MyST's
+static renderer removes widget views. These frames use the Jupyter widget
+runtime and retain the saved models and their dependencies. They need network
+access to load the runtime and any hosted imaging data.
+Source notebooks without saved widget state show their text fallback. CI uses
+the executed artifacts that contain this state.
+
 ### Publication reruns
 
 CI runs notebooks containing local NiiVue files twice: once to produce results,

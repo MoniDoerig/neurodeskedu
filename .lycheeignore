@@ -1,0 +1,8 @@
+# Zenodo concept DOIs resolve through a rate-limited redirect chain.
+^https://doi\.org/[^/]+/zenodo
+# "Run this notebook" launch links need a JupyterHub login and are rate limited.
+/hub/user-redirect/
+# Rejects automated requests with HTTP 400; the articles open in a browser.
+^https://www\.sciencedirect\.com/
+# Serves an incomplete certificate chain that browsers repair but lychee cannot.
+^https://discuss\.afni\.nimh\.nih\.gov/

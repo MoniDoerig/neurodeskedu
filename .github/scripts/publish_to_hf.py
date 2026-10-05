@@ -27,6 +27,7 @@ import re
 import hashlib
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 
 def _retry(fn, description="operation", max_attempts=3, backoff=5):
@@ -50,7 +51,8 @@ def _retry(fn, description="operation", max_attempts=3, backoff=5):
 # Hugging Face configuration
 HF_REPO = os.environ.get("HF_REPO", "neurodeskorg/neurodeskedu")
 HF_BRANCH = os.environ.get("HF_BRANCH", "main")
-HF_BASE_URL = f"https://huggingface.co/datasets/{HF_REPO}/resolve/{HF_BRANCH}"
+# Branch names such as "fix/x" must be encoded, or HF reads the slash as part of the file path.
+HF_BASE_URL = f"https://huggingface.co/datasets/{HF_REPO}/resolve/{quote(HF_BRANCH, safe='')}"
 DRY_RUN = os.environ.get("DRY_RUN", "").lower() == "true"
 
 _hf_branch_ensured = False
