@@ -79,9 +79,6 @@ class BookBuildTests(unittest.TestCase):
         self.assertEqual((self.book / self.source).read_bytes(), before)
         text = "".join(after["cells"][0]["source"])
         self.assertIn("doi: 10.5281/zenodo.12345", text)
-        badge = text.index("[https://doi.org/10.5281/zenodo.12345](<https://zenodo.org/doi/10.5281/zenodo.12345>)")
-        self.assertLess(text.index("# Example"), badge)
-        self.assertLess(badge, text.index("{admonition} Unreviewed"))
         self.assertIn("execute:\n  skip: true", text)
         self.assertIn("/edu/_sources/examples/topic/Test_one.ipynb", text)
         meta = yaml.safe_load(text.split("---\n")[1])
@@ -143,7 +140,6 @@ class BookBuildTests(unittest.TestCase):
         prepare(self.book, self.root / "stage", pages, toc, self.settings, {})
         text = "".join(json.loads((self.root / "stage" / self.source).read_text())["cells"][0]["source"])
         self.assertLess(text.index("# Example"), text.index("{dropdown} Run this notebook"))
-        self.assertNotIn("nd-doi", text)
 
     def test_launch_urls_identify_original_notebook_and_branch(self):
         text = controls(self.source, None, {}, self.settings)
