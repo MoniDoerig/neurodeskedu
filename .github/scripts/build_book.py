@@ -157,6 +157,25 @@ def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> N
     del notebook["metadata"]["widgets"]
 
 
+def merge_streams(outputs: list[dict]) -> list[dict]:
+    """Join each cell's stdout and stderr into one block apiece, as Jupyter Book 1 did (nb_merge_streams)."""
+    merged, streams = [], {}
+    for output in outputs:
+        if output["output_type"] != "stream":
+            merged.append(output)
+        elif output["name"] in streams:
+            stream = streams[output["name"]]
+            stream["text"] = "".join(stream["text"]) + "".join(output["text"])
+        else:
+            streams[output["name"]] = output
+            merged.append(output)
+    for stream in streams.values():
+        if "\r" in "".join(stream["text"]):
+            # Keep only the final state of lines redrawn with carriage returns (progress bars).
+            stream["text"] = re.sub(r".*\r(?=[^\n])", "", "".join(stream["text"]).replace("\r\n", "\n"))
+    return merged
+
+
 def controls(source: Path, review_id: str | None, reviews: dict, settings: dict) -> str:
     blocks = []
     if review_id:
@@ -221,13 +240,22 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
             meta["doi"] = doi.removeprefix("https://doi.org/")
         repo_path = "books/" + quote(source.as_posix())
         meta["github"] = f"{settings['repository']}/blob/{settings['branch']}/{repo_path}"
-        meta["edit_url"] = f"{settings['repository']}/edit/{settings['branch']}/{repo_path}"
+        # GitHub's web editor shows executed notebooks (often several MB of outputs) as an empty
+        # document; github.dev opens them in VS Code's notebook editor instead.
+        editor = (settings["repository"].replace("://github.com/", "://github.dev/") + "/blob"
+                  if notebook is not None else settings["repository"] + "/edit")
+        meta["edit_url"] = f"{editor}/{settings['branch']}/{repo_path}"
         meta["downloads"] = [{
             "url": settings["base_url"] + "/_sources/" + quote(source.as_posix()),
             "title": "Download source notebook" if notebook is not None else "Download source",
             "filename": source.name, "static": False,
         }]
         extra = controls(source, review_id, reviews, settings)
+        if doi:
+            # The theme only prints the frontmatter DOI as faint text under the authors. MyST turns
+            # doi.org links into citations, so link to Zenodo's resolver, where doi.org redirects.
+            target = "https://zenodo.org/doi/" + meta["doi"]
+            extra = f":::{{div}}\n:class: nd-doi\n\n**DOI:** {link(doi, target)}\n:::\n\n{extra}".rstrip()
         body = adapt_markdown(body, headings)
         heading = re.match(r"(\s*# [^\n]+(?:\n|\Z))(.*)", body, re.S)
         if heading:
@@ -239,6 +267,8 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
             for cell in cells:
                 if cell["cell_type"] == "markdown":
                     cell["source"] = adapt_markdown("".join(cell["source"]), headings).splitlines(keepends=True)
+                elif cell["cell_type"] == "code":
+                    cell["outputs"] = merge_streams(cell.get("outputs", []))
             if first is not None:
                 first["source"] = text.splitlines(keepends=True)
             else:
@@ -269,6 +299,7 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
     guard = (f"<script>if (!location.pathname.startsWith({json.dumps(base)})) location.replace("
              f"{json.dumps(settings['site_url'] + base)} + location.pathname.split('/').slice(2).join('/')"
              " + location.search + location.hash);</script>")
+    launch = f'<script src="{html.escape(base, quote=True)}_static/launch-menu.js" defer></script>'
     for source in pages:
         page = built / routes[source.as_posix()] / "index.html"
         text = page.read_text()
@@ -277,7 +308,7 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
         if authors:
             names = html.escape(", ".join(authors), quote=True)
             tags += [f'<meta name="author" content="{names}">', f'<meta property="article:author" content="{names}">']
-        text = re.sub(r"<head[^>]*>", lambda head: head[0] + guard, text, count=1)
+        text = re.sub(r"<head[^>]*>", lambda head: head[0] + guard + launch, text, count=1)
         page.write_text(text.replace("</head>", "".join(tags) + "</head>", 1))
         target = built / "_sources" / source
         target.parent.mkdir(parents=True, exist_ok=True)

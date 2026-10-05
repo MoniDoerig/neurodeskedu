@@ -19,9 +19,10 @@ def verify(url: str, executable: str | None, widgets: bool, screenshot: str | No
         notebook_url = url + "/" + routes[source]
         page.goto(notebook_url, wait_until="domcontentloaded")
         expect(page.locator(".nd-launch")).to_have_count(1)
-        page.get_by_text("Run this notebook", exact=True).click()
-        launches = page.locator('.nd-launch a[href*="/hub/user-redirect/git-pull?"]')
+        page.locator(".myst-fm-block-header .nd-launch-menu summary").click()
+        launches = page.locator('.nd-launch-menu a[href*="/hub/user-redirect/git-pull?"]')
         expect(launches).to_have_count(5)
+        expect(page.locator(".nd-launch")).to_be_hidden()
         for launch in launches.all():
             expect(launch).to_be_visible()
 
@@ -38,9 +39,11 @@ def verify(url: str, executable: str | None, widgets: bool, screenshot: str | No
 
         page.get_by_role("link", name=re.compile("^Structural imaging$", re.IGNORECASE)).click()
         expect(page.locator(".nd-launch")).to_have_count(0)
+        expect(page.locator(".nd-launch-menu")).to_have_count(0)
         expect(page.locator(".nd-review-badge")).to_have_count(0)
         page.go_back(wait_until="domcontentloaded")
         expect(page.locator(".nd-launch")).to_have_count(1)
+        expect(page.locator(".nd-launch-menu")).to_have_count(1)
 
         if widgets:
             frames = page.locator('iframe[title="Interactive notebook output"]')

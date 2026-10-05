@@ -11,7 +11,7 @@ from urllib.parse import parse_qs, urlparse
 import yaml
 
 import build_book
-from build_book import adapt_markdown, controls, discover, embed_widgets, finish, prepare
+from build_book import adapt_markdown, controls, discover, embed_widgets, finish, merge_streams, prepare
 from verify_book import PageLinks
 
 
@@ -79,10 +79,35 @@ class BookBuildTests(unittest.TestCase):
         self.assertEqual((self.book / self.source).read_bytes(), before)
         text = "".join(after["cells"][0]["source"])
         self.assertIn("doi: 10.5281/zenodo.12345", text)
+        badge = text.index("[https://doi.org/10.5281/zenodo.12345](<https://zenodo.org/doi/10.5281/zenodo.12345>)")
+        self.assertLess(text.index("# Example"), badge)
+        self.assertLess(badge, text.index("{admonition} Unreviewed"))
         self.assertIn("execute:\n  skip: true", text)
         self.assertIn("/edu/_sources/examples/topic/Test_one.ipynb", text)
+        meta = yaml.safe_load(text.split("---\n")[1])
+        self.assertEqual(meta["edit_url"],
+                         "https://github.dev/neurodesk/neurodeskedu/blob/main/books/examples/topic/Test_one.ipynb")
+        self.assertEqual(yaml.safe_load((stage / "intro.md").read_text().split("---\n")[1])["edit_url"],
+                         "https://github.com/neurodesk/neurodeskedu/edit/main/books/intro.md")
         self.assertIn("{admonition} Unreviewed", text)
         self.assertEqual(text.count("/hub/user-redirect/git-pull?"), 5)
+
+    def test_stream_outputs_are_merged_per_stream_like_jupyter_book_1(self):
+        stream = lambda name, text: {"output_type": "stream", "name": name, "text": text}
+        result = {"output_type": "execute_result", "execution_count": 4, "metadata": {}, "data": {"text/plain": "1"}}
+        self.notebook["cells"][1]["outputs"] = [
+            stream("stderr", ["[dipy] INFO: Downloading\n"]), stream("stderr", "[dipy] INFO: From: url\n"),
+            stream("stdout", ["Data shape: (81, 106)\n"]), stream("stderr", "10%\r100%\n"), result,
+        ]
+        (self.book / self.source).write_text(json.dumps(self.notebook))
+        pages, toc = discover(self.book)
+        prepare(self.book, self.root / "stage", pages, toc, self.settings, {})
+        outputs = json.loads((self.root / "stage" / self.source).read_text())["cells"][1]["outputs"]
+        self.assertEqual(outputs, [
+            stream("stderr", "[dipy] INFO: Downloading\n[dipy] INFO: From: url\n100%\n"),
+            stream("stdout", ["Data shape: (81, 106)\n"]), result,
+        ])
+        self.assertEqual(merge_streams([]), [])
 
     def test_frontmatter_cell_without_trailing_newline_keeps_its_metadata(self):
         self.notebook["cells"][0]["source"] = "---\ntitle: Front Title\nsubtitle: Sub\n---"
@@ -101,6 +126,7 @@ class BookBuildTests(unittest.TestCase):
         prepare(self.book, self.root / "stage", pages, toc, self.settings, {})
         text = "".join(json.loads((self.root / "stage" / self.source).read_text())["cells"][0]["source"])
         self.assertLess(text.index("# Example"), text.index("{dropdown} Run this notebook"))
+        self.assertNotIn("nd-doi", text)
 
     def test_launch_urls_identify_original_notebook_and_branch(self):
         text = controls(self.source, None, {}, self.settings)
@@ -229,6 +255,7 @@ class BookBuildTests(unittest.TestCase):
         self.assertEqual((output / "_sources" / self.source).read_bytes(), (self.book / self.source).read_bytes())
         self.assertIn('name="citation_author" content="Example Author"', (output / route / "index.html").read_text())
         self.assertIn('location.replace("https://neurodesk.org/edu/"', (output / route / "index.html").read_text())
+        self.assertIn('<script src="/edu/_static/launch-menu.js" defer>', (output / route / "index.html").read_text())
         alias = (output / "old/page.html").read_text()
         self.assertIn("../examples/topic/test-one/", alias)
         self.assertIn("location.search + location.hash", alias)
@@ -248,7 +275,7 @@ class BookBuildTests(unittest.TestCase):
         page = output / "examples/topic/test-one/index.html"
         self.assertIn("saved output", page.read_text())
         self.assertIn(
-            f"{self.settings['repository']}/edit/{self.settings['branch']}/books/{self.source}",
+            f"https://github.dev/neurodesk/neurodeskedu/blob/{self.settings['branch']}/books/{self.source}",
             PageLinks(page.read_text()).links,
         )
         self.assertEqual((output / "_sources" / self.source).read_bytes(), (self.book / self.source).read_bytes())

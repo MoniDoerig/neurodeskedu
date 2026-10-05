@@ -1672,6 +1672,17 @@ jobs:
             exit 1
           fi
 
+      - name: Drop DOI entries for pages that no longer exist
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          mapping = json.load(open("doi-mapping.json"))
+          stale = sorted(key for key in mapping if not os.path.isfile(key))
+          for key in stale:
+              print(f"Removing stale DOI entry: {key} ({mapping.pop(key).get('doi_url')})")
+          json.dump(mapping, open("doi-mapping.json", "w"), indent=2)
+          EOF
+
       - name: Push doi-mapping.json to ci-data branch
         if: github.ref == 'refs/heads/main'
         run: |
