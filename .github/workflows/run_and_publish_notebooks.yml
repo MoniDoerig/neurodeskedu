@@ -1721,9 +1721,11 @@ jobs:
     needs: [run-notebooks, setup, publish-dois]
     if: ${{ always() && inputs.drift_check != true && (needs.run-notebooks.result == 'success' || needs.run-notebooks.result == 'skipped' || needs.run-notebooks.result == 'failure') }}
     runs-on: ubuntu-22.04
-    # Serialize publish jobs to prevent race conditions on gh-pages
+    # Serialize publish jobs per branch to prevent race conditions on gh-pages. GitHub keeps
+    # one pending job per group and cancels the older one, so a shared group let any branch
+    # build drop a queued main deploy. Only main deploys; a newer main run includes older commits.
     concurrency:
-      group: publish-pages
+      group: publish-pages-${{ github.ref }}
       cancel-in-progress: false  # Queue instead of cancel
 
     steps:
