@@ -1,73 +1,43 @@
 name: check_broken_links
 
+# Checks every page of the published site (https://neurodesk.org/edu) for broken links.
+# Pages are read from the site's own inventory, so new pages are covered automatically.
+# Accepted exceptions live in .lycheeignore.
+
 on:
   schedule:
     - cron: 30 17 * * *
-  push:
-    branches:
-      - 'gh-pages'
-    paths:
-      - '**/*.html'
-  pull_request:
-    paths:
-      - '**/*.html'
-  # Trigger the workflow on manual dispatch
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 defaults:
   run:
     shell: bash
 
 jobs:
-  get-notebooks:
-    runs-on: ubuntu-22.04
-    outputs:
-      notebook_list: ${{ steps.list_all_notebooks.outputs.notebook_list }}
-    steps:
-    - uses: actions/checkout@v4
-    - name: Get all notebooks
-      working-directory: ./books
-      id: list_all_notebooks
-      run: |
-        all_notebooks=($(find . -type f -name "*.ipynb"))
-        notebook_list='['
-        for NOTEBOOK in "${all_notebooks[@]}"; do
-          html_notebook="${NOTEBOOK%.ipynb}.html"
-          echo "NOTEBOOK=${html_notebook}"
-          notebook_list+="\"${html_notebook}\","
-        done
-        notebook_list=$(sed '$s/,$//' <<< $notebook_list)
-        notebook_list+=']'
-        echo "notebook_list=${notebook_list}"
-        echo "notebook_list=${notebook_list}" >> $GITHUB_OUTPUT
-
   check-links:
-    needs: [ get-notebooks ]
-    if: ${{ needs.get-notebooks.outputs.notebook_list != '[]' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: gh-pages
 
-      - name: lychee Link Checker
+      - name: List published pages
         run: |
-          curl -sSf 'https://sh.rustup.rs' | sh -s -- -y
-          sudo apt install gcc pkg-config libc6-dev libssl-dev -y
-          cargo install lychee
+          curl -sSf https://neurodesk.org/edu/neurodesk-pages.json \
+            | jq -r '.[] | "https://neurodesk.org/edu/" + .' > pages.txt
+          echo "Checking $(wc -l < pages.txt) pages"
 
-      - name: Check broken links
+      - name: Check links on every page
+        uses: lycheeverse/lychee-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          notebook_list='${{ needs.get-notebooks.outputs.notebook_list }}'
-          echo "notebook_list=${notebook_list}"
-          for notebook in $(echo $notebook_list | jq -r '.[]'); do
-            echo "Checking links in $notebook"
-            lychee https://neurodesk.org/edu/${notebook} --remap "https://neurodesk.org/edu/intro.html https://neurodesk.org/edu" --accept 200..=206,403,429 --exclude "https:\/\/doi\.org\/[^\/]+\/zenodo.*"
-          done
+        with:
+          args: >-
+            --no-progress
+            --max-concurrency 16
+            --max-retries 3
+            --timeout 30
+            --accept 200..=206,403,429
+            --files-from pages.txt
+          fail: true
