@@ -246,6 +246,33 @@ class BookBuildTests(unittest.TestCase):
         page = next(folder.glob("*.html"))
         self.assertEqual(json.loads(self.widget_state(page))["state"], models)
 
+    def test_published_pngs_shrink_without_changing_pixels(self):
+        import io
+        from PIL import Image
+
+        figure = Image.new("RGBA", (64, 64))
+        figure.putdata([((x * y) % 7 * 30, x * 4, y * 4, 255) for y in range(64) for x in range(64)])
+        stored = io.BytesIO()
+        figure.save(stored, "PNG", compress_level=0)
+        stage = self.root / "stage"
+        built = stage / "_build/html"
+        content = stage / "_build/site/content"
+        content.mkdir(parents=True)
+        route = "examples/topic/test-one"
+        (content / "page.json").write_text(json.dumps({"location": "/" + str(self.source),
+                                                       "slug": route.replace("/", ".")}))
+        (built / route).mkdir(parents=True)
+        (built / route / "index.html").write_text("<html><head></head><body></body></html>")
+        (built / "build").mkdir()
+        (built / "build/figure.png").write_bytes(stored.getvalue())
+        (built / "build/photo.png").write_bytes(b"\xff\xd8\xff\xe0 a JPEG with a .png name")
+        output = self.root / "output"
+        finish(stage, self.book, output, [self.source], self.settings)
+        optimized = output / "build/figure.png"
+        self.assertLess(optimized.stat().st_size, len(stored.getvalue()))
+        self.assertEqual(Image.open(optimized).convert("RGBA").tobytes(), figure.tobytes())
+        self.assertEqual((output / "build/photo.png").read_bytes(), b"\xff\xd8\xff\xe0 a JPEG with a .png name")
+
     def test_export_requires_every_page_and_preserves_raw_downloads_and_aliases(self):
         stage = self.root / "stage"
         built = stage / "_build/html"
