@@ -160,7 +160,11 @@ def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> N
 
 
 def optimize_png(path: Path) -> None:
-    oxipng.optimize(path, level=2, strip=oxipng.StripChunks.safe())
+    try:
+        oxipng.optimize(path, level=2, strip=oxipng.StripChunks.safe())
+    except oxipng.PngError as error:
+        # e.g. a JPEG saved with a .png name: publish it unchanged rather than fail the deploy.
+        print(f"::warning::Left {path.name} unoptimized: {error}")
 
 
 def merge_streams(outputs: list[dict]) -> list[dict]:

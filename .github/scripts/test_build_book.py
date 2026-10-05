@@ -247,43 +247,13 @@ class BookBuildTests(unittest.TestCase):
         self.assertEqual(json.loads(self.widget_state(page))["state"], models)
 
     def test_published_pngs_shrink_without_changing_pixels(self):
-        import struct, zlib
+        import io
+        from PIL import Image
 
-        def png(pixels, width):
-            # 8-bit grayscale, filter 0 on every row, stored without compression.
-            rows = b"".join(b"\0" + pixels[i:i + width] for i in range(0, len(pixels), width))
-            chunk = lambda kind, data: (struct.pack(">I", len(data)) + kind + data
-                                        + struct.pack(">I", zlib.crc32(kind + data)))
-            header = struct.pack(">IIBBBBB", width, len(pixels) // width, 8, 0, 0, 0, 0)
-            return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(rows, 0))
-                    + chunk(b"IEND", b""))
-
-        def pixels(data):
-            # Decode any 8-bit grayscale or RGB(A)/palette-free PNG back to unfiltered rows.
-            pos, idat, info = 8, b"", None
-            while pos < len(data):
-                length, kind = struct.unpack(">I4s", data[pos:pos + 8])
-                body = data[pos + 8:pos + 8 + length]
-                if kind == b"IHDR":
-                    info = struct.unpack(">IIBBBBB", body)
-                elif kind == b"IDAT":
-                    idat += body
-                pos += 12 + length
-            width, height, depth, color = info[:4]
-            channels = {0: 1, 2: 3, 4: 2, 6: 4}[color]
-            stride, raw, out, prev = width * channels, zlib.decompress(idat), [], bytearray(width * channels)
-            for y in range(height):
-                kind, line = raw[y * (stride + 1)], bytearray(raw[y * (stride + 1) + 1:(y + 1) * (stride + 1)])
-                for x in range(stride):
-                    a = line[x - channels] if x >= channels else 0
-                    b, c = prev[x], prev[x - channels] if x >= channels else 0
-                    paeth = min((abs(b - c), a), (abs(a - c), b), (abs(a + b - 2 * c), c))[1]
-                    line[x] = (line[x] + [0, a, b, (a + b) // 2, paeth][kind]) % 256
-                out.append(bytes(line))
-                prev = line
-            # Normalise to grayscale so a colour-type change still compares pixel values.
-            return [bytes(row[i] for i in range(0, len(row), channels)) for row in out] if color != 0 else out
-
+        figure = Image.new("RGBA", (64, 64))
+        figure.putdata([((x * y) % 7 * 30, x * 4, y * 4, 255) for y in range(64) for x in range(64)])
+        stored = io.BytesIO()
+        figure.save(stored, "PNG", compress_level=0)
         stage = self.root / "stage"
         built = stage / "_build/html"
         content = stage / "_build/site/content"
@@ -293,14 +263,15 @@ class BookBuildTests(unittest.TestCase):
                                                        "slug": route.replace("/", ".")}))
         (built / route).mkdir(parents=True)
         (built / route / "index.html").write_text("<html><head></head><body></body></html>")
-        image = png(bytes((x * y) % 7 * 30 for y in range(64) for x in range(64)), 64)
         (built / "build").mkdir()
-        (built / "build/figure.png").write_bytes(image)
+        (built / "build/figure.png").write_bytes(stored.getvalue())
+        (built / "build/photo.png").write_bytes(b"\xff\xd8\xff\xe0 a JPEG with a .png name")
         output = self.root / "output"
         finish(stage, self.book, output, [self.source], self.settings)
-        optimized = (output / "build/figure.png").read_bytes()
-        self.assertLess(len(optimized), len(image))
-        self.assertEqual(pixels(optimized), pixels(image))
+        optimized = output / "build/figure.png"
+        self.assertLess(optimized.stat().st_size, len(stored.getvalue()))
+        self.assertEqual(Image.open(optimized).convert("RGBA").tobytes(), figure.tobytes())
+        self.assertEqual((output / "build/photo.png").read_bytes(), b"\xff\xd8\xff\xe0 a JPEG with a .png name")
 
     def test_export_requires_every_page_and_preserves_raw_downloads_and_aliases(self):
         stage = self.root / "stage"
