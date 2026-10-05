@@ -361,8 +361,10 @@ jobs:
     runs-on: ${{ contains(fromJson(needs.setup.outputs.heavy_notebooks), matrix.notebooks) && 'neurodesk-syd-arcrunner-neurodeskedu-heavy' || fromJson(needs.setup.outputs.runs_on) }}
     timeout-minutes: 840
 
+    # Per branch: a newer push supersedes the same notebook's run on that branch, but a review
+    # branch must not cancel main's run (the review gate would then see main's job as cancelled).
     concurrency:
-      group: notebook-${{ matrix.notebooks }}
+      group: notebook-${{ github.ref }}-${{ matrix.notebooks }}
       cancel-in-progress: true
 
     strategy:
