@@ -1,98 +1,43 @@
 name: check_broken_links
 
+# Checks every page of the published site (https://neurodesk.org/edu) for broken links.
+# Pages are read from the site's own inventory, so new pages are covered automatically.
+# Accepted exceptions live in .lycheeignore.
+
 on:
   schedule:
     - cron: 30 17 * * *
-  push:
-    branches:
-      - 'gh-pages'
-    paths:
-      - '**/*.html'
-  pull_request:
-    paths:
-      - '**/*.html'
-  # Trigger the workflow on manual dispatch
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 defaults:
   run:
     shell: bash
 
 jobs:
-  get-notebooks:
-    runs-on: ubuntu-22.04
-    outputs:
-      notebook_list: ${{ steps.list_all_notebooks.outputs.notebook_list }}
-    steps:
-    - uses: actions/checkout@v4
-    - name: Get all notebooks
-      working-directory: ./books
-      id: list_all_notebooks
-      run: |
-        all_notebooks=($(find . -type f -name "*.ipynb"))
-        notebook_list='['
-        for NOTEBOOK in "${all_notebooks[@]}"; do
-          html_notebook="${NOTEBOOK%.ipynb}.html"
-          echo "NOTEBOOK=${html_notebook}"
-          notebook_list+="\"${html_notebook}\","
-        done
-        notebook_list=$(sed '$s/,$//' <<< $notebook_list)
-        notebook_list+=']'
-        echo "notebook_list=${notebook_list}"
-        echo "notebook_list=${notebook_list}" >> $GITHUB_OUTPUT
-
   check-links:
-    needs: [ get-notebooks ]
-    if: ${{ needs.get-notebooks.outputs.notebook_list != '[]' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: gh-pages
 
-      - name: Install lychee
-        env:
-          LYCHEE_VERSION: v0.24.2
-          # sha256 of lychee-x86_64-unknown-linux-gnu.tar.gz in the lychee-v0.24.2 release
-          LYCHEE_SHA256: 1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a
+      - name: List published pages
         run: |
-          cd "$RUNNER_TEMP"
-          curl -sSfL -o lychee.tar.gz "https://github.com/lycheeverse/lychee/releases/download/lychee-${LYCHEE_VERSION}/lychee-x86_64-unknown-linux-gnu.tar.gz"
-          echo "${LYCHEE_SHA256}  lychee.tar.gz" | sha256sum -c -
-          tar -xzf lychee.tar.gz
-          sudo install lychee-x86_64-unknown-linux-gnu/lychee /usr/local/bin/lychee
-          lychee --version
+          curl -sSf https://neurodesk.org/edu/neurodesk-pages.json \
+            | jq -r '.[] | "https://neurodesk.org/edu/" + .' > pages.txt
+          echo "Checking $(wc -l < pages.txt) pages"
 
-      - name: Check broken links
+      - name: Check links on every page
+        uses: lycheeverse/lychee-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -o pipefail
-          notebook_list='${{ needs.get-notebooks.outputs.notebook_list }}'
-          echo "notebook_list=${notebook_list}"
-          report="$RUNNER_TEMP/broken-links.md"
-          total=0
-          failed=0
-          # Check every page and record failures instead of stopping at the first one
-          for notebook in $(echo $notebook_list | jq -r '.[]'); do
-            total=$((total + 1))
-            echo "Checking links in $notebook"
-            if ! lychee https://neurodesk.org/edu/${notebook} --remap "https://neurodesk.org/edu/intro.html https://neurodesk.org/edu" --accept 200..=206,403,429 --exclude "https:\/\/doi\.org\/[^\/]+\/zenodo.*" 2>&1 | tee "$RUNNER_TEMP/lychee.log"; then
-              failed=$((failed + 1))
-              { echo "### https://neurodesk.org/edu/${notebook}"; echo '```'; cat "$RUNNER_TEMP/lychee.log"; echo '```'; } >> "$report"
-            fi
-          done
-          if [ "$total" -eq 0 ]; then
-            echo "::error::No pages were checked"
-            exit 1
-          fi
-          if [ "$failed" -gt 0 ]; then
-            { echo "## Broken links on ${failed} of ${total} pages"; cat "$report"; } | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-          echo "## No broken links on ${total} pages" | tee -a "$GITHUB_STEP_SUMMARY"
+        with:
+          args: >-
+            --no-progress
+            --max-concurrency 16
+            --max-retries 3
+            --timeout 30
+            --accept 200..=206,403,429
+            --files-from pages.txt
+          fail: true
