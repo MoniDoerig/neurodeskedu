@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ProcessPoolExecutor
 import html
 import hashlib
 import json
@@ -14,6 +15,7 @@ import shutil
 import subprocess
 from urllib.parse import quote, unquote, urlencode
 
+import oxipng
 import yaml
 
 from notebook_metadata import extract_authors_from_content
@@ -155,6 +157,10 @@ def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> N
             'title="Interactive notebook output" width="100%" height="620" loading="lazy"></iframe>'
         )}
     del notebook["metadata"]["widgets"]
+
+
+def optimize_png(path: Path) -> None:
+    oxipng.optimize(path, level=2, strip=oxipng.StripChunks.safe())
 
 
 def merge_streams(outputs: list[dict]) -> list[dict]:
@@ -342,6 +348,10 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
         export.unlink()
     (built / ".nojekyll").touch()
     (built / "neurodesk-pages.json").write_text(json.dumps(routes, indent=2) + "\n")
+    # Lossless recompression saves about a third of the figure bytes. _sources stays byte-identical.
+    pngs = [p for p in built.rglob("*.png") if p.relative_to(built).parts[0] != "_sources"]
+    with ProcessPoolExecutor() as pool:
+        list(pool.map(optimize_png, pngs))
     oversized = [str(p.relative_to(built)) for p in built.rglob("*") if p.is_file() and p.stat().st_size >= 100 * 1024**2]
     if oversized:
         raise ValueError(f"Files exceed the GitHub Pages publication limit: {oversized}")
