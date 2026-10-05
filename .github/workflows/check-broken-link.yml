@@ -40,4 +40,39 @@ jobs:
             --timeout 30
             --accept 200..=206,403,429
             --files-from pages.txt
+          format: json
+          output: lychee-pages.json
+          fail: false
+
+      # ~3,000 external URLs a day almost always include one server having a bad minute (a 5xx
+      # or a timeout). Recheck just the failures after a pause; only links that fail twice count.
+      - name: Collect failures
+        id: failures
+        run: |
+          jq -r '[.error_map, .timeout_map] | map(. // {} | to_entries[] | .value[] | .url) | .[]' \
+            lychee-pages.json | sort -u > failed.txt
+          # Malformed links cannot be rechecked and never heal; report them straight away.
+          if grep -v -E '^https?://' failed.txt; then
+            echo "::error::Malformed links found; see the previous step's report"
+            exit 1
+          fi
+          echo "count=$(wc -l < failed.txt)" >> "$GITHUB_OUTPUT"
+          cat failed.txt
+
+      - name: Recheck failures after a pause
+        if: steps.failures.outputs.count != '0'
+        run: sleep 120
+
+      - name: Fail on links that are still broken
+        if: steps.failures.outputs.count != '0'
+        uses: lycheeverse/lychee-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: >-
+            --no-progress
+            --max-retries 3
+            --timeout 30
+            --accept 200..=206,403,429
+            failed.txt
           fail: true
