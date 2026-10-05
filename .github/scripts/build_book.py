@@ -136,6 +136,9 @@ def embed_widgets(notebook: dict, stage: Path, source: Path, base_url: str) -> N
         (folder / filename).write_text(
             '<!doctype html><html><head><meta charset="utf-8"><title>Interactive notebook output</title>'
             '<style>body{margin:0}.jupyter-widgets{max-width:100%}</style></head><body>'
+            # Fit the iframe to the rendered widget; a fixed height leaves a gap under short viewers.
+            '<script>new ResizeObserver(() => {const height = document.body.offsetHeight;'
+            'if (height && frameElement) frameElement.style.height = height + "px";}).observe(document.body);</script>'
             '<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>'
             f'<script type="{mime}">{widget_view}</script>'
             '<script>const load = path => fetch(path).then(response => {'
@@ -285,6 +288,10 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
                     cell["source"] = adapt_markdown("".join(cell["source"]), headings).splitlines(keepends=True)
                 elif cell["cell_type"] == "code":
                     cell["outputs"] = merge_streams(cell.get("outputs", []))
+                    # MyST parses scroll-output but the book theme ignores it. The theme does add a
+                    # cell's metadata class to the rendered block, so review-badge.css can cap it.
+                    if "scroll-output" in cell.get("metadata", {}).get("tags", []):
+                        cell["metadata"]["class"] = "nd-scroll-output"
             if first is not None:
                 first["source"] = text.splitlines(keepends=True)
             else:
