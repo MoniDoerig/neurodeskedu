@@ -72,12 +72,12 @@ jobs:
       # each notebook here with the version CI ran, so a notebook changed or deleted
       # since is not filed on an old result, and the auto-inject PR starts from
       # current main.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.repository.default_branch || '' }}
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.x'
 
@@ -144,7 +144,7 @@ jobs:
       - name: Reconcile UUIDs with existing review issues
         if: fromJSON(steps.scan.outputs.count) > 0 && inputs.dry_run != true
         id: reconcile
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           REVIEWS_REPO_OWNER: neurodesk
           REVIEWS_REPO_NAME: neurodeskedu-reviews
@@ -340,7 +340,7 @@ jobs:
       - name: Find PR authors for new notebooks
         if: ${{ !cancelled() && steps.gate.outcome == 'success' }}
         id: find_authors
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           GATED_JSON: ${{ steps.gate.outputs.gated }}
           HELD_JSON: ${{ steps.gate.outputs.held }}
@@ -402,7 +402,7 @@ jobs:
 
       - name: Open review issues in reviews repo
         if: steps.gate.outputs.count > 0 && inputs.dry_run != true
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           REVIEWS_REPO_OWNER: neurodesk
           REVIEWS_REPO_NAME: neurodeskedu-reviews
@@ -525,7 +525,7 @@ jobs:
       issues: write
     steps:
       - name: Open, update or close the notice
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           HELD_JSON: ${{ needs.detect.outputs.held }}
           DRY_RUN: ${{ inputs.dry_run == true }}
