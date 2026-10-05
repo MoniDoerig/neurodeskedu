@@ -172,7 +172,10 @@ def merge_streams(outputs: list[dict]) -> list[dict]:
     for stream in streams.values():
         if "\r" in "".join(stream["text"]):
             # Keep only the final state of lines redrawn with carriage returns (progress bars).
-            stream["text"] = re.sub(r".*\r(?=[^\n])", "", "".join(stream["text"]).replace("\r\n", "\n"))
+            # Per line, keep what follows the last carriage return that is not the line's final
+            # character. A regex (".*\r(?=[^\n])") does the same but is quadratic on long lines.
+            lines = "".join(stream["text"]).replace("\r\n", "\n").split("\n")
+            stream["text"] = "\n".join(line[line.rfind("\r", 0, len(line) - 1) + 1:] for line in lines)
     return merged
 
 
