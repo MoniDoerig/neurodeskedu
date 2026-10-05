@@ -6,3 +6,6 @@
 ^https://www\.sciencedirect\.com/
 # Serves an incomplete certificate chain that browsers repair but lychee cannot.
 ^https://discuss\.afni\.nimh\.nih\.gov/
+# Generated "Edit" links need a GitHub sign-in; verify_book.py checks them on every build.
+^https://github\.com/neurodesk/neurodeskedu/edit/
+^https://github\.dev/neurodesk/neurodeskedu/
