@@ -56,7 +56,7 @@ jobs:
 
       # Decide which image to test. Resolve the newest DATED tag rather than testing
       # :latest, because :latest moves: a pin must name exactly the image that was tested.
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ steps.check.outputs.run == 'true' }}
       - id: image
         if: ${{ steps.check.outputs.run == 'true' }}
@@ -113,7 +113,7 @@ jobs:
       actions: read
     steps:
       - name: Open or update the corpus-drift issue
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const label = 'corpus-drift';
@@ -186,7 +186,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
       - name: Open pin-bump PR
