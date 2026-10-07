@@ -1,11 +1,14 @@
 import ast
 import contextlib
+import email.utils
+import errno
 import hashlib
 import io
 import json
 import os
 from pathlib import Path
 import tempfile
+import time
 import unittest
 import urllib.error
 from unittest.mock import patch
@@ -113,6 +116,32 @@ class FetchTest(unittest.TestCase):
                 self.outcomes = [http_error(429, retry_after='900'), VALID_IMAGE]
                 fetch(FILE_ID, SHA256, str(self.local))
                 self.sleep.assert_called_once_with(900)
+
+    def test_retry_after_accepts_http_date(self):
+        for number, fetch in self.each_helper():
+            with self.subTest(notebook=number):
+                self.sleep.reset_mock()
+                when = email.utils.formatdate(time.time() + 600, usegmt=True)
+                self.outcomes = [http_error(429, retry_after=when), VALID_IMAGE]
+                fetch(FILE_ID, SHA256, str(self.local))
+                [delay] = [call.args[0] for call in self.sleep.call_args_list]
+                self.assertTrue(550 <= delay <= 600, delay)
+
+    def test_local_io_error_fails_without_retry(self):
+        for number, fetch in self.each_helper():
+            for failure in (PermissionError(errno.EACCES, 'denied'),
+                            OSError(errno.ENOSPC, 'No space left on device')):
+                with self.subTest(notebook=number, failure=failure):
+                    self.requests.clear()
+                    self.sleep.reset_mock()
+                    with patch('shutil.copyfileobj', side_effect=failure):
+                        with self.assertRaises(OSError) as error:
+                            fetch(FILE_ID, SHA256, str(self.local))
+                    self.assertIs(error.exception, failure)
+                    self.assertEqual(len(self.requests), 1)
+                    self.sleep.assert_not_called()
+                    self.assertFalse(self.local.exists())
+                    self.assertEqual(self.stray_files(), [])
 
     def test_exhaustion_leaves_no_cache_and_preserves_cause(self):
         for number, fetch in self.each_helper():
