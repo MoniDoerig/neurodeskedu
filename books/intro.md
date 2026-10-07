@@ -1,7 +1,29 @@
-# NeurodeskEDU - Neurodesk's education and learning resources
+---
+title: NeurodeskEDU - Neurodesk's education and learning resources
+site:
+  hide_title_block: true
+---
 
-```{image} static/neurodesk_tutorials_vs_examples.png
+```{image} static/neurodesk-edu-option1-stacked.svg
+:alt: NeurodeskEDU - Neurodesk's education and learning resources
+:width: 640px
+:class: nd-light-only
+```
+
+```{image} static/neurodesk-edu-option1-stacked-dark.svg
+:alt: NeurodeskEDU - Neurodesk's education and learning resources
+:width: 640px
+:class: nd-dark-only
+```
+
+```{image} static/neurodesk-tutorials-vs-examples-no-logo.svg
 :alt: Neurodesk tutorials vs examples
+:class: nd-light-only
+```
+
+```{image} static/neurodesk-tutorials-vs-examples-no-logo-dark.svg
+:alt: Neurodesk tutorials vs examples
+:class: nd-dark-only
 ```
 
 Neurodesk offers two types of learning resources to help you get started with neuroimaging analysis:
@@ -66,6 +88,7 @@ The interactive version of these notebooks is run in Europe by the EGI Federatio
 ```{image} static/Wellcome_Trust_logo.png
 :width: 150px
 :alt: Wellcome Trust logo
+:class: nd-invert-dark
 ```
 
 ```{image} static/czi_logo.png

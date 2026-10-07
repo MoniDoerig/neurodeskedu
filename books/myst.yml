@@ -6,13 +6,12 @@ project:
     - _static
 site:
   template: book-theme
-  nav:
-    - title: Return to neurodesk.org
-      url: https://neurodesk.org
+  nav: []
   options:
-    logo: images/neurodesk_logo.svg
+    logo: images/neurodesk-edu-option2-inline.svg
+    logo_dark: images/neurodesk-edu-option2-inline-dark.svg
+    logo_alt: NeurodeskEDU
     favicon: images/neurodesk_logo.svg
-    logo_text: NeurodeskEDU
     analytics_google: G-4Z9774J59Y
     folders: true
     style: _static/review-badge.css
