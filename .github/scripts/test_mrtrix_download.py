@@ -17,8 +17,7 @@ from unittest.mock import patch
 NOTEBOOK_DIRECTORY = Path(__file__).resolve().parents[2] / 'books/examples/diffusion_imaging'
 VALID_IMAGE = b'complete image payload'
 SHA256 = hashlib.sha256(VALID_IMAGE).hexdigest()
-FILE_ID = 'abc12'
-URL = f'https://osf.io/download/{FILE_ID}/'
+REMOTE = 'preprocessed/image with spaces.nii.gz'
 
 
 def load_helper(number):
@@ -27,15 +26,21 @@ def load_helper(number):
                   if 'def fetch_if_missing' in ''.join(c['source']))
     tree = ast.parse(source)
     tree.body = [node for node in tree.body
-                 if isinstance(node, (ast.Import, ast.ImportFrom, ast.FunctionDef))]
+                 if isinstance(node, (ast.Import, ast.ImportFrom, ast.FunctionDef, ast.Assign))]
     namespace = {'os': os}
     exec(compile(tree, f'MRtrix_{number}.ipynb', 'exec'), namespace)
     return namespace['fetch_if_missing']
 
 
+def expected_url(number):
+    revision = load_helper(number).__globals__['REVISION']
+    return ('https://huggingface.co/datasets/neurodeskorg/mrtrix-tutorial-data'
+            f'/resolve/{revision}/{REMOTE}')
+
+
 def http_error(code, retry_after=None):
     headers = {'Retry-After': retry_after} if retry_after else {}
-    return urllib.error.HTTPError(URL, code, 'error', headers, None)
+    return urllib.error.HTTPError(REMOTE, code, 'error', headers, None)
 
 
 class FetchTest(unittest.TestCase):
@@ -53,7 +58,7 @@ class FetchTest(unittest.TestCase):
         self.contexts.enter_context(patch('urllib.request.urlopen', side_effect=self.urlopen))
 
     def urlopen(self, url, timeout=None):
-        self.assertEqual(url, URL)
+        self.assertEqual(url, self.url)
         self.assertGreater(timeout or 0, 0)
         self.requests.append(url)
         result = self.outcomes.pop(0) if self.outcomes else VALID_IMAGE
@@ -71,13 +76,14 @@ class FetchTest(unittest.TestCase):
             self.sleep.reset_mock()
             if self.local.exists():
                 self.local.unlink()
+            self.url = expected_url(number)
             yield number, load_helper(number)
 
     def test_valid_cache_is_reused(self):
         for number, fetch in self.each_helper():
             with self.subTest(notebook=number):
                 self.local.write_bytes(VALID_IMAGE)
-                fetch(FILE_ID, SHA256, str(self.local))
+                fetch(REMOTE, SHA256, str(self.local))
                 self.assertEqual(self.local.read_bytes(), VALID_IMAGE)
                 self.assertEqual(self.requests, [])
 
@@ -87,7 +93,7 @@ class FetchTest(unittest.TestCase):
                 with self.subTest(notebook=number, corrupt=corrupt):
                     previous = set(self.directory.glob('*.invalid'))
                     self.local.write_bytes(corrupt)
-                    fetch(FILE_ID, SHA256, str(self.local))
+                    fetch(REMOTE, SHA256, str(self.local))
                     self.assertEqual(self.local.read_bytes(), VALID_IMAGE)
                     saved = set(self.directory.glob('*.invalid')) - previous
                     self.assertEqual(len(saved), 1)
@@ -104,7 +110,7 @@ class FetchTest(unittest.TestCase):
                     if self.local.exists():
                         self.local.unlink()
                     self.outcomes = [failure, VALID_IMAGE]
-                    fetch(FILE_ID, SHA256, str(self.local))
+                    fetch(REMOTE, SHA256, str(self.local))
                     self.assertEqual(self.local.read_bytes(), VALID_IMAGE)
                     self.assertEqual(len(self.requests), 2)
                     self.assertEqual(self.sleep.call_count, 1)
@@ -114,7 +120,7 @@ class FetchTest(unittest.TestCase):
         for number, fetch in self.each_helper():
             with self.subTest(notebook=number):
                 self.outcomes = [http_error(429, retry_after='900'), VALID_IMAGE]
-                fetch(FILE_ID, SHA256, str(self.local))
+                fetch(REMOTE, SHA256, str(self.local))
                 self.sleep.assert_called_once_with(900)
 
     def test_retry_after_accepts_http_date(self):
@@ -123,7 +129,7 @@ class FetchTest(unittest.TestCase):
                 self.sleep.reset_mock()
                 when = email.utils.formatdate(time.time() + 600, usegmt=True)
                 self.outcomes = [http_error(429, retry_after=when), VALID_IMAGE]
-                fetch(FILE_ID, SHA256, str(self.local))
+                fetch(REMOTE, SHA256, str(self.local))
                 [delay] = [call.args[0] for call in self.sleep.call_args_list]
                 self.assertTrue(550 <= delay <= 600, delay)
 
@@ -136,7 +142,7 @@ class FetchTest(unittest.TestCase):
                     self.sleep.reset_mock()
                     with patch('shutil.copyfileobj', side_effect=failure):
                         with self.assertRaises(OSError) as error:
-                            fetch(FILE_ID, SHA256, str(self.local))
+                            fetch(REMOTE, SHA256, str(self.local))
                     self.assertIs(error.exception, failure)
                     self.assertEqual(len(self.requests), 1)
                     self.sleep.assert_not_called()
@@ -151,8 +157,8 @@ class FetchTest(unittest.TestCase):
                     self.sleep.reset_mock()
                     self.outcomes = [outcome] * 20
                     with self.assertRaises(RuntimeError) as error:
-                        fetch(FILE_ID, SHA256, str(self.local))
-                    self.assertIn(URL, str(error.exception))
+                        fetch(REMOTE, SHA256, str(self.local))
+                    self.assertIn(self.url, str(error.exception))
                     self.assertIn(str(self.local), str(error.exception))
                     self.assertIsNotNone(error.exception.__cause__)
                     self.assertFalse(self.local.exists())
@@ -171,7 +177,7 @@ class FetchTest(unittest.TestCase):
                     self.requests.clear()
                     self.outcomes = [http_error(code)]
                     with self.assertRaises(urllib.error.HTTPError):
-                        fetch(FILE_ID, SHA256, str(self.local))
+                        fetch(REMOTE, SHA256, str(self.local))
                     self.assertEqual(len(self.requests), 1)
                     self.sleep.assert_not_called()
                     self.assertFalse(self.local.exists())
@@ -179,7 +185,7 @@ class FetchTest(unittest.TestCase):
 
 
 class PinnedFilesTest(unittest.TestCase):
-    def test_every_download_pins_an_osf_id_and_sha256(self):
+    def test_every_download_pins_a_mirror_path_and_sha256(self):
         for number in (2, 3):
             notebook = json.loads((NOTEBOOK_DIRECTORY / f'MRtrix_{number}.ipynb').read_text())
             source = next(''.join(c['source']) for c in notebook['cells']
@@ -187,10 +193,12 @@ class PinnedFilesTest(unittest.TestCase):
             calls = [node for node in ast.walk(ast.parse(source))
                      if isinstance(node, ast.Call) and getattr(node.func, 'id', None) == 'fetch_if_missing']
             with self.subTest(notebook=number):
+                self.assertRegex(load_helper(number).__globals__['REVISION'], r'^[0-9a-f]{40}$')
                 self.assertEqual(len(calls), 5)
                 for call in calls:
-                    file_id, sha256, local = (arg.value for arg in call.args)
-                    self.assertRegex(file_id, r'^[a-z0-9]{5,24}$')
+                    remote, sha256, local = (arg.value for arg in call.args)
+                    self.assertRegex(remote, r'^(preprocessed|fod)/[\w.-]+$')
+                    self.assertEqual(Path(remote).name, Path(local).name)
                     self.assertRegex(sha256, r'^[0-9a-f]{64}$')
                     self.assertTrue(local.startswith('MRtrix_'))
 
