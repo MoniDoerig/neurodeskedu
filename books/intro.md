@@ -64,7 +64,7 @@ Once you've chosen your setup, follow the instructions provided in the link.
 ## 4. Video tutorial
 See below for a 4-minute tutorial on Installation, Usage and Data Access with Neurodesktop
 
-<div style="max-width: 900px; margin-left: 0;">
+<div style="max-width: 900px; margin-left: 0; margin-bottom: 3rem;">
   <iframe
     width="900"
     height="506"
