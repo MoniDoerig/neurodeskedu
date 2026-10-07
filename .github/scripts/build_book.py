@@ -317,7 +317,8 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
     guard = (f"<script>if (!location.pathname.startsWith({json.dumps(base)})) location.replace("
              f"{json.dumps(settings['site_url'] + base)} + location.pathname.split('/').slice(2).join('/')"
              " + location.search + location.hash);</script>")
-    launch = f'<script src="{html.escape(base, quote=True)}_static/launch-menu.js" defer></script>'
+    launch = "".join(f'<script src="{html.escape(base, quote=True)}_static/{name}" defer></script>'
+                     for name in ("launch-menu.js", "home-button.js"))
     for source in pages:
         page = built / routes[source.as_posix()] / "index.html"
         text = page.read_text()
