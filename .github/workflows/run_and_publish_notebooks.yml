@@ -142,13 +142,14 @@ jobs:
 
           # --- ARC K8s runners (CVMFS-enabled, in-cluster mirror) ---
           # Sydney AZ DinD scale-set (runnerScaleSetName: neurodesk-syd-arcrunner-neurodeskedu).
-          # DinD/arc-base-equivalent architecture, hosted on Sydney AZ for AARNet I/O proximity.
+          # DinD pod, hosted on Sydney AZ for AARNet I/O proximity.
           # Heavy notebooks route to the Sydney heavy pool (neurodesk-syd-arcrunner-neurodeskedu-heavy); see run-notebooks job.
-          # Previous routing kept for one-line revert: echo 'runs_on={"group":"arc-base"}'
+          # The QRIS runner groups (arc-base/arc-cpu/arc-mem) are gone; there is no revert target.
           # Notebooks routed to the heavy pool. Single source of truth: run-notebooks reads this
           # for both its runs-on and the /opt/conda re-own skip. To add a heavy notebook, add it here.
           echo 'heavy_notebooks=["examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb","examples/functional_imaging/Demo_fmriprep_FEAT.ipynb"]' >> $GITHUB_OUTPUT
-          echo "runner=arc-base" >> $GITHUB_OUTPUT
+          # Keep the arc- prefix: downstream `case "$RUNNER_KIND" in arc-*)` toggles mirror + CVMFS.
+          echo "runner=arc-k8s" >> $GITHUB_OUTPUT
           echo 'runs_on="neurodesk-syd-arcrunner-neurodeskedu"' >> $GITHUB_OUTPUT
 
           # --- Legacy VMs (neurodeskedu-1 through -8) ---
@@ -354,10 +355,9 @@ jobs:
     #   work dir peaked at 0.42 GiB, but Demo_FEAT_HigherLevelStats used 29 of 32 GiB docker-lib
     #   (the regular pool only has 16 GiB). Do not remove this routing on a work-dir argument.
     #   (r3.xlarge 16 vCPU/64 GiB, 64Gi work PVC, max 3 concurrent, scale-from-zero ~3-5 min cold start).
-    #   Sydney parallel of QRIS arc-mem; moved 2026-06-08 for the ardc-syd-1 AARNet I/O advantage.
+    #   Moved to ardc-syd-1 on 2026-06-08 for the AARNet I/O advantage.
     # Everyone else → whatever setup selected (default: Sydney AZ DinD pool neurodesk-syd-arcrunner-neurodeskedu).
     # To add another notebook to the heavy list: add it to heavy_notebooks in the setup job.
-    # Previous QRIS arc-mem routing kept for one-line revert: ...matrix.notebooks) && fromJson('{"group":"arc-mem"}') || ...
     runs-on: ${{ contains(fromJson(needs.setup.outputs.heavy_notebooks), matrix.notebooks) && 'neurodesk-syd-arcrunner-neurodeskedu-heavy' || fromJson(needs.setup.outputs.runs_on) }}
     timeout-minutes: 840
 
@@ -443,7 +443,7 @@ jobs:
 
           # --- IMAGE PULL STRATEGY ---
           # Mirror follows the runner selection from the setup job.
-          # ARC runners (arc-base, arc-cpu, arc-mem) have the in-cluster mirror available.
+          # ARC scale sets (neurodesk-syd-arcrunner-neurodeskedu, -neurodeskedu-heavy) have the in-cluster mirror available.
           # Legacy VMs and GitHub-hosted runners pull directly from ghcr.io.
           MIRROR_HOST="registry-mirror.arc-gha-system.svc.cluster.local:5000"
           case "$RUNNER_KIND" in
