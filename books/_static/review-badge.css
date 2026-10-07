@@ -174,3 +174,9 @@ article:has(.nd-launch-menu) .nd-launch {
   filter: invert(1);
 }
 
+
+/* The homepage shows the stacked NeurodeskEDU logo instead of its title. Hide only the title (not
+   the whole title block) so the page keeps its GitHub, edit and download buttons. */
+article:has(.nd-home-logo) .myst-fm-block-title {
+  display: none;
+}

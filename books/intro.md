@@ -1,19 +1,17 @@
 ---
 title: NeurodeskEDU - Neurodesk's education and learning resources
-site:
-  hide_title_block: true
 ---
 
 ```{image} static/neurodesk-edu-option1-stacked.svg
 :alt: NeurodeskEDU - Neurodesk's education and learning resources
 :width: 640px
-:class: nd-light-only
+:class: nd-light-only nd-home-logo
 ```
 
 ```{image} static/neurodesk-edu-option1-stacked-dark.svg
 :alt: NeurodeskEDU - Neurodesk's education and learning resources
 :width: 640px
-:class: nd-dark-only
+:class: nd-dark-only nd-home-logo
 ```
 
 ```{image} static/neurodesk-tutorials-vs-examples-no-logo.svg
@@ -85,6 +83,8 @@ The interactive version of these notebooks is run in the US by Jetstream2 (NSF a
 The interactive version of these notebooks is run in Europe by the EGI Federation with the dedicated support of CESNET-MCC. Computational resources were provided by the e-INFRA CZ project (ID:90254), supported by the Ministry of Education, Youth and Sports of the Czech Republic.
 
 
+::::{grid} 1 2 2 2
+
 ```{image} static/Wellcome_Trust_logo.png
 :width: 150px
 :alt: Wellcome Trust logo
@@ -95,4 +95,6 @@ The interactive version of these notebooks is run in Europe by the EGI Federatio
 :width: 250px
 :alt: Chan Zuckerberg Initiative logo
 ```
+
+::::
 <!-- Trigger: update navigation_depth -> 3 (2025-12-17 06:30Z) - harmless comment -->

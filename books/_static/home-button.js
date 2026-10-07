@@ -24,9 +24,10 @@
     if (search.parentElement.querySelector(".nd-home-button")) return;
     // Reuse the theme toggle's own utility classes: they live in the theme's versioned stylesheet,
     // so the button matches the toggle exactly and can't be broken by a stale cached myst-theme.css.
+    // Hidden on phones, where the header has no room for it; the sidebar title covers that case.
     const link = Object.assign(document.createElement("a"), {
       href: home, title: "Return to neurodesk.org",
-      className: "nd-home-button block shrink-0 rounded-full border border-myst-border-strong "
+      className: "nd-home-button hidden md:block shrink-0 rounded-full border border-myst-border-strong "
         + "hover:bg-myst-surface border-solid overflow-hidden text-myst-text-secondary w-8 h-8 ml-3",
     });
     link.setAttribute("aria-label", "Return to neurodesk.org");
