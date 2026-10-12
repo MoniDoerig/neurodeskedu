@@ -59,11 +59,6 @@ on:
         required: false
         type: boolean
         default: false
-      force_deploy_pages:
-        description: 'Force deploy pages'
-        required: false
-        type: boolean
-        default: false
       notebook_selector:
         description: 'Path relative to books/ (e.g. examples/functional_imaging/intro_to_preprocessing.ipynb)'
         required: false
@@ -2037,7 +2032,7 @@ jobs:
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
-        if: (github.ref == 'refs/heads/main' || inputs.force_deploy_pages == true) && inputs.diagnostic_mode != true
+        if: github.ref == 'refs/heads/main' && inputs.diagnostic_mode != true
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./books/_build/html
@@ -2046,7 +2041,7 @@ jobs:
 
       - name: Deploy staging to neurodesk/edu
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
-        if: (github.ref == 'refs/heads/main' || inputs.force_deploy_pages == true) && inputs.diagnostic_mode != true
+        if: github.ref == 'refs/heads/main' && inputs.diagnostic_mode != true
         with:
           deploy_key: ${{ secrets.EDU_DEPLOY_KEY }}
           external_repository: neurodesk/edu
