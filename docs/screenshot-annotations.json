@@ -1,0 +1,2646 @@
+[
+  {
+    "source": "books/static/tutorials/electrophysiology/eeg_mne-python/launch-mne.jpg",
+    "size": [
+      850,
+      480
+    ],
+    "title": "Launch MNE: 1 Neurodesk, 2 Electrophysiology, 3 mne, 4 code 0.23.4",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Neurodesk",
+        "target": [
+          1,
+          392,
+          104,
+          17
+        ],
+        "label": [
+          70,
+          435
+        ],
+        "tip": [
+          70,
+          410
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select Electrophysiology",
+        "target": [
+          106,
+          128,
+          135,
+          17
+        ],
+        "label": [
+          80,
+          136
+        ],
+        "tip": [
+          105,
+          136
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Select mne",
+        "target": [
+          242,
+          287,
+          103,
+          17
+        ],
+        "label": [
+          303,
+          261
+        ],
+        "tip": [
+          303,
+          287
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Select code 0.23.4",
+        "target": [
+          346,
+          287,
+          80,
+          17
+        ],
+        "label": [
+          454,
+          295
+        ],
+        "tip": [
+          427,
+          295
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/download-fit1.jpg",
+    "size": [
+      699,
+      372
+    ],
+    "title": "Download Fit1: 1 clear the full study, 2 select the Fit1 scene, 3 download selected",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Clear the full-study checkbox first",
+        "target": [
+          25,
+          101,
+          15,
+          14
+        ],
+        "label": [
+          14,
+          132
+        ],
+        "tip": [
+          27,
+          116
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select all scenes in Retinotopy_HCP_7T_181_Fit1.scene",
+        "target": [
+          54,
+          119,
+          220,
+          16
+        ],
+        "label": [
+          299,
+          128
+        ],
+        "tip": [
+          275,
+          128
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Download the selected 649.9 MB archive",
+        "target": [
+          1,
+          42,
+          194,
+          24
+        ],
+        "label": [
+          100,
+          83
+        ],
+        "tip": [
+          100,
+          67
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/eeg_mne-python/mne-kernel-options.png",
+    "size": [
+      420,
+      60
+    ],
+    "title": "Choose the mne-0.23.4 Python environment",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select mne-0.23.4",
+        "target": [
+          1,
+          22,
+          416,
+          16
+        ],
+        "label": [
+          450,
+          30
+        ],
+        "tip": [
+          419,
+          30
+        ]
+      }
+    ],
+    "right_padding": 60
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/launch-workbench.jpg",
+    "size": [
+      896,
+      486
+    ],
+    "title": "Launch Workbench: 1 Neurodesk, 2 Functional Imaging, 3 connectomeworkbench, 4 version 1.5.0",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Neurodesk",
+        "target": [
+          1,
+          413,
+          110,
+          17
+        ],
+        "label": [
+          70,
+          451
+        ],
+        "tip": [
+          70,
+          431
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Functional Imaging",
+        "target": [
+          112,
+          168,
+          143,
+          18
+        ],
+        "label": [
+          88,
+          177
+        ],
+        "tip": [
+          111,
+          177
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Choose connectomeworkbench",
+        "target": [
+          256,
+          134,
+          148,
+          18
+        ],
+        "label": [
+          332,
+          108
+        ],
+        "tip": [
+          332,
+          133
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Choose connectomeworkbench 1.5.0",
+        "target": [
+          405,
+          151,
+          153,
+          18
+        ],
+        "label": [
+          589,
+          160
+        ],
+        "tip": [
+          559,
+          160
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/extract-archive.jpg",
+    "size": [
+      500,
+      290
+    ],
+    "title": "Extract the archive: 1 right-click the ZIP, 2 choose Extract Here",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Right-click the downloaded ZIP file",
+        "target": [
+          110,
+          99,
+          28,
+          30
+        ],
+        "label": [
+          82,
+          113
+        ],
+        "tip": [
+          109,
+          113
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Extract Here",
+        "target": [
+          143,
+          151,
+          93,
+          18
+        ],
+        "label": [
+          264,
+          160
+        ],
+        "tip": [
+          237,
+          160
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/open-other.jpg",
+    "size": [
+      671,
+      268
+    ],
+    "title": "Open a scene: click Open Other",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click Open Other",
+        "target": [
+          413,
+          243,
+          63,
+          18
+        ],
+        "label": [
+          401,
+          221
+        ],
+        "tip": [
+          426,
+          242
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/select-scene.jpg",
+    "size": [
+      896,
+      486
+    ],
+    "title": "Choose the scene: 1 Scene Files filter, 2 Fit1 scene, 3 Open",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Change Files of type to Scene Files",
+        "target": [
+          65,
+          461,
+          245,
+          18
+        ],
+        "label": [
+          338,
+          470
+        ],
+        "tip": [
+          311,
+          470
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select Retinotopy_HCP_7T_181_Fit1.scene",
+        "target": [
+          77,
+          43,
+          174,
+          19
+        ],
+        "label": [
+          281,
+          53
+        ],
+        "tip": [
+          252,
+          53
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Click Open",
+        "target": [
+          832,
+          440,
+          58,
+          18
+        ],
+        "label": [
+          860,
+          413
+        ],
+        "tip": [
+          860,
+          439
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/show-scene.jpg",
+    "size": [
+      896,
+      486
+    ],
+    "title": "Show the group-average scene: 1 select the first scene, 2 click Show",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select the first Spheres group-average scene",
+        "target": [
+          45,
+          69,
+          757,
+          84
+        ],
+        "label": [
+          29,
+          111
+        ],
+        "tip": [
+          44,
+          111
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Click Show",
+        "target": [
+          825,
+          78,
+          65,
+          18
+        ],
+        "label": [
+          802,
+          87
+        ],
+        "tip": [
+          824,
+          87
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/group-average.jpg",
+    "size": [
+      896,
+      486
+    ],
+    "title": "The group-average scene; open the File control on the first checked overlay",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open File on the first checked overlay (Polar Angle)",
+        "target": [
+          125,
+          429,
+          215,
+          18
+        ],
+        "label": [
+          372,
+          438
+        ],
+        "tip": [
+          341,
+          438
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/choose-individual-file.jpg",
+    "size": [
+      896,
+      486
+    ],
+    "title": "Choose the All.Fit1_PolarAngle file for individual participants",
+    "markers": [
+      {
+        "number": 2,
+        "text": "Choose S1200_7T_Retinotopy181.All.Fit1_PolarAngle_MSMAll.32k_fs_LR.dscalar.nii",
+        "target": [
+          127,
+          275,
+          364,
+          17
+        ],
+        "label": [
+          521,
+          283
+        ],
+        "tip": [
+          492,
+          283
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/individual-map-1.jpg",
+    "size": [
+      896,
+      486
+    ],
+    "title": "Select a participant: 1 map index, 2 map-name dropdown",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Enter a map index here (1 for participant 100610)",
+        "target": [
+          375,
+          429,
+          33,
+          18
+        ],
+        "label": [
+          384,
+          407
+        ],
+        "tip": [
+          384,
+          428
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Or select a participant by map name",
+        "target": [
+          410,
+          429,
+          210,
+          18
+        ],
+        "label": [
+          651,
+          438
+        ],
+        "tip": [
+          621,
+          438
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/connectomeworkbench/other-maps.jpg",
+    "size": [
+      896,
+      486
+    ],
+    "title": "Use the other map tabs to show all four variables for the same participant",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Switch between Eccentricity, pRF size and Myelin tabs",
+        "target": [
+          187,
+          33,
+          525,
+          21
+        ],
+        "label": [
+          731,
+          14
+        ],
+        "tip": [
+          710,
+          32
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/physio/download-examples.jpg",
+    "size": [
+      805,
+      151
+    ],
+    "title": "Download the official PhysIO examples archive",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click Download",
+        "target": [
+          702,
+          108,
+          87,
+          25
+        ],
+        "label": [
+          745,
+          78
+        ],
+        "tip": [
+          745,
+          106
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/physio/change-directory.jpg",
+    "size": [
+      212,
+      150
+    ],
+    "title": "SPM main Menu: 1 Utils, 2 CD",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Utils",
+        "target": [
+          59,
+          42,
+          44,
+          17
+        ],
+        "label": [
+          119,
+          59
+        ],
+        "tip": [
+          104,
+          50
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose CD",
+        "target": [
+          60,
+          68,
+          42,
+          13
+        ],
+        "label": [
+          119,
+          86
+        ],
+        "tip": [
+          104,
+          76
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/physio/spm-menu.jpg",
+    "size": [
+      212,
+      244
+    ],
+    "title": "Open SPM Batch Editor",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click Batch",
+        "target": [
+          110,
+          219,
+          38,
+          15
+        ],
+        "label": [
+          150,
+          191
+        ],
+        "tip": [
+          133,
+          217
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/physio/loaded-batch.jpg",
+    "size": [
+      746,
+      650
+    ],
+    "title": "PhysIO batch: 1 open batch, 2 run batch",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open the supplied batch file",
+        "target": [
+          24,
+          2,
+          23,
+          23
+        ],
+        "label": [
+          170,
+          13
+        ],
+        "tip": [
+          44,
+          24
+        ],
+        "via": [
+          [
+            150,
+            30
+          ],
+          [
+            50,
+            30
+          ]
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Run the loaded batch",
+        "target": [
+          76,
+          2,
+          23,
+          23
+        ],
+        "label": [
+          125,
+          13
+        ],
+        "tip": [
+          101,
+          13
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/lcmodel/select-data-type.jpg",
+    "size": [
+      681,
+      560
+    ],
+    "title": "Choose Varian fid data",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click Varian",
+        "target": [
+          12,
+          425,
+          80,
+          27
+        ],
+        "label": [
+          184,
+          466
+        ],
+        "tip": [
+          94,
+          451
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/lcmodel/select-fid.jpg",
+    "size": [
+      720,
+      546
+    ],
+    "title": "Select the Varian fid file, then OK",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select fid",
+        "target": [
+          326,
+          77,
+          260,
+          18
+        ],
+        "label": [
+          453,
+          126
+        ],
+        "tip": [
+          453,
+          97
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Click OK",
+        "target": [
+          607,
+          30,
+          106,
+          26
+        ],
+        "label": [
+          653,
+          13
+        ],
+        "tip": [
+          653,
+          28
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/lcmodel/select-basis.jpg",
+    "size": [
+      720,
+      546
+    ],
+    "title": "Select the supplied basis set, then OK",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select the supplied BASIS file",
+        "target": [
+          326,
+          77,
+          260,
+          18
+        ],
+        "label": [
+          453,
+          126
+        ],
+        "tip": [
+          453,
+          97
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Click OK",
+        "target": [
+          607,
+          30,
+          106,
+          26
+        ],
+        "label": [
+          653,
+          13
+        ],
+        "tip": [
+          653,
+          28
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/lcmodel/control-parameters.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "LCModel controls: 1 Change BASIS, 2 Run LCModel",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Change the basis set",
+        "target": [
+          720,
+          200,
+          114,
+          27
+        ],
+        "label": [
+          875,
+          213
+        ],
+        "tip": [
+          837,
+          213
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Run the configured analysis",
+        "target": [
+          37,
+          543,
+          111,
+          31
+        ],
+        "label": [
+          170,
+          558
+        ],
+        "tip": [
+          150,
+          558
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/lcmodel/confirm-analysis.jpg",
+    "size": [
+      254,
+      107
+    ],
+    "title": "Confirm analysis of all voxels in Slice 1",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click Yes",
+        "target": [
+          35,
+          74,
+          80,
+          23
+        ],
+        "label": [
+          18,
+          85
+        ],
+        "tip": [
+          33,
+          85
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/fieldtrip/launch-fieldtrip.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Launch FieldTrip 20211114",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click fieldtrip 20211114",
+        "target": [
+          508,
+          302,
+          149,
+          23
+        ],
+        "label": [
+          690,
+          314
+        ],
+        "tip": [
+          659,
+          314
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "FieldTrip browser: 1 next segment, 2 horizontal zoom",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Move to the next segment",
+        "target": [
+          224,
+          646,
+          61,
+          27
+        ],
+        "label": [
+          308,
+          618
+        ],
+        "tip": [
+          285,
+          646
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Shorten the displayed time interval",
+        "target": [
+          799,
+          646,
+          59,
+          27
+        ],
+        "label": [
+          884,
+          618
+        ],
+        "tip": [
+          858,
+          646
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/programming/matlab/activate-matlab.jpg",
+    "size": [
+      675,
+      395
+    ],
+    "title": "Activate MATLAB: 1 automatic Internet activation, 2 Next",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Keep automatic activation selected",
+        "target": [
+          10,
+          106,
+          341,
+          23
+        ],
+        "label": [
+          310,
+          180
+        ],
+        "tip": [
+          353,
+          118
+        ],
+        "via": [
+          [
+            355,
+            180
+          ],
+          [
+            355,
+            118
+          ]
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Click Next",
+        "target": [
+          112,
+          361,
+          94,
+          25
+        ],
+        "label": [
+          160,
+          331
+        ],
+        "tip": [
+          160,
+          358
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/programming/matlab/preferences-ribbon.jpg",
+    "size": [
+      1200,
+      134
+    ],
+    "title": "Open Preferences on the MATLAB Home ribbon",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Preferences",
+        "target": [
+          796,
+          51,
+          99,
+          22
+        ],
+        "label": [
+          946,
+          112
+        ],
+        "tip": [
+          898,
+          61
+        ],
+        "via": [
+          [
+            946,
+            61
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/programming/matlab/keyboard-shortcuts.jpg",
+    "size": [
+      807,
+      623
+    ],
+    "title": "MATLAB: 1 Keyboard Shortcuts, 2 Windows Default Set, 3 OK",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select Keyboard Shortcuts",
+        "target": [
+          14,
+          298,
+          223,
+          18
+        ],
+        "label": [
+          212,
+          342
+        ],
+        "tip": [
+          212,
+          319
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Windows Default Set",
+        "target": [
+          245,
+          88,
+          506,
+          23
+        ],
+        "label": [
+          847,
+          100
+        ],
+        "tip": [
+          754,
+          100
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Save with OK",
+        "target": [
+          430,
+          589,
+          84,
+          22
+        ],
+        "label": [
+          471,
+          558
+        ],
+        "tip": [
+          471,
+          586
+        ]
+      }
+    ],
+    "right_padding": 80
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/select-fmri.jpg",
+    "size": [
+      489,
+      293
+    ],
+    "title": "Choose fMRI in the SPM selector",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click fMRI",
+        "target": [
+          347,
+          192,
+          95,
+          29
+        ],
+        "label": [
+          529,
+          206
+        ],
+        "tip": [
+          445,
+          206
+        ]
+      }
+    ],
+    "right_padding": 80
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/change-directory.jpg",
+    "size": [
+      293,
+      201
+    ],
+    "title": "SPM main Menu: 1 Utils, 2 CD",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Utils",
+        "target": [
+          82,
+          58,
+          60,
+          20
+        ],
+        "label": [
+          201,
+          58
+        ],
+        "tip": [
+          144,
+          68
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose CD",
+        "target": [
+          83,
+          92,
+          59,
+          16
+        ],
+        "label": [
+          195,
+          115
+        ],
+        "tip": [
+          145,
+          101
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/select-subject-directory.jpg",
+    "size": [
+      549,
+      431
+    ],
+    "title": "Confirm the selected sub-08 directory",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click Done",
+        "target": [
+          101,
+          355,
+          165,
+          22
+        ],
+        "label": [
+          179,
+          327
+        ],
+        "tip": [
+          179,
+          352
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/select-anatomical.jpg",
+    "size": [
+      549,
+      431
+    ],
+    "title": "Confirm the selected T1 image",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click Done",
+        "target": [
+          100,
+          334,
+          166,
+          22
+        ],
+        "label": [
+          180,
+          307
+        ],
+        "tip": [
+          180,
+          331
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/browse-menu.jpg",
+    "size": [
+      290,
+      268
+    ],
+    "title": "Browse the functional volume series",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click Browse",
+        "target": [
+          1,
+          246,
+          287,
+          21
+        ],
+        "label": [
+          330,
+          257
+        ],
+        "tip": [
+          289,
+          257
+        ]
+      }
+    ],
+    "right_padding": 80
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/select-functional-frames.jpg",
+    "size": [
+      549,
+      431
+    ],
+    "title": "Select run 1: 1 Filter, 2 Frames, 3 Select All",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Filter to run 1",
+        "target": [
+          372,
+          264,
+          162,
+          22
+        ],
+        "label": [
+          589,
+          274
+        ],
+        "tip": [
+          537,
+          274
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Expand frames 1:146",
+        "target": [
+          280,
+          286,
+          254,
+          22
+        ],
+        "label": [
+          589,
+          299
+        ],
+        "tip": [
+          537,
+          297
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Select All in upper-right list",
+        "target": [
+          383,
+          185,
+          118,
+          27
+        ],
+        "label": [
+          589,
+          198
+        ],
+        "tip": [
+          504,
+          198
+        ]
+      }
+    ],
+    "right_padding": 80
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/functional-browser.jpg",
+    "size": [
+      436,
+      656
+    ],
+    "title": "Browse functional volumes using the bottom slider",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Move the volume slider",
+        "target": [
+          41,
+          642,
+          348,
+          13
+        ],
+        "label": [
+          230,
+          615
+        ],
+        "tip": [
+          230,
+          639
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/realign-menu.jpg",
+    "size": [
+      293,
+      339
+    ],
+    "title": "Select Realign Estimate and Reslice",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Choose the third realignment option",
+        "target": [
+          26,
+          94,
+          72,
+          16
+        ],
+        "label": [
+          169,
+          104
+        ],
+        "tip": [
+          101,
+          102
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/realign-two-runs.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Realign both runs: 1 Data, 2 New Session, 3 Play",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select Data",
+        "target": [
+          375,
+          111,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          119
+        ],
+        "tip": [
+          372,
+          119
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Click New Session once per run",
+        "target": [
+          375,
+          389,
+          815,
+          19
+        ],
+        "label": [
+          346,
+          398
+        ],
+        "tip": [
+          372,
+          398
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Run the batch",
+        "target": [
+          77,
+          43,
+          23,
+          24
+        ],
+        "label": [
+          133,
+          54
+        ],
+        "tip": [
+          104,
+          54
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/coregister-menu.jpg",
+    "size": [
+      293,
+      339
+    ],
+    "title": "Coregister: choose Estimate and Reslice",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Choose the third coregistration option",
+        "target": [
+          26,
+          119,
+          74,
+          17
+        ],
+        "label": [
+          169,
+          129
+        ],
+        "tip": [
+          103,
+          128
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/coregistration-setup.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Coregistration: 1 Reference Image, 2 Source Image, 3 Play",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Use the mean functional reference",
+        "target": [
+          375,
+          111,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          119
+        ],
+        "tip": [
+          372,
+          119
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Use the anatomical source",
+        "target": [
+          375,
+          130,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          149
+        ],
+        "tip": [
+          372,
+          139
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Run coregistration",
+        "target": [
+          77,
+          43,
+          23,
+          24
+        ],
+        "label": [
+          133,
+          54
+        ],
+        "tip": [
+          104,
+          54
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/contour-menu.jpg",
+    "size": [
+      450,
+      461
+    ],
+    "title": "Contours: 1 Contour, 2 Display onto, 3 all",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select Contour",
+        "target": [
+          1,
+          265,
+          172,
+          24
+        ],
+        "label": [
+          218,
+          243
+        ],
+        "tip": [
+          171,
+          266
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Display onto",
+        "target": [
+          173,
+          265,
+          130,
+          24
+        ],
+        "label": [
+          270,
+          221
+        ],
+        "tip": [
+          270,
+          262
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Choose all",
+        "target": [
+          304,
+          265,
+          145,
+          24
+        ],
+        "label": [
+          488,
+          277
+        ],
+        "tip": [
+          452,
+          277
+        ]
+      }
+    ],
+    "right_padding": 80
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/segmentation-bias-setting.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Segmentation: 1 Save Bias Corrected setting, 2 Save Bias Corrected choice",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select Save Bias Corrected",
+        "target": [
+          375,
+          199,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          208
+        ],
+        "tip": [
+          372,
+          208
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Save Bias Corrected",
+        "target": [
+          375,
+          405,
+          815,
+          19
+        ],
+        "label": [
+          346,
+          414
+        ],
+        "tip": [
+          372,
+          414
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/segmentation-forward-field.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Segmentation: 1 Deformation Fields, 2 Forward, 3 Play",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select Deformation Fields",
+        "target": [
+          375,
+          348,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          357
+        ],
+        "tip": [
+          372,
+          357
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Forward",
+        "target": [
+          375,
+          424,
+          815,
+          19
+        ],
+        "label": [
+          346,
+          433
+        ],
+        "tip": [
+          372,
+          433
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Run segmentation",
+        "target": [
+          77,
+          43,
+          23,
+          24
+        ],
+        "label": [
+          133,
+          54
+        ],
+        "tip": [
+          104,
+          54
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/normalize-menu.jpg",
+    "size": [
+      293,
+      339
+    ],
+    "title": "Select Normalize Write",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Choose Normalize Write",
+        "target": [
+          111,
+          102,
+          75,
+          17
+        ],
+        "label": [
+          225,
+          112
+        ],
+        "tip": [
+          189,
+          111
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/normalization-setup.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Normalization: 1 forward field, 2 both runs, 3 Play",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select the forward deformation field",
+        "target": [
+          375,
+          147,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          156
+        ],
+        "tip": [
+          372,
+          156
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select all 292 slice-timed volumes",
+        "target": [
+          375,
+          164,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          187
+        ],
+        "tip": [
+          372,
+          173
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Run normalization",
+        "target": [
+          77,
+          43,
+          23,
+          24
+        ],
+        "label": [
+          133,
+          54
+        ],
+        "tip": [
+          104,
+          54
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/smoothing-setup.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Smoothing: 1 Images to smooth, 2 FWHM, 3 Play",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select both runs: 292 volumes",
+        "target": [
+          375,
+          111,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          119
+        ],
+        "tip": [
+          372,
+          119
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Keep the 8 mm FWHM kernel",
+        "target": [
+          375,
+          130,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          149
+        ],
+        "tip": [
+          372,
+          139
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Run smoothing",
+        "target": [
+          77,
+          43,
+          23,
+          24
+        ],
+        "label": [
+          133,
+          54
+        ],
+        "tip": [
+          104,
+          54
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/first-level-setup.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "First-level model: 1 Directory, 2 timing, 3 Data and Design, 4 New Session, 5 Play",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select the model output directory",
+        "target": [
+          375,
+          111,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          119
+        ],
+        "tip": [
+          372,
+          119
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Use seconds and TR2",
+        "target": [
+          375,
+          147,
+          815,
+          36
+        ],
+        "label": [
+          346,
+          166
+        ],
+        "tip": [
+          372,
+          166
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Select Data and Design",
+        "target": [
+          375,
+          217,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          226
+        ],
+        "tip": [
+          372,
+          226
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Create two Subject Session entries",
+        "target": [
+          375,
+          389,
+          815,
+          19
+        ],
+        "label": [
+          346,
+          398
+        ],
+        "tip": [
+          372,
+          398
+        ]
+      },
+      {
+        "number": 5,
+        "text": "Run model specification",
+        "target": [
+          77,
+          43,
+          23,
+          24
+        ],
+        "label": [
+          133,
+          54
+        ],
+        "tip": [
+          104,
+          54
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/first-level-conditions.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Enter both conditions: 1 Inc fields, 2 Con fields, 3 Play",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Enter Inc name, onsets and duration",
+        "target": [
+          375,
+          156,
+          815,
+          53
+        ],
+        "label": [
+          346,
+          182
+        ],
+        "tip": [
+          372,
+          182
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Enter Con name, onsets and duration",
+        "target": [
+          375,
+          278,
+          815,
+          53
+        ],
+        "label": [
+          346,
+          304
+        ],
+        "tip": [
+          372,
+          304
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Run after completing both sessions",
+        "target": [
+          77,
+          43,
+          23,
+          24
+        ],
+        "label": [
+          133,
+          54
+        ],
+        "tip": [
+          104,
+          54
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/estimation-setup.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Estimation: 1 Select SPM.mat, 2 Play",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select the model SPM.mat file",
+        "target": [
+          375,
+          111,
+          815,
+          18
+        ],
+        "label": [
+          346,
+          119
+        ],
+        "tip": [
+          372,
+          119
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Run classical estimation",
+        "target": [
+          77,
+          43,
+          23,
+          24
+        ],
+        "label": [
+          133,
+          54
+        ],
+        "tip": [
+          104,
+          54
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/functional_imaging/spm/contrast-manager.jpg",
+    "size": [
+      364,
+      310
+    ],
+    "title": "Create a new contrast",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Click Define new contrast",
+        "target": [
+          27,
+          256,
+          110,
+          18
+        ],
+        "label": [
+          82,
+          230
+        ],
+        "tip": [
+          82,
+          253
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/phase_processing/swi/launch-clear-swi.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Launch CLEAR-SWI: Neurodesk, Phase Processing, clearswi, version 1.7.0",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Neurodesk",
+        "target": [
+          0,
+          576,
+          154,
+          24
+        ],
+        "label": [
+          82,
+          620
+        ],
+        "tip": [
+          82,
+          601
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select Phase Processing",
+        "target": [
+          155,
+          398,
+          200,
+          22
+        ],
+        "label": [
+          105,
+          405
+        ],
+        "tip": [
+          154,
+          405
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Select clearswi",
+        "target": [
+          357,
+          421,
+          147,
+          22
+        ],
+        "label": [
+          428,
+          386
+        ],
+        "tip": [
+          428,
+          416
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Select clearswi 1.7.0",
+        "target": [
+          505,
+          465,
+          120,
+          24
+        ],
+        "label": [
+          665,
+          477
+        ],
+        "tip": [
+          627,
+          477
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/phase_processing/swi/launch-itksnap.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Launch ITK-SNAP: Neurodesk, Visualization, itksnap, itksnapGUI 4.4.0",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Neurodesk",
+        "target": [
+          0,
+          576,
+          154,
+          24
+        ],
+        "label": [
+          80,
+          620
+        ],
+        "tip": [
+          80,
+          602
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select Visualization",
+        "target": [
+          155,
+          626,
+          200,
+          24
+        ],
+        "label": [
+          254,
+          603
+        ],
+        "tip": [
+          254,
+          625
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Select itksnap",
+        "target": [
+          357,
+          343,
+          155,
+          24
+        ],
+        "label": [
+          432,
+          314
+        ],
+        "tip": [
+          432,
+          342
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Select itksnapGUI 4.4.0",
+        "target": [
+          513,
+          553,
+          146,
+          24
+        ],
+        "label": [
+          704,
+          565
+        ],
+        "tip": [
+          660,
+          565
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/phase_processing/swi/open-swi-image.jpg",
+    "size": [
+      488,
+      371
+    ],
+    "title": "Open SWI: enter the full filename, then Next and Finish",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Enter the SWI filename",
+        "target": [
+          20,
+          80,
+          448,
+          24
+        ],
+        "label": [
+          218,
+          133
+        ],
+        "tip": [
+          218,
+          105
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Click Next, then Finish",
+        "target": [
+          315,
+          335,
+          79,
+          25
+        ],
+        "label": [
+          355,
+          305
+        ],
+        "tip": [
+          355,
+          334
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/phase_processing/swi/auto-contrast-menu.jpg",
+    "size": [
+      695,
+      117
+    ],
+    "title": "Tools, Image Contrast, Auto-Adjust Contrast (all layers)",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select Image Contrast",
+        "target": [
+          0,
+          43,
+          366,
+          24
+        ],
+        "label": [
+          234,
+          89
+        ],
+        "tip": [
+          234,
+          68
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Auto-Adjust Contrast (all layers)",
+        "target": [
+          367,
+          66,
+          326,
+          25
+        ],
+        "label": [
+          535,
+          35
+        ],
+        "tip": [
+          535,
+          65
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/phase_processing/swi/mip-result.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Compare SWI and mIP: use the tiled-layout button beside the slice",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Toggle tiled image layout",
+        "target": [
+          670,
+          65,
+          18,
+          19
+        ],
+        "label": [
+          678,
+          115
+        ],
+        "tip": [
+          678,
+          85
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/phase_processing/unwrapping/launch-romeo.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Launch ROMEO: Neurodesk, Phase Processing, romeo, version 3.2.8",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Neurodesk",
+        "target": [
+          0,
+          576,
+          154,
+          24
+        ],
+        "label": [
+          80,
+          620
+        ],
+        "tip": [
+          80,
+          602
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select Phase Processing",
+        "target": [
+          155,
+          393,
+          200,
+          24
+        ],
+        "label": [
+          106,
+          405
+        ],
+        "tip": [
+          154,
+          405
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Select romeo",
+        "target": [
+          357,
+          486,
+          147,
+          24
+        ],
+        "label": [
+          429,
+          454
+        ],
+        "tip": [
+          429,
+          486
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Select romeo 3.2.8",
+        "target": [
+          505,
+          510,
+          118,
+          24
+        ],
+        "label": [
+          668,
+          522
+        ],
+        "tip": [
+          625,
+          522
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/phase_processing/unwrapping/add-comparison-image.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "File, Add Another Image: load unwrapped.nii alongside phase.nii",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select Add Another Image",
+        "target": [
+          7,
+          84,
+          343,
+          25
+        ],
+        "label": [
+          393,
+          97
+        ],
+        "tip": [
+          352,
+          97
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/phase_processing/unwrapping/phase-contrast-window.jpg",
+    "size": [
+      631,
+      545
+    ],
+    "title": "Unwrapped layer contrast: select unwrapped, Contrast, Minimum -10 and Maximum 10",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select unwrapped",
+        "target": [
+          8,
+          134,
+          174,
+          37
+        ],
+        "label": [
+          87,
+          186
+        ],
+        "tip": [
+          87,
+          173
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select Contrast",
+        "target": [
+          263,
+          26,
+          78,
+          27
+        ],
+        "label": [
+          305,
+          78
+        ],
+        "tip": [
+          305,
+          54
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Set Minimum -10 and Maximum 10",
+        "target": [
+          285,
+          96,
+          68,
+          48
+        ],
+        "label": [
+          393,
+          135
+        ],
+        "tip": [
+          355,
+          135
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/phase_processing/unwrapping/romeo-result.jpg",
+    "size": [
+      1245,
+      675
+    ],
+    "title": "Wrapped and unwrapped phase: tiled-layout button beside the slice",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Toggle tiled image layout",
+        "target": [
+          670,
+          65,
+          18,
+          19
+        ],
+        "label": [
+          678,
+          115
+        ],
+        "tip": [
+          678,
+          85
+        ]
+      }
+    ]
+  }
+]

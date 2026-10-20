@@ -36,7 +36,7 @@ The default conda environment is not persistent across sessions, so this means a
 
 1. In a Terminal window, type in:
 
-![1_terminal](/static/tutorials/programming/conda/1_terminal.png '1_terminal')
+![1_terminal](/static/tutorials/programming/conda/1-terminal.png '1_terminal')
 
 For *Python*:
 ```bash
@@ -101,8 +101,8 @@ conda activate r_env
 
 4. Open a new Launcher tab. The new environment can take a short time to appear on the JupyterLab start page after the installation finishes. When it appears, select the new Notebook option to start a Jupyter Notebook in that environment.
 
-![2_env](/static/tutorials/programming/conda/2_env.png '2_env')
+![2_env](/static/tutorials/programming/conda/2-env.png '2_env')
 
 Switching the environment on a Jupyter Notebook is also possible on the top right corner dropdown menu.
 
-![3_notebook](/static/tutorials/programming/conda/3_notebook.png '3_notebook')
+![3_notebook](/static/tutorials/programming/conda/3-notebook.png '3_notebook')

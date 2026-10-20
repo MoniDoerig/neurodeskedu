@@ -1,0 +1,18 @@
+arsub-08_task-flanker_run-1_bold.nii 47841632
+ shape (64, 64, 40, 146) zooms (np.float32(3.0), np.float32(3.0), np.float32(4.0), np.float32(2.0))
+arsub-08_task-flanker_run-2_bold.nii 47841632
+ shape (64, 64, 40, 146) zooms (np.float32(3.0), np.float32(3.0), np.float32(4.0), np.float32(2.0))
+meansub-08_task-flanker_run-1_bold.nii 328032
+ shape (64, 64, 40) zooms (np.float32(3.0), np.float32(3.0), np.float32(4.0))
+rp_sub-08_task-flanker_run-1_bold.txt 14162
+rp_sub-08_task-flanker_run-2_bold.txt 14162
+rsub-08_task-flanker_run-1_bold.nii 47841632
+ shape (64, 64, 40, 146) zooms (np.float32(3.0), np.float32(3.0), np.float32(4.0), np.float32(2.0))
+rsub-08_task-flanker_run-2_bold.nii 47841632
+ shape (64, 64, 40, 146) zooms (np.float32(3.0), np.float32(3.0), np.float32(4.0), np.float32(2.0))
+sub-08_task-flanker_run-1_bold.mat 18880
+sub-08_task-flanker_run-1_bold.nii 47841632
+ shape (64, 64, 40, 146) zooms (np.float32(3.0), np.float32(3.0), np.float32(4.0), np.float32(2.0))
+sub-08_task-flanker_run-2_bold.mat 18880
+sub-08_task-flanker_run-2_bold.nii 47841632
+ shape (64, 64, 40, 146) zooms (np.float32(3.0), np.float32(3.0), np.float32(4.0), np.float32(2.0))

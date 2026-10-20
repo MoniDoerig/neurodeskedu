@@ -29,6 +29,7 @@ DataLad is an open-source tool to publish and access open datasets. In addition 
 First we have to create a DataLad dataset:
 ```Bash
 datalad create my_dataset
+cd my_dataset
 
 # now add files to your project and then add save the files with datalad
 datalad save -m "added new files"
@@ -47,7 +48,7 @@ Here is an example how to publish a dataset on the OSF:
 
 # create sibling
 datalad create-sibling-osf --title best-study-ever -s osf
-git config --global --add datalad.extensions.load next
+git config --local --add datalad.extensions.load next
 
 # push
 datalad push --to osf

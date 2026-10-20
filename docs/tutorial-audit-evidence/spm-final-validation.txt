@@ -1,0 +1,17 @@
+Contrast: Incongruent-Congruent T
+Weights: [ 0.5 -0.5  0.5 -0.5  0.   0. ]
+Effective residual df: 277.9999999994869
+Analysis mask voxels: 223413
+ResMS.nii shape (79, 95, 79) finite inside mask True range 0.22053539752960205 129.0397491455078
+beta_0001.nii shape (79, 95, 79) finite inside mask True range -7.139091968536377 9.8107271194458
+beta_0002.nii shape (79, 95, 79) finite inside mask True range -8.591136932373047 6.483393669128418
+beta_0003.nii shape (79, 95, 79) finite inside mask True range -9.406005859375 15.788681030273438
+beta_0004.nii shape (79, 95, 79) finite inside mask True range -4.849714756011963 5.158034324645996
+beta_0005.nii shape (79, 95, 79) finite inside mask True range 81.35386657714844 253.89019775390625
+beta_0006.nii shape (79, 95, 79) finite inside mask True range 81.38322448730469 254.2615509033203
+con_0001.nii shape (79, 95, 79) finite inside mask True range -6.5769853591918945 9.513254165649414
+spmT_0001.nii shape (79, 95, 79) finite inside mask True range -2.9409115314483643 4.257462501525879
+swarsub-08_task-flanker_run-1_bold.nii (79, 95, 79, 146) zooms (np.float32(2.0), np.float32(2.0), np.float32(2.0), np.float32(2.0)) finite True
+swarsub-08_task-flanker_run-2_bold.nii (79, 95, 79, 146) zooms (np.float32(2.0), np.float32(2.0), np.float32(2.0), np.float32(2.0)) finite True
+warsub-08_task-flanker_run-1_bold.nii (79, 95, 79, 146) zooms (np.float32(2.0), np.float32(2.0), np.float32(2.0), np.float32(2.0)) finite True
+warsub-08_task-flanker_run-2_bold.nii (79, 95, 79, 146) zooms (np.float32(2.0), np.float32(2.0), np.float32(2.0), np.float32(2.0)) finite True

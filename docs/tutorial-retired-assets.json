@@ -1,0 +1,422 @@
+[
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut0.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut1.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut10.PNG"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut2.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut3.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut4.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut5.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut6.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut7.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut8.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/EEGtut9.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/1_balsa.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/10_scene.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/11_loadedscene.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/12_fileselection.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/13_polarAngleALL.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/14_index1.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/14_index5.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/15_tabs.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/2_balsa.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/3_unzip.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/4_appmenu.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/5_wbview.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/6_openother.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/7_scenefile.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/8_path.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/9_file.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/application-menu.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/average-maps.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/find-file.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/connectomeworkbench/wb_view.png"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/connectomeworkbench",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/physio/physio_screenshot1.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/physio",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/physio/physio_screenshot2.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/physio",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/functional_imaging/physio/physio_screenshot3.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/functional_imaging/physio",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/fieldtrip/1_menu.png"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip",
+    "reason": "Superseded by verified VNC captures and a runnable public-data example."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/fieldtrip/2_container.PNG"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip",
+    "reason": "Superseded by verified VNC captures and a runnable public-data example."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/fieldtrip/3_running.PNG"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip",
+    "reason": "Superseded by verified VNC captures and a runnable public-data example."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/programming/matlab/0_appmenu.png"
+    ],
+    "replaced_in": "books/static/tutorials/programming/matlab",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/programming/matlab/1_matlabgui.png"
+    ],
+    "replaced_in": "books/static/tutorials/programming/matlab",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/programming/matlab/2_login.png"
+    ],
+    "replaced_in": "books/static/tutorials/programming/matlab",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/programming/matlab/3_license.png"
+    ],
+    "replaced_in": "books/static/tutorials/programming/matlab",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/programming/matlab/4_username.png"
+    ],
+    "replaced_in": "books/static/tutorials/programming/matlab",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/programming/matlab/5_confirm.png"
+    ],
+    "replaced_in": "books/static/tutorials/programming/matlab",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/programming/matlab/6_fslmaths.png"
+    ],
+    "replaced_in": "books/static/tutorials/programming/matlab",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/programming/matlab/7_preferences.png"
+    ],
+    "replaced_in": "books/static/tutorials/programming/matlab",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/programming/matlab/8_shortcuts.png"
+    ],
+    "replaced_in": "books/static/tutorials/programming/matlab",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/swi/open-clear-swi.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/swi",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/swi/open-itksnap.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/swi",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/swi/file-manager.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/swi",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/swi/itksnap-output.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/swi",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/swi/terminal_output1.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/swi",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/swi/neurodesktop-terminal.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/swi",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/swi/terminal_output2.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/swi",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/swi/terminal-output3.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/swi",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/unwrapping/open-romeo.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/unwrapping",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/unwrapping/romeo_result.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/unwrapping",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/unwrapping/terminal_download.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/unwrapping",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/unwrapping/Screenshot 2026-03-16 at 2.11.16\u202fpm.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/unwrapping",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/unwrapping/romeo.PNG"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/unwrapping",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/phase_processing/unwrapping/terminal_romeo.png"
+    ],
+    "replaced_in": "books/static/tutorials/phase_processing/unwrapping",
+    "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  }
+]

@@ -1,0 +1,11 @@
+PhysIO_output_01.fig 264465 bytes
+PhysIO_output_02.fig 58313124 bytes
+PhysIO_output_03.fig 47073236 bytes
+PhysIO_output_04.fig 8573367 bytes
+PhysIO_output_05.fig 1703416 bytes
+PhysIO_output_06.fig 1303739 bytes
+PhysIO_output_07.fig 667955 bytes
+multiple_regressors.txt 309375 bytes
+physio.mat 18557467 bytes
+regressors shape (495, 24)
+all finite True

@@ -1,0 +1,38 @@
+=== Corrected notebook kernel ===
+[NbConvertApp] Converting notebook /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/accessing_neurodesk_tools.ipynb to notebook
+[NbConvertApp] Writing 189962 bytes to /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/accessing_neurodesk_tools-fixed.ipynb
+EXIT 0
+
+=== MNE wrapper ===
+#!/usr/bin/env bash
+# neurodesk-artifact-v2
+_neurodesk_wrapper=$(readlink -f -- "${BASH_SOURCE[0]}") || exit 2
+_neurodesk_dir=$(cd "$(dirname "$_neurodesk_wrapper")" && pwd -P) || exit 2
+source "$_neurodesk_dir/container_runtime.sh" || exit 2
+neurodesk_container exec "$_neurodesk_dir/"mne_0.23.4_20220121.simg code "$@"
+
+=== Phase processing ===
+ROMEO EXIT 0
+ERROR: LoadError: KeyError: key "TUTORIAL_AUDIT_DIR" not found
+Stacktrace:
+ [1] (::Base.var"#getindex##11#getindex##12")(k::String)
+   @ Base ./env.jl:164
+ [2] access_env(onError::Base.var"#getindex##11#getindex##12", var::String)
+   @ Base ./env.jl:60
+ [3] getindex(::Base.EnvDict, k::String)
+   @ Base ./env.jl:164
+ [4] top-level scope
+   @ ~/neurodesktop-storage/tutorial-audit-2026-10-20/clearswi.jl:4
+ [5] include(mod::Module, _path::String)
+   @ Base ./Base.jl:306
+ [6] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:317
+ [7] _start()
+   @ Base ./client.jl:550
+in expression starting at /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/clearswi.jl:4
+CLEAR-SWI EXIT 1
+citations_romeo.txt 1243 bytes
+unwrapped.nii 32112992 bytes
+mag.nii 16056672 bytes
+phase.nii 16056672 bytes
+settings_romeo.txt 1548 bytes

@@ -1,0 +1,854 @@
+
+=== fsl/6.0.7.8 ===
+
+Usage: fslmaths [-dt <datatype>] <first_input> [operations and inputs] <output> [-odt <datatype>]
+
+Datatype information:
+ -dt sets the datatype used internally for calculations (default float for all except double images)
+ -odt sets the output datatype ( default is float )
+ Possible datatypes are: char short int float double input
+ "input" will set the datatype to that of the original image
+
+Binary operations:
+  (some inputs can be either an image or a number)
+ -add   : add following input to current image
+ -sub   : subtract following input from current image
+ -mul   : multiply current image by following input
+ -div   : divide current image by following input
+ -rem   : modulus remainder - divide current image by following input and take remainder
+ -mas   : use (following image>0) to mask current image
+ -thr   : threshold below the following number (zero anything below the number)
+ -thrp  : threshold below the following percentage (0-100) of ROBUST RANGE
+ -thrP  : threshold below the following percentage (0-100) of the positive voxels' ROBUST RANGE
+ -uthr  : upper-threshold above the following number (zero anything above the number)
+ -uthrp : upper-threshold above the following percentage (0-100) of the ROBUST RANGE
+ -uthrP : upper-threshold above the following percentage (0-100) of the positive voxels' ROBUST RANGE
+ -max   : take maximum of following input and current image
+ -min   : take minimum of following input and current image
+ -seed  : seed random number generator with following number
+ -restart : replace the current image with input for future processing operations
+ -save : save the current working image to the input filename
+
+Basic unary operations:
+ -exp   : exponential
+ -log   : natural logarithm
+ -sin   : sine function
+ -cos   : cosine function
+ -tan   : tangent function
+ -asin  : arc sine function
+ -acos  : arc cosine function
+ -atan  : arc tangent function
+ -sqr   : square
+ -sqrt  : square root
+ -recip : reciprocal (1/current image)
+ -abs   : absolute value
+ -bin   : use (current image>0) to binarise
+ -binv  : binarise and invert (binarisation and logical inversion)
+ -fillh : fill holes in a binary mask (holes are internal - i.e. do not touch the edge of the FOV)
+ -fillh26 : fill holes using 26 connectivity
+ -index : replace each nonzero voxel with a unique (subject to wrapping) index number
+ -grid <value> <spacing> : add a 3D grid of intensity <value> with grid spacing <spacing>
+ -edge  : edge strength
+ -dog_edge <sigma1> <sigma2> : difference of gaussians edge filter. Typical sigma1 is 1.0 and sigma2 is 1.6
+ -tfce <H> <E> <connectivity>: enhance with TFCE, e.g. -tfce 2 0.5 6 (maybe change 6 to 26 for skeletons)
+ -tfceS <H> <E> <connectivity> <X> <Y> <Z> <tfce_thresh>: show support area for voxel (X,Y,Z)
+ -nan   : replace NaNs (improper numbers) with 0
+ -nanm  : make NaN (improper number) mask with 1 for NaN voxels, 0 otherwise
+ -rand  : add uniform noise (range 0:1)
+ -randn : add Gaussian noise (mean=0 sigma=1)
+ -inm <mean> :  (-i i ip.c) intensity normalisation (per 3D volume mean)
+ -ing <mean> :  (-I i ip.c) intensity normalisation, global 4D mean)
+ -range : set the output calmin/max to full data range
+
+Matrix operations:
+ -tensor_decomp : convert a 4D (6-timepoint )tensor image into L1,2,3,FA,MD,MO,V1,2,3 (remaining image in pipeline is FA)
+
+Kernel operations (set BEFORE filtering operation if desired):
+ -kernel 3D : 3x3x3 box centered on target voxel (set as default kernel)
+ -kernel 2D : 3x3x1 box centered on target voxel
+ -kernel box    <size>     : all voxels in a cube of width <size> mm centered on target voxel
+ -kernel boxv   <size>     : all voxels in a cube of width <size> voxels centered on target voxel, CAUTION: size should be an odd number
+ -kernel boxv3  <X> <Y> <Z>: all voxels in a cuboid of dimensions X x Y x Z centered on target voxel, CAUTION: size should be an odd number
+ -kernel gauss  <sigma>    : gaussian kernel (sigma in mm, not voxels)
+ -kernel sphere <size>     : all voxels in a sphere of radius <size> mm centered on target voxel
+ -kernel file   <filename> : use external file as kernel
+
+Spatial Filtering operations: N.B. all options apart from -s use the default kernel or that _previously_ specified by -kernel
+ -dilM    : Mean Dilation of non-zero voxels
+ -dilD    : Modal Dilation of non-zero voxels
+ -dilF    : Maximum filtering of all voxels
+ -dilall  : Apply -dilM repeatedly until the entire FOV is covered
+ -ero     : Erode by zeroing non-zero voxels when zero voxels found in kernel
+ -eroF    : Minimum filtering of all voxels
+ -fmedian : Median Filtering
+ -fmean   : Mean filtering, kernel weighted (conventionally used with gauss kernel)
+ -fmeanu  : Mean filtering, kernel weighted, un-normalised (gives edge effects)
+ -s <sigma> : create a gauss kernel of sigma mm and perform mean filtering
+ -subsamp2  : downsamples image by a factor of 2 (keeping new voxels centred on old)
+ -subsamp2offc  : downsamples image by a factor of 2 (non-centred)
+
+Dimensionality reduction operations:
+  (the "T" can be replaced by X, Y or Z to collapse across a different dimension)
+ -Tmean   : mean across time
+ -Tstd    : standard deviation across time
+ -Tmax    : max across time
+ -Tmaxn   : time index of max across time
+ -Tmin    : min across time
+ -Tmedian : median across time
+ -Tperc <percentage> : nth percentile (0-100) of FULL RANGE across time
+ -Tar1    : temporal AR(1) coefficient (use -odt float and probably demean first)
+
+Basic statistical operations:
+ -pval    : Nonparametric uncorrected P-value, assuming timepoints are the permutations; first timepoint is actual (unpermuted) stats image
+ -pval0   : Same as -pval, but treat zeros as missing data
+ -cpval   : Same as -pval, but gives FWE corrected P-values
+ -ztop    : Convert Z-stat to (uncorrected) P
+ -ptoz    : Convert (uncorrected) P to Z
+ -rank    : Convert data to ranks (over T dim)
+ -ranknorm: Transform to Normal dist via ranks
+
+Multi-argument operations:
+ -roi <xmin> <xsize> <ymin> <ysize> <zmin> <zsize> <tmin> <tsize> : zero outside roi (using voxel coordinates). Inputting -1 for a size will set it to the full image extent for that dimension.
+ -bptf  <hp_sigma> <lp_sigma> : (-t in ip.c) Bandpass temporal filtering; nonlinear highpass and Gaussian linear lowpass (with sigmas in volumes, not seconds); set either sigma<0 to skip that filter
+ -roc <AROC-thresh> <outfile> [4Dnoiseonly] <truth> : take (normally binary) truth and test current image in ROC analysis against truth. <AROC-thresh> is usually 0.05 and is limit of Area-under-ROC measure FP axis. <outfile> is a text file of the ROC curve (triplets of values: FP TP threshold). If the truth image contains negative voxels these get excluded from all calculations. If <AROC-thresh> is positive then the [4Dnoiseonly] option needs to be set, and the FP rate is determined from this noise-only data, and is set to be the fraction of timepoints where any FP (anywhere) is seen, as found in the noise-only 4d-dataset. This is then controlling the FWE rate. If <AROC-thresh> is negative the FP rate is calculated from the zero-value parts of the <truth> image, this time averaging voxelwise FP rate over all timepoints. In both cases the TP rate is the average fraction of truth=positive voxels correctly found.
+
+Combining 4D and 3D images:
+ If you apply a Binary operation (one that takes the current image and a new image together), when one is 3D and the other is 4D,
+ the 3D image is cloned temporally to match the temporal dimensions of the 4D image.
+
+e.g. fslmaths inputVolume -add inputVolume2 output_volume
+     fslmaths inputVolume -add 2.5 output_volume
+     fslmaths inputVolume -add 2.5 -mul inputVolume2 output_volume
+
+     fslmaths 4D_inputVolume -Tmean -mul -1 -add 4D_inputVolume demeaned_4D_inputVolume
+
+EXIT 0
+
+=== ants/2.5.3 ===
+ANTs Version: 2.5.3-g98bf76d
+Compiled: Sep 24 2024 23:37:31
+
+EXIT 0
+
+=== freesurfer/7.3.2 ===
+freesurfer-linux-centos8_x86_64-7.3.2-20220804-6354275
+EXIT 0
+
+=== fmriprep/25.2.7 ===
+usage: fmriprep [-h] [--skip_bids_validation]
+                [--participant-label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]]
+                [--session-label SESSION_LABEL [SESSION_LABEL ...]]
+                [-t TASK_ID] [--echo-idx ECHO_IDX]
+                [--subject-anatomical-reference {first-lex,unbiased,sessionwise}]
+                [--track-sessions | --no-track-sessions]
+                [--bids-filter-file FILE] [-d PACKAGE=PATH [PACKAGE=PATH ...]]
+                [--bids-database-dir PATH] [--nprocs NPROCS]
+                [--omp-nthreads OMP_NTHREADS] [--mem MEMORY_MB] [--low-mem]
+                [--use-plugin FILE] [--sloppy] [--anat-only]
+                [--level {minimal,resampling,full}] [--boilerplate-only]
+                [--reports-only]
+                [--ignore {fieldmaps,slicetiming,sbref,t2w,flair,fmap-jacobian} [{fieldmaps,slicetiming,sbref,t2w,flair,fmap-jacobian} ...]]
+                [--force {bbr,no-bbr,syn-sdc,fmap-jacobian} [{bbr,no-bbr,syn-sdc,fmap-jacobian} ...]]
+                [--output-spaces [OUTPUT_SPACES ...]]
+                [--longitudinal LONGITUDINAL]
+                [--bold2anat-init {auto,t1w,t2w,header}]
+                [--bold2anat-dof {6,9,12}] [--force-bbr FORCE_BBR]
+                [--force-no-bbr FORCE_NO_BBR]
+                [--slice-time-ref SLICE_TIME_REF] [--dummy-scans DUMMY_SCANS]
+                [--fallback-total-readout-time FALLBACK_TOTAL_READOUT_TIME]
+                [--random-seed _RANDOM_SEED]
+                [--me-t2s-fit-method {curvefit,loglin}]
+                [--output-layout {bids,legacy}] [--me-output-echos]
+                [--aggregate-session-reports AGGR_SES_REPORTS]
+                [--medial-surface-nan] [--project-goodvoxels]
+                [--md-only-boilerplate] [--cifti-output [{91k,170k}]]
+                [--msm | --no-msm] [--return-all-components]
+                [--fd-spike-threshold REGRESSORS_FD_TH]
+                [--dvars-spike-threshold REGRESSORS_DVARS_TH]
+                [--skull-strip-template SKULL_STRIP_TEMPLATE]
+                [--skull-strip-fixed-seed]
+                [--skull-strip-t1w {auto,skip,force}] [--fmap-bspline]
+                [--fmap-no-demean] [--use-syn-sdc [{warn,error}]]
+                [--force-syn FORCE_SYN] [--fs-license-file FILE]
+                [--fs-subjects-dir PATH] [--submm-recon | --no-submm-recon]
+                [--fs-no-reconall] [--fs-no-resume] [--track-carbon]
+                [--country-code COUNTRY_CODE] [--version] [-v] [-w WORK_DIR]
+                [--clean-workdir] [--resource-monitor] [--config-file FILE]
+                [--write-graph] [--stop-on-first-crash] [--notrack]
+                [--debug {compcor,fieldmaps,pdb,all} [{compcor,fieldmaps,pdb,all} ...]]
+                bids_dir output_dir {participant}
+
+fMRIPrep: fMRI PREProcessing workflows v25.2.7
+
+positional arguments:
+  bids_dir              The root folder of a BIDS valid dataset (sub-XXXXX
+                        folders should be found at the top level in this
+                        folder).
+  output_dir            The output path for the outcomes of preprocessing and
+                        visual reports
+  {participant}         Processing stage to be run, only "participant" in the
+                        case of fMRIPrep (see BIDS-Apps specification).
+
+options:
+  -h, --help            show this help message and exit
+
+Options for filtering BIDS queries:
+  --skip_bids_validation, --skip-bids-validation
+                        Assume the input dataset is BIDS compliant and skip
+                        the validation (default: False)
+  --participant-label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...], --participant_label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]
+                        A space delimited list of participant identifiers or a
+                        single identifier (the sub- prefix can be removed)
+                        (default: None)
+  --session-label SESSION_LABEL [SESSION_LABEL ...]
+                        A space delimited list of session identifiers or a
+                        single identifier (the ses- prefix can be removed)
+                        (default: None)
+  -t TASK_ID, --task-id TASK_ID
+                        Select a specific task to be processed (default: None)
+  --echo-idx ECHO_IDX   Select a specific echo to be processed in a multiecho
+                        series (default: None)
+  --subject-anatomical-reference {first-lex,unbiased,sessionwise}
+                        Method to produce the reference anatomical space:
+                        "first-lex" will use the first image in
+                        lexicographical order "unbiased" will construct an
+                        unbiased template from all images (previously "--
+                        longitudinal") "sessionwise" will independently
+                        process each session. If multiple runs are found, the
+                        behavior will be similar to "first-lex" for each
+                        session. (default: first-lex)
+  --track-sessions, --no-track-sessions
+                        Track and append session IDs. If disabled, sessions
+                        will not be tracked nor appended to FreeSurfer subject
+                        ID. (default: True)
+  --bids-filter-file FILE
+                        A JSON file describing custom BIDS input filters using
+                        PyBIDS. For further details, please check out https://
+                        fmriprep.readthedocs.io/en/25.2.7/faq.html#how-do-I-
+                        select-only-certain-files-to-be-input-to-fMRIPrep
+                        (default: None)
+  -d PACKAGE=PATH [PACKAGE=PATH ...], --derivatives PACKAGE=PATH [PACKAGE=PATH ...]
+                        Search PATH(s) for pre-computed derivatives. These may
+                        be provided as named folders (e.g., `--derivatives
+                        smriprep=/path/to/smriprep`). (default: None)
+  --bids-database-dir PATH
+                        Path to a PyBIDS database folder, for faster indexing
+                        (especially useful for large datasets). Will be
+                        created if not present. (default: None)
+
+Options to handle performance:
+  --nprocs NPROCS, --nthreads NPROCS, --n_cpus NPROCS, --n-cpus NPROCS
+                        Maximum number of threads across all processes
+                        (default: None)
+  --omp-nthreads OMP_NTHREADS
+                        Maximum number of threads per-process (default: None)
+  --mem MEMORY_MB, --mem_mb MEMORY_MB, --mem-mb MEMORY_MB
+                        Upper bound memory limit for fMRIPrep processes
+                        (default: None)
+  --low-mem             Attempt to reduce memory usage (will increase disk
+                        usage in working directory) (default: False)
+  --use-plugin FILE, --nipype-plugin-file FILE
+                        Nipype plugin configuration file (default: None)
+  --sloppy              Use low-quality tools for speed - TESTING ONLY
+                        (default: False)
+
+Options for performing only a subset of the workflow:
+  --anat-only           Run anatomical workflows only (default: False)
+  --level {minimal,resampling,full}
+                        Processing level; may be 'minimal' (nothing that can
+                        be recomputed), 'resampling' (recomputable targets
+                        that aid in resampling) or 'full' (all target
+                        outputs). (default: full)
+  --boilerplate-only, --boilerplate_only
+                        Generate boilerplate only (default: False)
+  --reports-only        Only generate reports, don't run workflows. This will
+                        only rerun report aggregation, not reportlet
+                        generation for specific nodes. (default: False)
+
+Workflow configuration:
+  --ignore {fieldmaps,slicetiming,sbref,t2w,flair,fmap-jacobian} [{fieldmaps,slicetiming,sbref,t2w,flair,fmap-jacobian} ...]
+                        Ignore selected aspects of the input dataset to
+                        disable corresponding parts of the workflow (a space
+                        delimited list) (default: [])
+  --force {bbr,no-bbr,syn-sdc,fmap-jacobian} [{bbr,no-bbr,syn-sdc,fmap-jacobian} ...]
+                        Force selected processing choices, overriding
+                        automatic selections (a space delimited list). *
+                        [no-]bbr: Use/disable boundary-based registration for
+                        BOLD-to-T1w coregistration (No goodness-of-fit checks)
+                        * syn-sdc: Calculate SyN-SDC correction *in addition*
+                        to other fieldmaps (default: [])
+  --output-spaces [OUTPUT_SPACES ...]
+                        Standard and non-standard spaces to resample
+                        anatomical and functional images to. Standard spaces
+                        may be specified by the form
+                        ``<SPACE>[:cohort-<label>][:res-<resolution>][...]``,
+                        where ``<SPACE>`` is a keyword designating a spatial
+                        reference, and may be followed by optional, colon-
+                        separated parameters. Non-standard spaces imply
+                        specific orientations and sampling grids. Important to
+                        note, the ``res-*`` modifier does not define the
+                        resolution used for the spatial normalization. To
+                        generate no BOLD outputs, use this option without
+                        specifying any spatial references. For further
+                        details, please check out
+                        https://fmriprep.readthedocs.io/en/25.2.7/spaces.html
+                        (default: None)
+  --longitudinal LONGITUDINAL
+                        Deprecated - use `--subject-anatomical-reference
+                        unbiased` instead (default: None)
+  --bold2anat-init {auto,t1w,t2w,header}
+                        Method of initial BOLD to anatomical coregistration.
+                        If `auto`, a T2w image is used if available, otherwise
+                        the T1w image. `t1w` forces use of the T1w, `t2w`
+                        forces use of the T2w, and `header` uses the BOLD
+                        header information without an initial registration.
+                        (default: auto)
+  --bold2anat-dof {6,9,12}
+                        Degrees of freedom when registering BOLD to anatomical
+                        images. 6 degrees (rotation and translation) are used
+                        by default. (default: 6)
+  --force-bbr FORCE_BBR
+                        Deprecated - use `--force bbr` instead. (default:
+                        None)
+  --force-no-bbr FORCE_NO_BBR
+                        Deprecated - use `--force no-bbr` instead. (default:
+                        None)
+  --slice-time-ref SLICE_TIME_REF
+                        The time of the reference slice to correct BOLD values
+                        to, as a fraction acquisition time. 0 indicates the
+                        start, 0.5 the midpoint, and 1 the end of acquisition.
+                        The alias `start` corresponds to 0, and `middle` to
+                        0.5. The default value is 0.5. (default: 0.5)
+  --dummy-scans DUMMY_SCANS
+                        Number of nonsteady-state volumes. Overrides automatic
+                        detection. (default: None)
+  --fallback-total-readout-time FALLBACK_TOTAL_READOUT_TIME
+                        Fallback value for Total Readout Time (TRT)
+                        calculation. May be a number or "estimated". (default:
+                        None)
+  --random-seed _RANDOM_SEED
+                        Initialize the random seed for the workflow (default:
+                        None)
+  --me-t2s-fit-method {curvefit,loglin}
+                        The method by which to estimate T2* and S0 for multi-
+                        echo data. 'curvefit' uses nonlinear regression. It is
+                        more memory intensive, but also may be more accurate,
+                        than 'loglin'. 'loglin' uses log-linear regression. It
+                        is faster and less memory intensive, but may be less
+                        accurate. (default: curvefit)
+  --project-goodvoxels  Exclude voxels whose timeseries have locally high
+                        coefficient of variation from surface resampling. Only
+                        performed for GIFTI files mapped to a freesurfer
+                        subject (fsaverage or fsnative). (default: False)
+
+Options for modulating outputs:
+  --output-layout {bids,legacy}
+                        Organization of outputs. "bids" (default) places
+                        fMRIPrep derivatives directly in the output directory,
+                        and defaults to placing FreeSurfer derivatives in
+                        <output-dir>/sourcedata/freesurfer. "legacy" creates
+                        derivative datasets as subdirectories of outputs.
+                        (default: bids)
+  --me-output-echos     Output individual echo time series with slice, motion
+                        and susceptibility correction. Useful for further
+                        Tedana processing post-fMRIPrep. (default: False)
+  --aggregate-session-reports AGGR_SES_REPORTS
+                        Maximum number of sessions aggregated in one subject's
+                        visual report. If exceeded, visual reports are split
+                        by session. (default: 4)
+  --medial-surface-nan  Replace medial wall values with NaNs on functional
+                        GIFTI files. Only performed for GIFTI files mapped to
+                        a freesurfer subject (fsaverage or fsnative).
+                        (default: False)
+  --md-only-boilerplate
+                        Skip generation of HTML and LaTeX formatted citation
+                        with pandoc (default: False)
+  --cifti-output [{91k,170k}]
+                        Output preprocessed BOLD as a CIFTI dense timeseries.
+                        Optionally, the number of grayordinate can be
+                        specified (default is 91k, which equates to 2mm
+                        resolution) (default: False)
+  --msm, --no-msm       Enable or disable Multimodal Surface Matching surface
+                        registration. (default: True)
+
+Options relating to confounds:
+  --return-all-components
+                        Include all components estimated in CompCor
+                        decomposition in the confounds file instead of only
+                        the components sufficient to explain 50 percent of
+                        BOLD variance in each CompCor mask (default: False)
+  --fd-spike-threshold REGRESSORS_FD_TH
+                        Threshold for flagging a frame as an outlier on the
+                        basis of framewise displacement (default: 0.5)
+  --dvars-spike-threshold REGRESSORS_DVARS_TH
+                        Threshold for flagging a frame as an outlier on the
+                        basis of standardised DVARS (default: 1.5)
+
+Specific options for ANTs registrations:
+  --skull-strip-template SKULL_STRIP_TEMPLATE
+                        Select a template for skull-stripping with
+                        antsBrainExtraction (OASIS30ANTs, by default)
+                        (default: OASIS30ANTs)
+  --skull-strip-fixed-seed
+                        Do not use a random seed for skull-stripping - will
+                        ensure run-to-run replicability when used with --omp-
+                        nthreads 1 and matching --random-seed <int> (default:
+                        False)
+  --skull-strip-t1w {auto,skip,force}
+                        Perform T1-weighted skull stripping ('force' ensures
+                        skull stripping, 'skip' ignores skull stripping, and
+                        'auto' applies brain extraction based on the outcome
+                        of a heuristic to check whether the brain is already
+                        masked). (default: force)
+
+Specific options for handling fieldmaps:
+  --fmap-bspline        Fit a B-Spline field using least-squares
+                        (experimental) (default: False)
+  --fmap-no-demean      Do not remove median (within mask) from fieldmap
+                        (default: True)
+
+Specific options for SyN distortion correction:
+  --use-syn-sdc [{warn,error}]
+                        Use fieldmap-less distortion correction based on
+                        anatomical image; if unable, error (default) or warn
+                        based on optional argument. (default: False)
+  --force-syn FORCE_SYN
+                        Deprecated - use `--force syn-sdc` instead. (default:
+                        False)
+
+Specific options for FreeSurfer preprocessing:
+  --fs-license-file FILE
+                        Path to FreeSurfer license key file. Get it (for free)
+                        by registering at
+                        https://surfer.nmr.mgh.harvard.edu/registration.html
+                        (default: None)
+  --fs-subjects-dir PATH
+                        Path to existing FreeSurfer subjects directory to
+                        reuse. (default: OUTPUT_DIR/freesurfer) (default:
+                        None)
+  --submm-recon, --no-submm-recon
+                        Enable or disable sub-millimeter (hi-res)
+                        reconstruction. (default: True)
+  --fs-no-reconall      Disable FreeSurfer surface preprocessing. (default:
+                        True)
+  --fs-no-resume        EXPERT: Import pre-computed FreeSurfer reconstruction
+                        without resuming. The user is responsible for ensuring
+                        that all necessary files are present. (default: False)
+
+Options for carbon usage tracking:
+  --track-carbon        Tracks power draws using CodeCarbon package (default:
+                        False)
+  --country-code COUNTRY_CODE
+                        Country ISO code used by carbon trackers (default:
+                        CAN)
+
+Other options:
+  --version             show program's version number and exit
+  -v, --verbose         Increases log verbosity for each occurrence, debug
+                        level is -vvv (default: 0)
+  -w WORK_DIR, --work-dir WORK_DIR
+                        Path where intermediate results should be stored
+                        (default: None)
+  --clean-workdir       Clears working directory of contents. Use of this flag
+                        is not recommended when running concurrent processes
+                        of fMRIPrep. (default: False)
+  --resource-monitor    Enable Nipype's resource monitoring to keep track of
+                        memory and CPU usage (default: False)
+  --config-file FILE    Use pre-generated configuration file. Values in file
+                        will be overridden by command-line arguments.
+                        (default: None)
+  --write-graph         Write workflow graph. (default: False)
+  --stop-on-first-crash
+                        Force stopping on first crash, even if a work
+                        directory was specified. (default: False)
+  --notrack             Opt-out of sending tracking information of this run to
+                        the FMRIPREP developers. This information helps to
+                        improve FMRIPREP and provides an indicator of real
+                        world usage crucial for obtaining funding. (default:
+                        False)
+  --debug {compcor,fieldmaps,pdb,all} [{compcor,fieldmaps,pdb,all} ...]
+                        Debug mode(s) to enable. 'all' is alias for all
+                        available modes. (default: None)
+EXIT 0
+
+=== mriqc/24.0.2 ===
+usage: mriqc [-h] [--version] [-v] [--species {human,rat}]
+             [--participant-label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]]
+             [--bids-filter-file PATH] [--session-id [SESSION_ID ...]]
+             [--run-id [RUN_ID ...]] [--task-id [TASK_ID ...]]
+             [-m [{T1w,T2w,bold,dwi} ...]] [--dsname DSNAME]
+             [--bids-database-dir PATH] [--bids-database-wipe]
+             [--no-datalad-get] [--nprocs NPROCS]
+             [--omp-nthreads OMP_NTHREADS] [--mem MEMORY_GB] [--testing] [-f]
+             [--pdb] [-w WORK_DIR] [--verbose-reports] [--reports-only]
+             [--write-graph] [--dry-run] [--resource-monitor]
+             [--use-plugin USE_PLUGIN] [--crashfile-format {txt,pklz}]
+             [--no-sub] [--email EMAIL] [--webapi-url WEBAPI_URL]
+             [--webapi-port WEBAPI_PORT] [--upload-strict] [--notrack]
+             [--ants-float] [--ants-settings ANTS_SETTINGS]
+             [--min-dwi-length MIN_LEN_DWI] [--min-bold-length MIN_LEN_BOLD]
+             [--fft-spikes-detector] [--fd_thres FD_THRES] [--deoblique]
+             [--despike] [--start-idx START_IDX] [--stop-idx STOP_IDX]
+             bids_dir output_dir {participant,group} [{participant,group} ...]
+
+MRIQC 24.1.0.dev0+gd5b13cb5.d20240826 Automated Quality Control and visual
+reports for Quality Assessment of structural (T1w, T2w) and functional MRI of
+the brain. IMPORTANT: Anonymized quality metrics (IQMs) will be submitted to
+MRIQC's metrics repository. Submission of IQMs can be disabled using the
+``--no-sub`` argument. Please visit
+https://mriqc.readthedocs.io/en/latest/dsa.html to revise MRIQC's Data Sharing
+Agreement.
+
+positional arguments:
+  bids_dir              The root folder of a BIDS valid dataset (sub-XXXXX
+                        folders should be found at the top level in this
+                        folder).
+  output_dir            The directory where the output files should be stored.
+                        If you are running group level analysis this folder
+                        should be prepopulated with the results of the
+                        participant level analysis.
+  {participant,group}   Level of the analysis that will be performed. Multiple
+                        participant level analyses can be run independently
+                        (in parallel) using the same output_dir.
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  -v, --verbose         Increases log verbosity for each occurrence, debug
+                        level is -vvv. (default: 0)
+  --species {human,rat}
+                        Use appropriate template for population (default:
+                        human)
+
+Options for filtering BIDS queries:
+  --participant-label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...], --participant_label PARTICIPANT_LABEL [PARTICIPANT_LABEL ...], --participant-labels PARTICIPANT_LABEL [PARTICIPANT_LABEL ...], --participant_labels PARTICIPANT_LABEL [PARTICIPANT_LABEL ...]
+                        A space delimited list of participant identifiers or a
+                        single identifier (the sub- prefix can be removed).
+                        (default: None)
+  --bids-filter-file PATH
+                        a JSON file describing custom BIDS input filter using
+                        pybids {<suffix>:{<entity>:<filter>,...},...}
+                        (https://github.com/bids-standard/pybids/blob/master/b
+                        ids/layout/config/bids.json) (default: None)
+  --session-id [SESSION_ID ...]
+                        Filter input dataset by session ID. (default: None)
+  --run-id [RUN_ID ...]
+                        DEPRECATED - This argument will be disabled. Use
+                        ``--bids-filter-file`` instead. (default: None)
+  --task-id [TASK_ID ...]
+                        Filter input dataset by task ID. (default: None)
+  -m [{T1w,T2w,bold,dwi} ...], --modalities [{T1w,T2w,bold,dwi} ...]
+                        Filter input dataset by MRI type. (default: ('T1w',
+                        'T2w', 'bold', 'dwi'))
+  --dsname DSNAME       A dataset name. (default: None)
+  --bids-database-dir PATH
+                        Path to an existing PyBIDS database folder, for faster
+                        indexing (especially useful for large datasets).
+                        (default: None)
+  --bids-database-wipe  Wipe out previously existing BIDS indexing caches,
+                        forcing re-indexing. (default: False)
+  --no-datalad-get      Disable attempting to get remote files in DataLad
+                        datasets. (default: True)
+
+Options to handle performance:
+  --nprocs NPROCS, --n_procs NPROCS, --n_cpus NPROCS, -n-cpus NPROCS
+                        Maximum number of simultaneously running parallel
+                        processes executed by *MRIQC* (e.g., several instances
+                        of ANTs' registration). However, when ``--nprocs`` is
+                        greater or equal to the ``--omp-nthreads`` option, it
+                        also sets the maximum number of threads that
+                        simultaneously running processes may aggregate
+                        (meaning, with ``--nprocs 16 --omp-nthreads 8`` a
+                        maximum of two 8-CPU-threaded processes will be
+                        running at a given time). Under this mode of
+                        operation, ``--nprocs`` sets the maximum number of
+                        processors that can be assigned work within an *MRIQC*
+                        job, which includes all the processors used by
+                        currently running single- and multi-threaded
+                        processes. If ``None``, the number of CPUs available
+                        will be automatically assigned (which may not be what
+                        you want in, e.g., shared systems like a HPC cluster.
+                        (default: None)
+  --omp-nthreads OMP_NTHREADS, --ants-nthreads OMP_NTHREADS
+                        Maximum number of threads that multi-threaded
+                        processes executed by *MRIQC* (e.g., ANTs'
+                        registration) can use. If ``None``, the number of CPUs
+                        available will be automatically assigned (which may
+                        not be what you want in, e.g., shared systems like a
+                        HPC cluster. (default: None)
+  --mem MEMORY_GB, --mem_gb MEMORY_GB, --mem-gb MEMORY_GB
+                        Upper bound memory limit for MRIQC processes.
+                        (default: None)
+  --testing             Use testing settings for a minimal footprint.
+                        (default: False)
+  -f, --float32         Cast the input data to float32 if it's represented in
+                        higher precision (saves space and improves
+                        performance). (default: True)
+  --pdb                 Open Python debugger (pdb) on exceptions. (default:
+                        False)
+
+Instrumental options:
+  -w WORK_DIR, --work-dir WORK_DIR
+                        Path where intermediate results should be stored.
+                        (default: /home/jovyan/work)
+  --verbose-reports
+  --reports-only
+  --write-graph         Write workflow graph. (default: False)
+  --dry-run             Do not run the workflow. (default: False)
+  --resource-monitor, --profile
+                        Hook up the resource profiler callback to nipype.
+                        (default: False)
+  --use-plugin USE_PLUGIN
+                        Nipype plugin configuration file. (default: None)
+  --crashfile-format {txt,pklz}
+                        Nipype crashfile format (default: txt)
+  --no-sub              Turn off submission of anonymized quality metrics to
+                        MRIQC's metrics repository. (default: False)
+  --email EMAIL         Email address to include with quality metric
+                        submission. (default: )
+  --webapi-url WEBAPI_URL
+                        IP address where the MRIQC WebAPI is listening.
+                        (default: None)
+  --webapi-port WEBAPI_PORT
+                        Port where the MRIQC WebAPI is listening. (default:
+                        None)
+  --upload-strict       Upload will fail if upload is strict. (default: False)
+  --notrack             Opt-out of sending tracking information of this run to
+                        the NiPreps developers. This information helps to
+                        improve MRIQC and provides an indicator of real world
+                        usage crucial for obtaining funding. (default: False)
+
+Specific settings for ANTs:
+  --ants-float          Use float number precision on ANTs computations.
+                        (default: False)
+  --ants-settings ANTS_SETTINGS
+                        Path to JSON file with settings for ANTs. (default:
+                        None)
+
+Diffusion MRI workflow configuration:
+  --min-dwi-length MIN_LEN_DWI
+                        Drop DWI runs with fewer orientations than this
+                        threshold. (default: 7)
+
+Functional MRI workflow configuration:
+  --min-bold-length MIN_LEN_BOLD
+                        Drop BOLD runs with fewer time points than this
+                        threshold. (default: 5)
+  --fft-spikes-detector
+                        Turn on FFT based spike detector (slow). (default:
+                        False)
+  --fd_thres FD_THRES   Threshold on framewise displacement estimates to
+                        detect outliers. (default: 0.2)
+  --deoblique           Deoblique the functional scans during head motion
+                        correction preprocessing. (default: False)
+  --despike             Despike the functional scans during head motion
+                        correction preprocessing. (default: False)
+  --start-idx START_IDX
+                        DEPRECATED Initial volume in functional timeseries
+                        that should be considered for preprocessing. (default:
+                        None)
+  --stop-idx STOP_IDX   DEPRECATED Final volume in functional timeseries that
+                        should be considered for preprocessing. (default:
+                        None)
+EXIT 0
+
+=== connectomeworkbench/1.5.0 ===
+Connectome Workbench
+Type: Command Line Application
+Version: 1.5.0
+Qt Compiled Version: 5.15.2
+Qt Runtime Version: 5.15.4
+Commit: unknown
+Commit Date: unknown
+Compiled with OpenMP: YES
+Compiler: c++ (/usr/bin)
+Compiler Version: 11.2.0
+Compiled Debug: NO
+Operating System: Linux
+EXIT 0
+
+=== fieldtrip/20211114 ===
+/cvmfs/neurodesk.ardc.edu.au/containers/fieldtrip_20211114_20211206/run_fieldtrip.sh
+EXIT 0
+
+=== physio/r7771 ===
+/cvmfs/neurodesk.ardc.edu.au/containers/physio_r7771_20211206/run_spm12.sh
+EXIT 0
+
+=== lcmodel/6.3 ===
+/cvmfs/neurodesk.ardc.edu.au/containers/lcmodel_6.3_20220222/setup_lcmodel.sh
+/cvmfs/neurodesk.ardc.edu.au/containers/lcmodel_6.3_20220222/lcmgui
+EXIT 0
+
+=== mne/0.23.4 ===
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import mne; print(mne.__version__)
+    ^^^^^^^^^^
+ModuleNotFoundError: No module named 'mne'
+EXIT 1
+
+=== mrsiproc/0.1.0 ===
+EXIT 1
+
+=== mfcsc/1.1 ===
+/cvmfs/neurodesk.ardc.edu.au/containers/mfcsc_1.1_20230321/mfcsc
+EXIT 0
+
+=== julia/1.13.2 ===
+julia version 1.13.2
+EXIT 0
+
+=== romeo/4.9.0 ===
+usage: <PROGRAM> [-p PHASE] [-m MAGNITUDE] [-o OUTPUT]
+                 [-t ECHO-TIMES [ECHO-TIMES...]] [-k MASK [MASK...]]
+                 [-u] [-e UNWRAP-ECHOES [UNWRAP-ECHOES...]]
+                 [-w WEIGHTS] [-B [COMPUTE-B0]]
+                 [--B0-phase-weighting B0-PHASE-WEIGHTING]
+                 [--phase-offset-correction [PHASE-OFFSET-CORRECTION]]
+                 [--phase-offset-smoothing-sigma-mm PHASE-OFFSET-SMOOTHING-SIGMA-MM [PHASE-OFFSET-SMOOTHING-SIGMA-MM...]]
+                 [--write-phase-offsets] [-i] [--template TEMPLATE]
+                 [-N] [--no-phase-rescale] [--fix-ge-phase]
+                 [--threshold THRESHOLD] [-v] [-g] [-q] [-Q]
+                 [-s MAX-SEEDS] [--merge-regions] [--correct-regions]
+                 [--wrap-addition WRAP-ADDITION]
+                 [--temporal-uncertain-unwrapping [TEMPORAL-UNCERTAIN-UNWRAPPING]]
+                 [--version] [-h]
+
+optional arguments:
+  -p, --phase PHASE     The phase image that should be unwrapped
+  -m, --magnitude MAGNITUDE
+                        The magnitude image (better unwrapping if
+                        specified)
+  -o, --output OUTPUT   The output path or filename. The unwrapped
+                        phase is written in radians, keeping the wraps
+                        that were removed as multiples of 2pi, so its
+                        range is wider than the input. (default:
+                        "unwrapped.nii")
+  -t, --echo-times ECHO-TIMES [ECHO-TIMES...]
+                        The echo times in [ms] required for temporal
+                        unwrapping specified in array or range syntax
+                        (eg. "[1.5,3.0]" or "3.5:3.5:14"). For
+                        identical echo times, "-t epi" can be used
+                        with the possibility to specify the echo time
+                        as e.g. "-t epi 5.3" (for B0 calculation).
+  -k, --mask MASK [MASK...]
+                        nomask | qualitymask <threshold> | robustmask
+                        | <mask_file>. <threshold>=0.1 for qualitymask
+                        in [0;1] (default: Any["robustmask"])
+  -u, --mask-unwrapped  Apply the mask on the unwrapped result. If
+                        mask is "nomask", sets it to "robustmask".
+  -e, --unwrap-echoes UNWRAP-ECHOES [UNWRAP-ECHOES...]
+                        Load only the specified echoes from disk
+                        (default: Any[":"])
+  -w, --weights WEIGHTS
+                        romeo | romeo2 | romeo3 | romeo4 | romeo6 |
+                        bestpath | <4d-weights-file> | <flags>.
+                        <flags> are up to 6 bits to activate
+                        individual weights (eg. "1010"). The weights
+                        are (1)phasecoherence
+                        (2)phasegradientcoherence (3)phaselinearity
+                        (4)magcoherence (5)magweight (6)magweight2
+                        (default: "romeo")
+  -B, --compute-B0 [COMPUTE-B0]
+                        Calculate combined B0 map in [Hz]. Supports
+                        the B0 output filename as optional input. This
+                        activates MCPC3Ds phase offset correction
+                        (monopolar) for multi-echo data. (default: "",
+                        without arg: "B0")
+  --B0-phase-weighting B0-PHASE-WEIGHTING
+                        phase_snr | phase_var | average | TEs | mag |
+                        simulated_mag Set the weighting for the B0
+                        calculation. (default: "phase_snr")
+  --phase-offset-correction [PHASE-OFFSET-CORRECTION]
+                        on | off | bipolar. Applies the MCPC3Ds method
+                        to perform phase offset determination and
+                        removal (for multi-echo). "bipolar" removes
+                        eddy current artefacts (requires >= 3 echoes).
+                        (default: "default off", without arg: "on")
+  --phase-offset-smoothing-sigma-mm PHASE-OFFSET-SMOOTHING-SIGMA-MM [PHASE-OFFSET-SMOOTHING-SIGMA-MM...]
+                        default: [7,7,7] Only applied if
+                        phase-offset-correction is activated. The
+                        given sigma size is divided by the voxel size
+                        from the nifti phase file to obtain a
+                        smoothing size in voxels. A value of [0,0,0]
+                        deactivates phase offset smoothing (not
+                        recommended). The 7mm default assumes a
+                        whole-head field of view. On a small field of
+                        view (ex vivo, small animal, a single slab)
+                        7mm covers a large part of the object, which
+                        smooths away the phase offset structure it is
+                        meant to capture and leaves a gradient across
+                        the fieldmap. Reduce it to a few voxels in
+                        that case, and use 0 for a dimension with a
+                        single slice.
+  --write-phase-offsets
+                        Saves the estimated phase offsets to the
+                        output folder
+  -i, --individual-unwrapping
+                        Unwraps the echoes individually (not
+                        temporal). This might be necessary if there is
+                        large movement (timeseries) or
+                        phase-offset-correction is not applicable.
+  --template TEMPLATE   Template echo that is spatially unwrapped and
+                        used for temporal unwrapping (type: Int64,
+                        default: 1)
+  -N, --no-mmap         Deactivate memory mapping. Memory mapping
+                        might cause problems on network storage
+  --no-phase-rescale, --no-rescale
+                        Deactivate rescaling of input images. By
+                        default the input phase is rescaled to the
+                        range [-π;π]. This option allows inputting
+                        already unwrapped phase images without
+                        manually wrapping them first.
+  --fix-ge-phase        GE systems write corrupted phase output (slice
+                        jumps). This option fixes the phase problems.
+  --threshold THRESHOLD
+                        <maximum number of wraps>. Threshold the
+                        unwrapped phase to the maximum number of wraps
+                        and sets exceeding values to 0 (type: Float64,
+                        default: Inf)
+  -v, --verbose         verbose output messages
+  -g, --correct-global  Phase is corrected to remove global n2π phase
+                        offset. The median of phase values (inside
+                        mask if given) is used to calculate the
+                        correction term. This also corrects multi-echo
+                        phase for individual unwrapping, and might
+                        require MCPC3Ds phase offset correction.
+  -q, --write-quality   Writes out the ROMEO quality map as a 3D image
+                        with one value per voxel
+  -Q, --write-quality-all
+                        Writes out an individual quality map for each
+                        of the ROMEO weights.
+  -s, --max-seeds MAX-SEEDS
+                        EXPERIMENTAL! Sets the maximum number of seeds
+                        for unwrapping. Higher values allow more
+                        seperated regions. (type: Int64, default: 1)
+  --merge-regions       EXPERIMENTAL! Spatially merges neighboring
+                        regions after unwrapping.
+  --correct-regions     EXPERIMENTAL! Performed after merging. Brings
+                        the median of each region closest to 0 (mod
+                        2π).
+  --wrap-addition WRAP-ADDITION
+                        [0;π] EXPERIMENTAL! Usually the true phase
+                        difference of neighboring voxels cannot exceed
+                        π to be able to unwrap them. This setting
+                        increases the limit and uses 'linear
+                        unwrapping' of 3 voxels in a line. Neighbors
+                        can have (π + wrap-addition) phase difference.
+                        (type: Float64, default: 0.0)
+  --temporal-uncertain-unwrapping [TEMPORAL-UNCERTAIN-UNWRAPPING]
+                        EXPERIMENTAL! Uses spatial unwrapping on
+                        voxels that have low quality values after
+                        temporal unwrapping. A higher threshold leads
+                        to more voxels being spatially unwrapped. The
+                        range of the threshold is [0;1] (type:
+                        Float64, default: 0.0, without arg: 0.5)
+  --version             show version information and exit
+  -h, --help            show this help message and exit
+
+EXIT 0
+
+=== clearswi/1.7.0 ===
+CLEARSWI imported
+EXIT 0

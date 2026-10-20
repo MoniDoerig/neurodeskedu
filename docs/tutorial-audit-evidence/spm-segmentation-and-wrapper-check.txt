@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# neurodesk-artifact-v2
+_neurodesk_wrapper=$(readlink -f -- "${BASH_SOURCE[0]}") || exit 2
+_neurodesk_dir=$(cd "$(dirname "$_neurodesk_wrapper")" && pwd -P) || exit 2
+source "$_neurodesk_dir/container_runtime.sh" || exit 2
+neurodesk_container exec "$_neurodesk_dir/"matlab_2022a_20231207.simg matlab "$@"
+rsub-08_T1w_seg8.mat
+c3rsub-08_T1w.nii
+y_rsub-08_T1w.nii
+rsub-08_T1w.nii
+c1rsub-08_T1w.nii
+c4rsub-08_T1w.nii
+c5rsub-08_T1w.nii
+c2rsub-08_T1w.nii
+sub-08_T1w.nii
+mrsub-08_T1w.nii

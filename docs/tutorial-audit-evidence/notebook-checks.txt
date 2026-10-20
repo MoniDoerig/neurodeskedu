@@ -1,0 +1,121 @@
+
+=== MySt_neurodesk ===
+[NbConvertApp] Converting notebook /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/MySt_neurodesk.ipynb to notebook
+[NbConvertApp] Writing 7182 bytes to /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/MySt_neurodesk-executed.ipynb
+EXIT 0
+
+=== RISE_slideshow ===
+[NbConvertApp] Converting notebook /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/RISE_slideshow.ipynb to notebook
+/opt/conda/lib/python3.13/site-packages/nbformat/validator.py:434: MissingIDFieldWarning: Cell is missing an id field, this will become a hard error in future nbformat versions. You may want to use `normalize()` on your notebooks before validations (available since nbformat 5.1.4). Previous versions of nbformat are fixing this issue transparently, and will stop doing so in the future.
+  _validate(nbdict, ref, version, version_minor, relax_add_props)
+[NbConvertApp] Writing 4199 bytes to /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/RISE_slideshow-executed.ipynb
+EXIT 0
+
+=== accessing_neurodesk_tools ===
+[NbConvertApp] Converting notebook /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/accessing_neurodesk_tools.ipynb to notebook
+[NbConvertApp] ERROR | No such kernel named conda-base-py
+Traceback (most recent call last):
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/manager.py", line 107, in wrapper
+    out = await method(self, *args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/manager.py", line 528, in _async_start_kernel
+    kernel_cmd, kw = await self._async_pre_start_kernel(**kw)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/manager.py", line 490, in _async_pre_start_kernel
+    self.kernel_spec,
+    ^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/manager.py", line 267, in kernel_spec
+    self._kernel_spec = self.kernel_spec_manager.get_kernel_spec(self.kernel_name)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/kernelspec.py", line 295, in get_kernel_spec
+    raise NoSuchKernel(kernel_name)
+jupyter_client.kernelspec.NoSuchKernel: No such kernel named conda-base-py
+Traceback (most recent call last):
+  File "/opt/conda/bin/jupyter-nbconvert", line 10, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_core/application.py", line 284, in launch_instance
+    super().launch_instance(argv=argv, **kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/traitlets/config/application.py", line 1080, in launch_instance
+    app.start()
+    ~~~~~~~~~^^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/nbconvertapp.py", line 420, in start
+    self.convert_notebooks()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/nbconvertapp.py", line 597, in convert_notebooks
+    self.convert_single_notebook(notebook_filename)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/nbconvertapp.py", line 563, in convert_single_notebook
+    output, resources = self.export_single_notebook(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources, input_buffer=input_buffer
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/nbconvertapp.py", line 487, in export_single_notebook
+    output, resources = self.exporter.from_filename(
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        notebook_filename, resources=resources
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/exporters/exporter.py", line 201, in from_filename
+    return self.from_file(f, resources=resources, **kw)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/exporters/exporter.py", line 220, in from_file
+    return self.from_notebook_node(
+           ~~~~~~~~~~~~~~~~~~~~~~~^
+        nbformat.read(file_stream, as_version=4), resources=resources, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/exporters/notebook.py", line 36, in from_notebook_node
+    nb_copy, resources = super().from_notebook_node(nb, resources, **kw)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/exporters/exporter.py", line 154, in from_notebook_node
+    nb_copy, resources = self._preprocess(nb_copy, resources)
+                         ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/exporters/exporter.py", line 353, in _preprocess
+    nbc, resc = preprocessor(nbc, resc)
+                ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/preprocessors/base.py", line 48, in __call__
+    return self.preprocess(nb, resources)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/nbconvert/preprocessors/execute.py", line 97, in preprocess
+    with self.setup_kernel():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/opt/conda/lib/python3.13/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/opt/conda/lib/python3.13/site-packages/nbclient/client.py", line 600, in setup_kernel
+    self.start_new_kernel(**kwargs)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_core/utils/__init__.py", line 165, in wrapped
+    return loop.run_until_complete(inner)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/conda/lib/python3.13/asyncio/base_events.py", line 726, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/opt/conda/lib/python3.13/site-packages/nbclient/client.py", line 550, in async_start_new_kernel
+    await ensure_async(self.km.start_kernel(extra_arguments=self.extra_arguments, **kwargs))
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_core/utils/__init__.py", line 214, in ensure_async
+    result = await obj
+             ^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/manager.py", line 116, in wrapper
+    raise e
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/manager.py", line 107, in wrapper
+    out = await method(self, *args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/manager.py", line 528, in _async_start_kernel
+    kernel_cmd, kw = await self._async_pre_start_kernel(**kw)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/manager.py", line 490, in _async_pre_start_kernel
+    self.kernel_spec,
+    ^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/manager.py", line 267, in kernel_spec
+    self._kernel_spec = self.kernel_spec_manager.get_kernel_spec(self.kernel_name)
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.13/site-packages/jupyter_client/kernelspec.py", line 295, in get_kernel_spec
+    raise NoSuchKernel(kernel_name)
+jupyter_client.kernelspec.NoSuchKernel: No such kernel named conda-base-py
+EXIT 1

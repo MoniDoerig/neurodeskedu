@@ -1,0 +1,61 @@
+get(ok): sub-08/func/sub-08_task-flanker_run-1_bold.nii.gz (file) [from s3-PUBLIC...]
+get(ok): sub-08/func/sub-08_task-flanker_run-2_bold.nii.gz (file) [from s3-PUBLIC...]
+action summary:
+  get (ok: 2)
+-------------------------------------------------------------
+   /cvmfs/neurodesk.ardc.edu.au/neurodesk-modules/functional_imaging/physio/r7771:
+-------------------------------------------------------------
+whatis("physio_r7771_20211206.simg")
+prepend_path("PATH","/cvmfs/neurodesk.ardc.edu.au/containers/physio_r7771_20211206")
+
+-------------------------------------------------------------
+   /cvmfs/neurodesk.ardc.edu.au/neurodesk-modules/functional_imaging/spm12/r7771.lua:
+-------------------------------------------------------------
+help([[----------------------------------
+## spm12/r7771 ##
+SPM12 standalone with Matlab Compiler Runtime included
+
+Example:
+```
+run_spm12.sh /opt/mcr/v97/
+```
+
+Example with nipype:
+```
+pip install osfclient
+
+osf -p bt4ez fetch TOMCAT_DIB/sub-01/ses-01_7T/anat/sub-01_ses-01_7T_T1w_defaced.nii.gz /neurodesktop-storage/sub-01_ses-01_7T_T1w_defaced.nii.gz
+
+gunzip /neurodesktop-storage/sub-01_ses-01_7T_T1w_defaced.nii.gz
+
+python
+```
+```
+import nipype.interfaces.spm as spm
+
+matlab_cmd = 'run_spm12.sh /opt/mcr/v97/ script'
+spm.SPMCommand.set_mlab_paths(matlab_cmd=matlab_cmd, use_mcr=True)
+
+norm12 = spm.Normalize12()
+norm12.inputs.image_to_align = '/neurodesktop-storage/sub-01_ses-01_7T_T1w_defaced.nii'
+norm12.run()
+```
+
+More documentation can be found here: https://www.fil.ion.ucl.ac.uk/spm/doc/
+
+To run container outside of this environment: ml spm12/r7771
+
+----------------------------------]])
+whatis("spm12_r7771_20260708.simg")
+prepend_path("PATH","/cvmfs/neurodesk.ardc.edu.au/containers/spm12_r7771_20260708")
+setenv("NEURODESK_IMAGE_73706D31322F7237373731","/cvmfs/neurodesk.ardc.edu.au/containers/spm12_r7771_20260708/spm12_r7771_20260708.simg")
+whatis("Commands: run_spm12.sh, spm12")
+setenv("FORCE_SPMMCR","1")
+setenv("SPMMCRCMD","run_spm12.sh /opt/mcr/v97/ script")
+
+-------------------------------------------------------------
+   /cvmfs/neurodesk.ardc.edu.au/neurodesk-modules/spectroscopy/lcmodel/6.3:
+-------------------------------------------------------------
+whatis("lcmodel_6.3_20220222.simg")
+whatis("Commands: cat-paged-ps, kecc, lcmgui, lcmodel, license, makebasis, plotraw, run-batch, setup_lcmodel.sh, testrun, time-testrun")
+prepend_path("PATH","/cvmfs/neurodesk.ardc.edu.au/containers/lcmodel_6.3_20220222")

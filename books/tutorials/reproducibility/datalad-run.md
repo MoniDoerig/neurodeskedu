@@ -40,14 +40,14 @@ many things including an analysis project. Let's go to the Neurodesktop storage
 and create a dataset for some project. Open a terminal and enter these commands:
 
 ```
-$ cd /storage
+$ cd ~/neurodesktop-storage
 
 $ datalad create -c yoda SomeProject
-[INFO   ] Creating a new annex repo at /home/user/Desktop/storage/SomeProject
+[INFO   ] Creating a new annex repo at /home/jovyan/neurodesktop-storage/SomeProject
 [INFO   ] Running procedure cfg_yoda
 [INFO   ] == Command start (output follows) =====
 [INFO   ] == Command exit (modification check follows) =====
-create(ok): /home/user/Desktop/storage/SomeProject (dataset)
+create(ok): /home/jovyan/neurodesktop-storage/SomeProject (dataset)
 ```
 
 ```{admonition} yoda?
@@ -104,8 +104,8 @@ or clean them.
 
 ```
 $ datalad status
-untracked: /home/user/Desktop/storage/SomeProject/code/hello.jl (file)
-untracked: /home/user/Desktop/storage/SomeProject/hello.txt (file)
+untracked: /home/jovyan/neurodesktop-storage/SomeProject/code/hello.jl (file)
+untracked: /home/jovyan/neurodesktop-storage/SomeProject/hello.txt (file)
 
 $ datalad save -m 'hello script' code/
 add(ok): code/hello.jl (file)
