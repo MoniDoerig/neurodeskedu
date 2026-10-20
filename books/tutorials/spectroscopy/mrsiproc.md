@@ -1,16 +1,33 @@
 ---
-title: "Spectroscopy pipeline"
-linkTitle: "mrsiproc"
+title: Spectroscopy pipeline
+linkTitle: mrsiproc
 weight: 1
-tags: ["mrsiproc"]
-author: Korbinian Eckstein
+tags:
+- mrsiproc
 aliases:
 - /tutorials/spectroscopy/mrsiproc
-description: >
-  Using mrsiproc, you can reconstruct and analyze MR spectroscopy data.
+description: Using mrsiproc, you can reconstruct and analyze MR spectroscopy data.
+authors:
+- name: Korbinian Eckstein
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
-
 # Spectroscopy pipeline
+
+**Authors:** Korbinian Eckstein, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Launch the MRSI processing environment.
+- Identify the inputs needed by the processing scripts.
+- Locate output maps and distinguish preparation from a completed analysis.
+:::
+
 
 Using mrsiproc, you can reconstruct and analyze MR spectroscopy data.
 
@@ -39,7 +56,7 @@ Part2_EvaluateMRSI.sh [ARGUMENTS]
 
 After starting Neurodesk, a JupyterLab instance should open. You can either work from here or open a desktop environment by clicking **Neurodesktop RDP** or **Neurodesktop VNC** under **Neurodesk** in the Launcher. This tutorial uses the desktop.
 
-![JupyterLab](/static/tutorials/spectroscopy/mrsiproc/jupyterlab.png 'JupyterLab')
+![JupyterLab](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/neurodesktop-launcher-desktop.png 'JupyterLab')
 
 ## Running MRSI reconstruction
 

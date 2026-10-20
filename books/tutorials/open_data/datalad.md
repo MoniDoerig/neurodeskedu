@@ -1,16 +1,33 @@
 ---
-title: "datalad"
-linkTitle: "datalad"
+title: datalad
+linkTitle: datalad
 weight: 1
-tags: ["datalad"]
-author: Steffen Bollmann
+tags:
+- datalad
 aliases:
 - /tutorials/open_data/datalad
-description: >
-  Using datalad to publish and access open data on OSF
+description: Using datalad to publish and access open data on OSF
+authors:
+- name: Steffen Bollmann
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
-
 # datalad
+
+**Authors:** Steffen Bollmann, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Clone an open dataset and distinguish file metadata from file content.
+- Retrieve selected data and record local changes.
+- Understand when DataLad differs from a simple file download.
+:::
+
 
 Using datalad to publish and access open data on OSF.
 

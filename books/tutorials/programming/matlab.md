@@ -1,16 +1,34 @@
 ---
-title: "Matlab"
-linkTitle: "Matlab"
+title: Matlab
+linkTitle: Matlab
 weight: 1
-tags: ["matlab", "programming"]
-author: Fernanda L. Ribeiro
+tags:
+- matlab
+- programming
 aliases:
 - /tutorials/programming/matlab
-description: > 
-  A tutorial for setting up your matlab license on Neurodesk.
+description: A tutorial for setting up your matlab license on Neurodesk.
+authors:
+- name: Fernanda L. Ribeiro
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
-
 # MATLAB
+
+**Authors:** Fernanda L. Ribeiro, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Launch MATLAB and use the available activation route.
+- Call a Neurodesk tool from MATLAB.
+- Choose and save keyboard shortcut preferences.
+:::
+
 
 This tutorial covers activating MATLAB R2022a, calling a Neurodesk tool from MATLAB and changing keyboard shortcuts.
 
@@ -24,9 +42,9 @@ This tutorial covers activating MATLAB R2022a, calling a Neurodesk tool from MAT
 
 You need your own MATLAB license. An eligible MathWorks account can activate MATLAB, or your institution can provide a network license file and access to its license server. A file installation key alone does not activate this installed copy; see [MathWorks' license-file and installation-key guidance](https://www.mathworks.com/help/install/ug/get-license-file-and-file-installation-key.html).
 
-The desktop menu contains **Neurodesk → Programming → matlab → matlabGUI 2022a**.
+The desktop menu contains **Neurodesk (1) → Programming (2) → matlab (3) → matlabGUI 2022a (4)**.
 
-![MATLAB entries in the current Neurodesk menu](/static/tutorials/programming/matlab/launch-matlab.jpg)
+![MATLAB entries in the current Neurodesk menu](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launch-matlab-guide.png)
 
 On the Neurodesktop image tested on 20 October 2026, that GUI entry exits without opening a window. Open **LXTerminal** from the bottom panel and start MATLAB directly:
 

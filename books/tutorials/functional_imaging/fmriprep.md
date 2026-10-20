@@ -1,16 +1,36 @@
 ---
-title: "Using fmriprep with neurodesk on an HPC"
-linkTitle: "fmriprep"
+title: Using fmriprep with neurodesk on an HPC
+linkTitle: fmriprep
 weight: 1
-tags: ["fmriprep", "documentation", "preprocessing"]
-author: Kelly G. Garner
+tags:
+- fmriprep
+- documentation
+- preprocessing
 aliases:
 - /tutorials/functional_imaging/fmriprep_cvl
 - /tutorials-examples/tutorials/functional_imaging/fmriprep_cvl
-description: > 
-  A brief guide to using fmriprep with neurodesk
+description: A brief guide to using fmriprep with neurodesk
+authors:
+- name: Kelly G. Garner
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
 # Using fmriprep with neurodesk on an HPC
+
+**Authors:** Kelly G. Garner, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Launch a specific fMRIPrep version in Neurodesktop.
+- Download a public BIDS dataset and run a single-participant example.
+- Find the preprocessing outputs and inspect the HTML report.
+:::
+
 
 A brief guide to using fmriprep with Neurodesk.
 
@@ -45,13 +65,13 @@ A brief guide to using fmriprep with Neurodesk.
 
 In JupyterLab, open a Launcher tab with the **+** button. Under **Neurodesk**, select **Neurodesktop RDP** or **Neurodesktop VNC**.
 
-![Current JupyterLab Launcher with Neurodesktop options](/static/tutorials/shared/jupyterlab-launcher.jpg)
+![Current JupyterLab Launcher with Neurodesktop options](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/neurodesktop-launcher-desktop.png)
 
 ### Open fMRIPrep
 
-Open the application menu at the bottom left of the desktop, then expand **Neurodesk** and select the fMRIPrep entry in its category. Choose a specific version so that you can record which container you used.
+In the bottom-left Applications menu, select **Neurodesk (1) → Functional Imaging (2) → fmriprep (3) → fmriprep 25.2.6 (4)**. The four numbers match the screenshot below.
 
-![Neurodesk application categories on the current desktop](/static/tutorials/shared/neurodesk-application-menu.jpg)
+![Neurodesk application categories on the current desktop](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launch-fmriprep-guide.png)
 
 The application entry opens a terminal with fMRIPrep loaded. Check the version before entering the analysis command:
 

@@ -1,16 +1,35 @@
 ---
-title: "Conda environments"
-linkTitle: "conda envs"
+title: Conda environments
+linkTitle: conda envs
 weight: 1
-tags: ["python", "conda", "programming"]
-author: Fernanda L. Ribeiro
+tags:
+- python
+- conda
+- programming
 aliases:
 - /tutorials/programming/conda
-description: > 
-  A tutorial for setting up your conda environments on Neurodesk.
+description: A tutorial for setting up your conda environments on Neurodesk.
+authors:
+- name: Fernanda L. Ribeiro
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
-
 # Conda environments
+
+**Authors:** Fernanda L. Ribeiro, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Create and activate a software environment.
+- Install a package in the intended environment.
+- Select the corresponding notebook kernel.
+:::
+
 
 A tutorial for setting up your conda environments on Neurodesk.
 
@@ -36,7 +55,7 @@ The default conda environment is not persistent across sessions, so this means a
 
 1. In a Terminal window, type in:
 
-![1_terminal](/static/tutorials/programming/conda/1-terminal.png '1_terminal')
+![1_terminal](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/neurodesktop-launcher-terminal.png '1_terminal')
 
 For *Python*:
 ```bash

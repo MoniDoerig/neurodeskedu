@@ -2,6 +2,8 @@
 
 20 October 2026 · Neurodesk Play America · Neurodesktop 2026-10-07 · Ubuntu 24.04.5 LTS
 
+The initial revision (`d396631d`) completed nine GUI walkthroughs. Follow-up revisions are in progress; the status below describes that initial revision.
+
 Nine GUI walkthroughs were completed in the VNC desktop. Websites and downloads were used through Firefox inside Neurodesk. Tests followed the published steps first; necessary corrections and deviations are listed below. The Jupyter tools and RISE slideshow GUI checks were explicitly skipped at the user's request.
 
 ## Completed GUI walkthroughs
@@ -52,7 +54,7 @@ The asset validator checks Markdown and notebook references, including exact cas
 
 [tutorial-audit-evidence](tutorial-audit-evidence/) contains command logs, GUI result checks, the Nano-saved Julia script and diagnostic screenshots. The preserved work journal is chronological and contains interim states superseded by this report. Only the completed results above describe final GUI status.
 
-Final checks passed:
+Initial revision checks passed:
 
 - Website build: 99 pages and 100 legacy redirects.
 - Publication verifier: all 99 pages, raw source downloads, saved notebook cells and redirects verified.
@@ -66,3 +68,18 @@ Final checks passed:
 The older notebook-image checker also scans generated notebooks when passed all of books/. After a local build, run it against books/tutorials and books/examples to avoid reporting obsolete/generated source copies. CI starts from a clean checkout.
 
 Implementation branch: `tutorial-platform-audit-2026-10-20`. The GUI results above describe the tested revision; deployment status is tracked separately in its pull request.
+
+
+## Follow-up revision: shared media and clearer launch instructions
+
+Reusable screenshots now live only in [neurodesk/media](https://github.com/neurodesk/media/tree/main/screenshots/neurodesk), merged through [media PR #1](https://github.com/neurodesk/media/pull/1). Tutorials link to the canonical main-branch PNGs. The migration map in [shared-media-migration.json](shared-media-migration.json) records replaced paths; the earlier asset-move map follows these moves through to their current destinations. Replaced copies, including duplicate fMRIPrep/MRIQC launcher images, have been removed from this repository.
+
+The shared library has 21 images: a clean launcher with separate desktop, terminal and notebook guides; a clean desktop and terminal; numbered software-menu guides; and reusable SPM controls. Fresh menu captures cover fMRIPrep 25.2.6, MRIQC 24.0.2, PhysIO r2021a, SPM r7771, MATLAB 2022a and LCModel 6.3. Menu instructions and marker numbers agree. A menu capture establishes the available entry, rather than successful analysis.
+
+All 23 tutorial sources now include a revision date and Michèle Masson-Trottier as an author alongside the original authors. Learning objectives have been added where relevant; the phase tutorials retain their existing objectives and have simpler opening formatting. The tools and RISE GUI checks remain skipped.
+
+Public dataset preparation was rerun in the VNC terminal: `datalad clone https://github.com/OpenNeuroDatasets/ds000102.git`, then `datalad get sub-08/`, both completed. The clone is under `~/neurodesktop-storage/open-data/ds000102`. Current BIDS validation rejects the dataset's optional bare `CogAtlasID` value. The original JSON was backed up outside the dataset and the optional key removed from the working copy; validation then continued with a missing SliceTiming warning. A complete fMRIPrep run is still being debugged, including the container's default missing SUBJECTS_DIR. No successful fMRIPrep result is claimed at this stage.
+
+FreeSurfer 8.2.0 was checked for a readable bundled license and bundled fsaverage demonstration files; no license contents were read or published. Freeview opens. The expanded GUI example and new output captures are in progress.
+
+The media repository's asset and PR-size checks pass. All shared image targets resolve locally and the published main-branch URLs return HTTP 200. The refreshed sources have no missing local image references. Remaining GUI/example revisions from the feedback are not marked complete by these checks.

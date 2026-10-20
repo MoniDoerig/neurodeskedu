@@ -1,15 +1,35 @@
 ---
-title: "Connectome Workbench"
-linkTitle: "Connectome Workbench"
+title: Connectome Workbench
+linkTitle: Connectome Workbench
 weight: 1
-tags: ["Connectome Workbench", "functional imaging"]
-author: Fernanda L. Ribeiro
+tags:
+- Connectome Workbench
+- functional imaging
 aliases:
 - /static/tutorials/functional_imaging/connectomeworkbench
-description: > 
-  A tutorial for accessing and visualizing the 7T HCP Retinotopy Dataset on Connectome Workbench.
+description: A tutorial for accessing and visualizing the 7T HCP Retinotopy Dataset
+  on Connectome Workbench.
+authors:
+- name: Fernanda L. Ribeiro
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
 # Connectome Workbench
+
+**Authors:** Fernanda L. Ribeiro, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Download and open an HCP retinotopy scene.
+- Switch between group and participant maps.
+- Compare polar angle, eccentricity, pRF size and myelin maps.
+:::
+
 
 A tutorial for accessing and visualizing the 7T HCP Retinotopy Dataset on Connectome Workbench.
 
@@ -53,7 +73,7 @@ To do so, follow the next steps:
 
 1. In the application menu, navigate to **1** Neurodesk → **2** Functional Imaging → **3** connectomeworkbench → **4** connectomeworkbench 1.5.0
 
-![Follow the four numbered menu targets to launch Workbench 1.5.0](/static/tutorials/functional_imaging/connectomeworkbench/launch-workbench-annotated.svg)
+![Follow the four numbered menu targets to launch Workbench 1.5.0](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launch-workbench-guide.png)
 
 2. On the terminal shell that pops up, type in:
 

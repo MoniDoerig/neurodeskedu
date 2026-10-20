@@ -1,15 +1,35 @@
 ---
-title: "Analysing M/EEG Data with FieldTrip"
-linkTitle: "fieldtrip"
+title: Analysing M/EEG Data with FieldTrip
+linkTitle: fieldtrip
 weight: 1
-tags: ["fieldtrip", "documentation"]
-author: Judy D Zhu
+tags:
+- fieldtrip
+- documentation
 aliases:
 - /static/tutorials/electrophysiology/fieldtrip
-description: > 
-  A brief guide to using FieldTrip to analyse electrophysiological data within neurodesk.
+description: A brief guide to using FieldTrip to analyse electrophysiological data
+  within neurodesk.
+authors:
+- name: Judy D Zhu
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
 # Analysing M/EEG Data with FieldTrip
+
+**Authors:** Judy D Zhu, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Launch the compiled FieldTrip container.
+- Download public EEG data and prepare a runnable script.
+- Browse recording segments and change the time scale.
+:::
+
 
 A brief guide to using FieldTrip to analyse electrophysiological data within neurodesk.
 
@@ -34,7 +54,7 @@ Please note that this container uses a compiled version of FieldTrip to run scri
 
 1. Navigate to **Neurodesk → Electrophysiology → fieldtrip → fieldtrip 20211114** (1) in the menu:
 
-![Launch FieldTrip 20211114 from the Neurodesk menu](/static/tutorials/electrophysiology/fieldtrip/launch-fieldtrip-annotated.svg '1_menu')
+![Launch FieldTrip 20211114 from the Neurodesk menu](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launch-fieldtrip-guide.png '1_menu')
 
 Once this window is loaded, you are ready to go:
 

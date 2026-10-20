@@ -1,15 +1,35 @@
 ---
-title: "A batch scripting example for PhysIO toolbox"
-linkTitle: "PhysIO_Batch"
+title: A batch scripting example for PhysIO toolbox
+linkTitle: PhysIO_Batch
 weight: 1
-tags: ["fMRI", "documentation"]
-author: Kelly G. Garner
+tags:
+- fMRI
+- documentation
 aliases:
 - /tutorials/functional_imaging/physio_batch_workflow
-description: > 
-  Follow this tutorial as an example of how to batch script for the PhysIO toolbox using Neurodesk.
+description: Follow this tutorial as an example of how to batch script for the PhysIO
+  toolbox using Neurodesk.
+authors:
+- name: Kelly G. Garner
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
 # A batch scripting example for PhysIO toolbox
+
+**Authors:** Kelly G. Garner, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Create a reusable PhysIO batch from a working GUI job.
+- Set recording and output paths explicitly.
+- Run the saved batch and check the regressor file.
+:::
+
 
 Follow this tutorial as an example of how to batch script for the PhysIO toolbox using Neurodesk.
 

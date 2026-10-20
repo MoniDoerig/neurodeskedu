@@ -1,16 +1,34 @@
 ---
-title: "Reproducible script execution with DataLad"
-linkTitle: "datalad run"
+title: Reproducible script execution with DataLad
+linkTitle: datalad run
 weight: 1
-tags: ["datalad"]
-author: Sin Kim
+tags:
+- datalad
 aliases:
 - /tutorials/reproducibility/datalad-run
-description: >
-  Using datalad run, you can precisely record results of your analysis scripts.
+description: Using datalad run, you can precisely record results of your analysis
+  scripts.
+authors:
+- name: Sin Kim
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
-
 # Reproducible script execution with DataLad
+
+**Authors:** Sin Kim, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Record a command and its inputs and outputs with DataLad.
+- Clone the recorded analysis into a second location.
+- Rerun the analysis and verify the reproduced result.
+:::
+
 
 Using datalad run, you can precisely record results of your analysis scripts.
 

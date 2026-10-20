@@ -1,14 +1,32 @@
 ---
-title: "Structural connectivity dMRI"
-linkTitle: "Structural connectivity dMRI"
+title: Structural connectivity dMRI
+linkTitle: Structural connectivity dMRI
 weight: 1
 aliases:
 - /tutorials/structural_imaging/structuralconnectivity
-description: > 
-  Example workflow for constructing strutural connectivity (Human connectome project: Single subject)
+description: 'Example workflow for constructing strutural connectivity (Human connectome
+  project: Single subject)'
+authors:
+- name: Joan Amos
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
-
 # Structural connectivity dMRI
+
+**Authors:** Joan Amos, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Prepare public anatomical and diffusion inputs.
+- Construct a tractogram and weighted structural connectome.
+- Inspect intermediate results and the final connectivity matrix.
+:::
+
 
 Example workflow for constructing strutural connectivity (Human connectome project: Single subject)
 

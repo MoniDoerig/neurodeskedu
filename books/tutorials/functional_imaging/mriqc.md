@@ -1,17 +1,36 @@
 ---
-title: "Using mriqc with neurodesk on HPC"
-linkTitle: "mriqc"
+title: Using mriqc with neurodesk on HPC
+linkTitle: mriqc
 weight: 1
-tags: ["mriqc", "documentation", "preprocessing"]
-author: Kelly G. Garner
+tags:
+- mriqc
+- documentation
+- preprocessing
 aliases:
 - /tutorials/functional_imaging/mriqc_cvl
 - /tutorials-examples/tutorials/functional_imaging/mriqc_cvl
-description: > 
-  A brief guide to using mriqc with neurodesk.
+description: A brief guide to using mriqc with neurodesk.
+authors:
+- name: Kelly G. Garner
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
-
 # Using mriqc with neurodesk on HPC
+
+**Authors:** Kelly G. Garner, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Launch MRIQC and identify its terminal.
+- Run quality assessment on public BIDS data.
+- Open individual and group reports and interpret the displayed quality checks.
+:::
+
 
 A brief guide to using mriqc with neurodesk.
 
@@ -47,13 +66,13 @@ export neurodesk_singularity_opts="--home $HOME:/home"
 
 In JupyterLab, open a Launcher tab with the **+** button. Under **Neurodesk**, select **Neurodesktop RDP** or **Neurodesktop VNC**.
 
-![Current JupyterLab Launcher with Neurodesktop options](/static/tutorials/shared/jupyterlab-launcher.jpg)
+![Current JupyterLab Launcher with Neurodesktop options](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/neurodesktop-launcher-desktop.png)
 
 ### Open MRIQC
 
-Open the application menu at the bottom left of the desktop, then expand **Neurodesk** and select the MRIQC entry in its category. Choose a specific version so that you can record which container you used.
+In the bottom-left Applications menu, select **Neurodesk (1) → Functional Imaging (2) → mriqc (3) → mriqc 24.0.2 (4)**. The four numbers match the screenshot below.
 
-![Neurodesk application categories on the current desktop](/static/tutorials/shared/neurodesk-application-menu.jpg)
+![Neurodesk application categories on the current desktop](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launch-mriqc-guide.png)
 
 The application entry opens a terminal with MRIQC loaded. Check the version before entering the analysis command:
 

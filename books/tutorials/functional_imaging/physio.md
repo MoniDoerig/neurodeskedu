@@ -1,13 +1,31 @@
 ---
-title: "PhysIO"
-linkTitle: "PhysIO"
+title: PhysIO
+linkTitle: PhysIO
 weight: 1
 aliases:
 - /tutorials/functional_imaging/physio
-description: >
-  Example workflow for the PhysIO Toolbox
+description: Example workflow for the PhysIO Toolbox
+authors:
+- name: Lars Kasper
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
 # PhysIO
+
+**Authors:** Lars Kasper, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Download the public PhysIO demonstration recordings.
+- Configure and run the Philips ECG3T example in SPM Batch Editor.
+- Inspect the physiological regressors and quality-control figures.
+:::
+
 
 Example workflow for the PhysIO Toolbox
 
@@ -77,8 +95,6 @@ This walkthrough uses the official [PhysIO examples v9.1.0 archive on Zenodo](ht
 4. Rename the extracted `ComputationalPsychiatry-PhysIO-Examples-9343a40` folder to `physio-demo` and move it into `~/neurodesktop-storage/`.
 5. Open `physio-demo/Philips/ECG3T/`. It should contain `SCANPHYSLOG.log`, `rp_fMRI.txt` and the `philips_ecg3t_*` scripts and batch files.
 
-The current container does not bundle these files under `/opt/spm12/examples/`. The older `www.tapas.tnu-zurich.com` download link no longer connects from the tested instance.
-
 ## Copy your own data
 
 - On Windows, the folder `C:\neurodesktop-storage` should have been automatically created when starting neurodesk
@@ -89,7 +105,9 @@ The current container does not bundle these files under `/opt/spm12/examples/`. 
 
 ### Start SPM
 
-The current desktop menu lists **Neurodesk → Functional Imaging → physio → physioGUI r2021a**. In the tested platform image this launcher returned to the desktop without opening a window. The older `r7771` container has been disabled by its maintainers.
+In the bottom-left Applications menu, select **Neurodesk (1) → Functional Imaging (2) → physio (3) → physioGUI r2021a (4)**.
+
+![Follow the four numbered menu choices to open PhysIO](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launch-physio-guide.png)
 
 If the menu does not open SPM, open **LXTerminal** from the desktop panel and enter these two commands, one at a time:
 
@@ -104,7 +122,7 @@ Wait for the SPM windows to appear. This command selects fMRI mode directly. The
 
 1. In SPM's main **Menu** window, open **Utils…** (1) and choose **CD** (2).
 
-![SPM main menu: open Utils, then choose CD](/static/tutorials/functional_imaging/physio/change-directory-annotated.svg)
+![SPM main menu: open Utils, then choose CD](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/spm-change-directory-guide.png)
 
 2. Navigate to `~/neurodesktop-storage/physio-demo/Philips/` using the left-hand directory list. In the **right-hand list**, click **ECG3T**, then **Done**. The selected directory appears in the box at the bottom before you click Done.
 
@@ -114,7 +132,7 @@ The batch uses relative input paths, so SPM must be working in the folder contai
 
 1. Click **Batch** (1) in SPM's main Menu window.
 
-![Open Batch Editor using the Batch button](/static/tutorials/functional_imaging/physio/spm-menu-annotated.svg)
+![Open Batch Editor using the Batch button](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/spm-open-batch-guide.png)
 
 2. In Batch Editor, choose **File → Load Batch**, or click the **open-folder icon** (1 in the next screenshot).
 3. Select **`philips_ecg3t_spm_job.m`**, then **Done**. Wait for **TAPAS PhysIO Toolbox** to appear in the Module List. The corresponding `.mat` file is also supplied; do not select `philips_ecg3t_matlab_script.m`.

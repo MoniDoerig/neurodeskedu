@@ -1,16 +1,33 @@
 ---
-title: "Spectroscopy with lcmodel"
-linkTitle: "lcmodel"
+title: Spectroscopy with lcmodel
+linkTitle: lcmodel
 weight: 1
-tags: ["lcmodel"]
-author: Steffen Bollmann
+tags:
+- lcmodel
 aliases:
 - /tutorials/spectroscopy/lcmodel
-description: >
-  Using lcmodel, you can analyze MR spectroscopy data.
+description: Using lcmodel, you can analyze MR spectroscopy data.
+authors:
+- name: Steffen Bollmann
+- name: Michèle Masson-Trottier
+date: '2026-10-20'
 ---
-
 # Spectroscopy with lcmodel
+
+**Authors:** Steffen Bollmann, Michèle Masson-Trottier
+
+**Last updated:** 20 October 2026
+
+:::{admonition} Learning Objectives
+:class: tip
+
+By the end of this tutorial you will be able to:
+
+- Launch LCModel and initialise its graphical interface.
+- Load the bundled Varian spectrum and matching basis.
+- Run the fit and inspect the saved spectral reports.
+:::
+
 
 Using lcmodel, you can analyze MR spectroscopy data.
 
@@ -25,15 +42,19 @@ Using lcmodel, you can analyze MR spectroscopy data.
 [Getting Set Up with Neurodesk](https://neurodesk.org/getting-started/)
 <!-- -->
 
-Open lcmodel from the menu: Applications → Neurodesk → Spectroscopy → lcmodel → lcmodel 6.3
+Open the bottom-left Applications menu and select **Neurodesk (1) → Spectroscopy (2) → lcmodel (3) → lcmodel 6.3 (4)**.
 
-run 
-```
+![Follow the four numbered menu choices to open the LCModel terminal](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launch-lcmodel-guide.png)
+
+In the terminal opened by the menu, enter the setup command and press **Enter**:
+
+```bash
 setup_lcmodel.sh
 ```
 
-then run
-```
+Wait for the setup to finish. In the **same terminal**, enter the next command and press **Enter** to open the graphical interface:
+
+```bash
 lcmgui
 ```
 
