@@ -111,3 +111,45 @@ Scope update: the user explicitly requested skipping the Accessing Neurodesk too
 Smoothing completed and CheckReg of matching first volumes shows the expected smoother swar image. The first-level model was entered through Batch Editor with both146-scan smoothed runs and all four original12-event schedules (duration2). Saved first-level-job.mat from the GUI before running it. Independent readback in spm-model-validation.txt confirms every onset, duration, timing units/TR and session count. The resulting292×6 matrix has rank6; columns are Inc1, Con1, Inc2, Con2, constant1, constant2. GUI Review of SPM.mat completed. Classical estimation was configured and started once.
 
 SPM final result verified in the GUI with t-contrast Incongruent-Congruent, weights[.5,-.5,.5,-.5], no masking, uncorrectedp.01 and extent10. The contrast editor requires submit before OK; the original article omitted this detail. The MIP and statistics rendered. Opened SPM Figure → Results Table and clicked whole brain to populate a wider Satellite Results Table; this avoids clipping in the narrow fixed-size Graphics window. Numerical readback confirms padded weights[.5,-.5,.5,-.5,0,0], effective residualdf278, six finite beta maps, finite residual/contrast/T maps within the analysis mask, and both finite warped and smoothed79×95×79×146 runs at2mm/TR2. See spm-final-validation.txt. Full SPM GUI test is complete; later final rendering review still required.
+
+
+## Structural connectivity Neurodesktop rerun — 22 October 2026
+
+Completed the HCP 100307 example in native Neurodesktop terminal and MRview
+windows on Neurodesk Play. The 100,000-streamline iFOD2/ACT tractogram and SIFT2
+weights from the 21 October processing run were retained. The distributed
+anatomy only included an MNI-space aparc+aseg image, which did not match the
+T1w-space anatomy used for registration. The tutorial now generates its own
+T1w-space cortical and subcortical labels with FreeSurfer 7.4.1 SynthSeg 2.0
+(`--parc --cpu --threads 8`) from the supplied brain-extracted T1w image. This
+change is stated explicitly: it is not the original surface-based HCP
+FreeSurfer reconstruction.
+
+SynthSeg completed, followed by labelconvert, the inverse T1w-to-diffusion
+header transform, and SIFT2-weighted tck2connectome with symmetric,
+zero-diagonal, inverse-node-volume scaling. The parcellation overlay was
+inspected in MRview's three-plane view. The Python matrix plot opened in a
+native desktop window. All eleven article screenshots are native window
+captures; the final three show connectome construction, node alignment and
+the matrix. PNG optimisation is lossless.
+
+Numerical checks: tckinfo reports exactly 100,000 streamlines, and there are
+100,000 finite, nonnegative SIFT2 weights. The output matrix is 84 by 84,
+finite, nonnegative, symmetric and zero-diagonal, with 1,499 nonzero undirected
+edges. These are consistency checks for this teaching run, not validation of
+biological connectivity. Processing timestamps, normalized command output,
+SynthSeg QC, tractogram metadata and numerical checks are retained under
+`structuralconnectivity-2026-10-22/`. Terminal progress escape codes and
+intermediate percentage updates have been removed from the saved text logs.
+
+
+## Structural connectivity screenshot style follow-up — 22 October 2026
+
+Compared the FreeSurfer and FieldTrip GUI guides with the structural connectivity
+page. Recaptured the four MRview checks with their actual ODF display, Overlay
+and Tractography panels visible. Added the repository's editable green numbered
+SVG markers and matching numbered instructions. The unmarked PNGs remain beside
+the guides. FOD glyph scale is 4; the tractography panel shows direction colours
+and a 2.5 mm slice slab; the node overlay has Interpolate disabled. Corrected
+`-mode 1` to `-mode 2` for the three-plane MRview commands (F2 in the GUI).
+The completed 100,000-streamline analysis and matrix are unchanged.

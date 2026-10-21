@@ -1,0 +1,16 @@
+[2026-10-21 11:38:03] START
+[2026-10-21 11:38:34] mrconvert done
+[2026-10-21 11:39:56] dwibiascorrect done
+[2026-10-21 11:41:17] dwi2response done
+[2026-10-21 11:41:17] READY response
+[2026-10-21 11:50:51] dwi2fod done
+[2026-10-21 11:51:00] mtnormalise done
+[2026-10-21 11:51:00] READY fod
+[2026-10-21 12:08:41] 5ttgen done
+[2026-10-21 12:09:03] flirt done
+[2026-10-21 12:09:05] 5tt coreg done
+[2026-10-21 12:09:05] READY coreg
+[2026-10-21 12:20:19] tckgen done
+[2026-10-21 12:20:19] READY tckgen
+[2026-10-21 12:27:43] tcksift2 done
+[2026-10-21 12:27:43] READY sift2

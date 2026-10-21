@@ -13,7 +13,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
-from urllib.parse import quote, unquote, urlencode
+from urllib.parse import quote, unquote, urlencode, urlsplit
 
 import yaml
 
@@ -76,6 +76,20 @@ def heading_id(text: str) -> str:
 
 
 def adapt_markdown(text: str, headings: set[str]) -> str:
+    # Empty headings create blank entries in the outline. Preserve examples inside code fences.
+    lines = []
+    fence = None
+    for line in text.splitlines(keepends=True):
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if marker:
+            if fence is None:
+                fence = marker[1]
+            elif marker[1][0] == fence[0] and len(marker[1]) >= len(fence):
+                fence = None
+        if fence is None and re.fullmatch(r" {0,3}#{1,6}[ \t]*\n?", line):
+            continue
+        lines.append(line)
+    text = "".join(lines)
     text = re.sub(r"(?im)(\b(?:github|twitter):\s*\[?)@([\w-]+)", r"\1\\@\2", text)
     text = re.sub(r"\(@([\w-]+)\)", r"(\\@\1)", text)
 
@@ -237,6 +251,27 @@ def controls(source: Path, review_id: str | None, reviews: dict, settings: dict)
     return "\n\n".join(blocks)
 
 
+def streamline_header(text: str, authors: bool, date: bool) -> str:
+    """The page header owns author/date metadata; preserve code and narrative text."""
+    labels = (["authors?"] if authors else []) + (["date", "last updated"] if date else [])
+    if not labels:
+        return text
+    pattern = re.compile(r"^\s*(?:\*\*|__)?(?:" + "|".join(labels)
+                         + r")(?:\*\*|__)?\s*:(?:\*\*|__)?[^\n]*$", re.I)
+    lines, fence = [], None
+    for line in text.splitlines(keepends=True):
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if marker:
+            if fence is None:
+                fence = marker[1]
+            elif marker[1][0] == fence[0] and len(marker[1]) >= len(fence):
+                fence = None
+        if fence is None and pattern.fullmatch(line.rstrip("\n")):
+            continue
+        lines.append(line)
+    return "".join(lines)
+
+
 def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], settings: dict, dois: dict) -> None:
     shutil.copytree(book, stage, dirs_exist_ok=True,
                     ignore=shutil.ignore_patterns("_build", ".ipynb_checkpoints", "_ext"))
@@ -258,6 +293,22 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
                              if c["cell_type"] == "markdown") if notebook is not None else text
         headings = {heading_id(h) for h in re.findall(r"(?m)^#{1,6} (.+)$", markdown)}
         meta, body = frontmatter(text)
+        # MyST only extracts a title at the beginning of the first cell. A preamble or an
+        # introductory cell otherwise leaves a second, identical H1 in the article.
+        if notebook is not None and not meta.get("title") and not re.match(r"\s*# ", body):
+            for cell in cells:
+                if cell["cell_type"] != "markdown":
+                    continue
+                content = body if cell is first else "".join(cell["source"])
+                title = re.search(r"(?m)^# ([^\n]+)\n?", content)
+                if title:
+                    meta["title"] = title[1].strip()
+                    content = content[:title.start()] + content[title.end():]
+                    if cell is first:
+                        body = content
+                    else:
+                        cell["source"] = content.splitlines(keepends=True)
+                    break
         meta["execute"] = {"skip": True}
         review_id = meta.get("nd_review_id") or (notebook or {}).get("metadata", {}).get("nd_review_id")
         authors = extract_authors_from_content(str(book / source))
@@ -265,6 +316,15 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
             meta["authors"] = [{"name": name} for name in authors]
         if meta.get("authors"):
             meta.pop("author", None)
+        body = streamline_header(body, bool(meta.get("authors")), bool(meta.get("date")))
+        if notebook is not None:
+            for cell in cells:
+                if cell["cell_type"] == "code":
+                    break
+                if cell["cell_type"] == "markdown" and cell is not first:
+                    cell["source"] = streamline_header(
+                        "".join(cell["source"]), bool(meta.get("authors")), bool(meta.get("date"))
+                    ).splitlines(keepends=True)
         doi = dois.get("books/" + source.as_posix(), {}).get("doi_url")
         if doi:
             meta["doi"] = doi.removeprefix("https://doi.org/")
@@ -309,6 +369,108 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
             path.write_text(text)
 
 
+def preserve_screenshot_pngs(built: Path) -> int:
+    """Serve lossless tutorial PNGs instead of MyST's lossy WebP alternatives."""
+    optimized = set()
+
+    def collect(value):
+        if isinstance(value, dict):
+            origin = value.get("urlSource", "")
+            if (value.get("type") == "image" and isinstance(origin, str)
+                    and origin.startswith("/static/tutorials/") and origin.endswith(".png")
+                    and value.get("urlOptimized")):
+                optimized.add(value["urlOptimized"])
+            for child in value.values():
+                collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    for path in built.glob("*.json"):
+        collect(json.loads(path.read_text()))
+    if not optimized:
+        return 0
+    urls = re.compile("|".join(re.escape(url) for url in sorted(optimized, key=len, reverse=True)))
+    property_pattern = re.compile(
+        r'(,\s*)?(?<!\\)"urlOptimized"\s*:\s*(?:'
+        + "|".join(re.escape(json.dumps(url)) for url in optimized) + r')(\s*,)?'
+    )
+    for path in built.rglob("*"):
+        if path.suffix not in {".html", ".json"} or "_sources" in path.relative_to(built).parts:
+            continue
+        original = path.read_text()
+        text = property_pattern.sub(lambda m: "," if m[1] and m[2] else "", original)
+        text = re.sub(r"<source\b[^>]*>", lambda m: "" if urls.search(m[0]) else m[0], text)
+        # Without urlOptimized the React image component renders an img directly.
+        # Match that structure in the exported HTML to preserve hydration.
+        text = re.sub(r"<picture\b[^>]*>(\s*<img\b[^>]*>\s*)</picture>", r"\1", text)
+        if text != original:
+            if path.suffix == ".json":
+                json.loads(text)
+            path.write_text(text)
+    return len(optimized)
+
+
+def externalize_shared_images(built: Path) -> int:
+    """Keep the shared screenshot library external in HTML and client navigation data."""
+    replacements = {}
+    optimized = set()
+    cached_files = set()
+
+    def collect(value):
+        if isinstance(value, list):
+            for child in value:
+                collect(child)
+        elif isinstance(value, dict):
+            origin = value.get("urlSource", "")
+            if value.get("type") == "image" and isinstance(origin, str) and re.match(
+                r"^https://raw\.githubusercontent\.com/neurodesk/media/[^/]+/screenshots/", origin
+            ):
+                for key in ("url", "urlOptimized"):
+                    local = value.get(key)
+                    match = re.search(r"(?:^|/)build/(.+)$", urlsplit(local).path) if isinstance(local, str) else None
+                    if not match or urlsplit(local).scheme or urlsplit(local).netloc:
+                        continue
+                    cached = (built / "build" / unquote(match[1])).resolve()
+                    if not cached.is_relative_to((built / "build").resolve()):
+                        raise ValueError(f"Unexpected shared-image cache path: {local}")
+                    replacements[local] = origin
+                    cached_files.add(cached)
+                    if key == "urlOptimized":
+                        optimized.add(local)
+            for child in value.values():
+                collect(child)
+
+    # These are the same article records used by the browser after client-side navigation.
+    for path in built.glob("*.json"):
+        collect(json.loads(path.read_text()))
+    if not replacements:
+        return 0
+    urls = re.compile("|".join(re.escape(url) for url in sorted(replacements, key=len, reverse=True)))
+    optimized_property = re.compile(
+        r'(,\s*)?(?<!\\)"urlOptimized"\s*:\s*(?:'
+        + "|".join(re.escape(json.dumps(url)) for url in optimized) + r')(\s*,)?'
+    ) if optimized else None
+    for path in built.rglob("*"):
+        if path.suffix not in {".html", ".json"} or "_sources" in path.relative_to(built).parts:
+            continue
+        text = original = path.read_text()
+        if optimized_property:
+            # Remove the property, rather than publishing a PNG as a WebP picture source.
+            text = optimized_property.sub(lambda m: "," if m[1] and m[2] else "", text)
+        text = re.sub(r"<source\b[^>]*>",
+                      lambda m: "" if urls.search(m[0]) else m[0], text)
+        text = re.sub(r"<picture\b[^>]*>(\s*<img\b[^>]*>\s*)</picture>", r"\1", text)
+        text = urls.sub(lambda m: replacements[m[0]], text)
+        if text != original:
+            if path.suffix == ".json":
+                json.loads(text)  # Fail before publication if a future serializer changes shape.
+            path.write_text(text)
+    for path in cached_files:
+        path.unlink(missing_ok=True)
+    return len(set(replacements.values()))
+
+
 def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: dict) -> None:
     require_oxipng()
     built = stage / "_build/html"
@@ -340,6 +502,8 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
             names = html.escape(", ".join(authors), quote=True)
             tags += [f'<meta name="author" content="{names}">', f'<meta property="article:author" content="{names}">']
         text = re.sub(r"<head[^>]*>", lambda head: head[0] + guard + launch, text, count=1)
+        # Keep stylesheet URLs identical to MyST's serialized client data. Rewriting
+        # only the HTML head causes React hydration errors on every fresh page load.
         page.write_text(text.replace("</head>", "".join(tags) + "</head>", 1))
         target = built / "_sources" / source
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -365,6 +529,12 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
     # MyST also exports every notebook to build/; the Downloads menu serves the raw source from _sources.
     for export in (built / "build").glob("*.ipynb"):
         export.unlink()
+    shared_images = externalize_shared_images(built)
+    if shared_images:
+        print(f"Linked {shared_images} shared screenshots directly to neurodesk/media")
+    lossless_images = preserve_screenshot_pngs(built)
+    if lossless_images:
+        print(f"Preserved {lossless_images} lossless tutorial PNGs")
     (built / ".nojekyll").touch()
     (built / "neurodesk-pages.json").write_text(json.dumps(routes, indent=2) + "\n")
     # Lossless recompression saves about a third of the figure bytes. _sources stays byte-identical.

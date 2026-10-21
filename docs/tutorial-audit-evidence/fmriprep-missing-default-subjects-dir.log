@@ -1,0 +1,103 @@
+You are using fMRIPrep-25.2.6, and a newer version of fMRIPrep is available: 25.2.7.
+Please check out our documentation about how and when to upgrade:
+https://fmriprep.readthedocs.io/en/latest/faq.html#upgrading
+bids-validator@1.14.10
+(node:31182) Warning: Closing directory handle on garbage collection
+(Use `node --trace-warnings ...` to show where the warning was created)
+	1: [WARN] You should define 'SliceTiming' for this file. If you don't provide this information slice time correction will not be possible. 'Slice Timing' is the time at which each slice was acquired within each volume (frame) of the acquisition. Slice timing is not slice order -- rather, it is a list of times containing the time (in seconds) of each slice acquisition in relation to the beginning of volume acquisition. (code: 13 - SLICE_TIMING_NOT_DEFINED)
+		./sub-08/func/sub-08_task-flanker_run-1_bold.nii.gz
+		./sub-08/func/sub-08_task-flanker_run-2_bold.nii.gz
+
+	Please visit https://neurostars.org/search?q=SLICE_TIMING_NOT_DEFINED for existing conversations about this issue.
+
+        Summary:                Available Tasks:        Available Modalities: 
+        11 Files, 64.7MB        Flanker                 MRI                   
+        1 - Subject                                                           
+        1 - Session                                                           
+
+
+	If you have any questions, please post on https://neurostars.org/tags/bids.
+261020-05:24:39,222 nipype.workflow IMPORTANT:
+	 Running fMRIPrep version 25.2.6
+
+         License NOTICE ##################################################
+         fMRIPrep 25.2.6
+         Copyright The NiPreps Developers.
+         
+         This product includes software developed by
+         the NiPreps Community (https://nipreps.org/).
+         
+         Portions of this software were developed at the Department of
+         Psychology at Stanford University, Stanford, CA, US.
+         
+         This software is also distributed as a Docker container image.
+         The bootstrapping file for the image ("Dockerfile") is licensed
+         under the MIT License.
+         
+         This software may be distributed through an add-on package called
+         "Docker Wrapper" that is under the BSD 3-clause License.
+         #################################################################
+261020-05:24:39,222 nipype.workflow IMPORTANT:
+	 Building fMRIPrep's workflow:
+           * BIDS dataset path: /home/jovyan/neurodesktop-storage/open-data/ds000102.
+           * Participants and sessions: sub-08.
+           * Run identifier: 20261020-052410_28217e7d-4e04-4f6d-89f1-768dd408a22d.
+           * Output spaces: T1w.
+           * Pre-run FreeSurfer's SUBJECTS_DIR: /home/jovyan/neurodesktop-storage/fmriprep-freesurfer.
+261020-05:24:40,697 nipype.workflow INFO:
+	 ANAT Stage 1: Adding template workflow
+261020-05:24:41,22 nipype.workflow INFO:
+	 ANAT Stage 2: Preparing brain extraction workflow
+261020-05:24:41,171 nipype.workflow INFO:
+	 ANAT Stage 3: Preparing segmentation workflow
+261020-05:24:41,176 nipype.workflow INFO:
+	 ANAT Stage 4: Preparing normalization workflow for ['MNI152NLin2009cAsym']
+261020-05:24:41,183 nipype.workflow INFO:
+	 ANAT Skipping Stages 5+
+261020-05:24:41,319 nipype.workflow INFO:
+	 No single-band-reference found for sub-08_task-flanker_run-1_bold.nii.gz.
+261020-05:24:41,377 nipype.workflow INFO:
+	 Stage 1: Adding HMC boldref workflow
+261020-05:24:41,386 nipype.workflow INFO:
+	 Stage 2: Adding motion correction workflow
+261020-05:24:41,393 nipype.workflow INFO:
+	 No fieldmap correction - skipping Stage 3
+261020-05:24:41,393 nipype.workflow INFO:
+	 Stage 4: Adding coregistration boldref workflow
+261020-05:24:41,427 nipype.workflow INFO:
+	 Stage 5: Adding coregistration workflow
+Process Process-2:
+Traceback (most recent call last):
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/fmriprep/cli/workflow.py", line 116, in build_workflow
+    retval['workflow'] = init_fmriprep_wf()
+                         ^^^^^^^^^^^^^^^^^^
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/fmriprep/workflows/base.py", line 108, in init_fmriprep_wf
+    single_subject_wf = init_single_subject_wf(subject_id, sessions, name=wf_name)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/fmriprep/workflows/base.py", line 875, in init_single_subject_wf
+    bold_wf = init_bold_wf(
+              ^^^^^^^^^^^^^
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/fmriprep/workflows/bold/base.py", line 248, in init_bold_wf
+    bold_fit_wf = init_bold_fit_wf(
+                  ^^^^^^^^^^^^^^^^^
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/fmriprep/workflows/bold/fit.py", line 669, in init_bold_fit_wf
+    bold_reg_wf = init_bold_reg_wf(
+                  ^^^^^^^^^^^^^^^^^
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/fmriprep/workflows/bold/registration.py", line 171, in init_bold_reg_wf
+    bbr_wf = init_fsl_bbr_wf(
+             ^^^^^^^^^^^^^^^^
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/fmriprep/workflows/bold/registration.py", line 601, in init_fsl_bbr_wf
+    MRICoreg(dof=bold2anat_dof, sep=[4], ftol=0.0001, linmintol=0.01),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/nipype/interfaces/freesurfer/base.py", line 135, in __init__
+    self.inputs.subjects_dir = self._subjects_dir
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/nipype/interfaces/base/traits_extension.py", line 136, in validate
+    self.error(objekt, name, str(value))
+  File "/app/.pixi/envs/fmriprep/lib/python3.12/site-packages/traits/base_trait_handler.py", line 74, in error
+    raise TraitError(
+traits.trait_errors.TraitError: The 'subjects_dir' trait of a MRICoregInputSpec instance must be a pathlike object or string representing an existing directory, but a value of '/home/jovyan/freesurfer-subjects-dir' <class 'str'> was specified.

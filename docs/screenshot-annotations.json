@@ -66,31 +66,48 @@
   {
     "source": "books/static/tutorials/electrophysiology/eeg_mne-python/mne-kernel-options.png",
     "size": [
-      420,
-      60
+      1280,
+      690
     ],
-    "title": "Choose the mne-0.23.4 Python environment",
+    "title": "Choose the MNE kernel: 1 Select Kernel, 2 mne-0.23.4",
     "markers": [
       {
         "number": 1,
-        "text": "Select mne-0.23.4",
+        "text": "Click Select Kernel in the notebook toolbar",
         "target": [
-          1,
-          22,
-          416,
-          16
+          1131,
+          115,
+          140,
+          28
         ],
         "label": [
-          450,
-          30
+          1195,
+          182
         ],
         "tip": [
-          419,
-          30
+          1200,
+          144
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose mne-0.23.4 (Python 3.9.7)",
+        "target": [
+          282,
+          114,
+          720,
+          27
+        ],
+        "label": [
+          1040,
+          128
+        ],
+        "tip": [
+          1003,
+          128
         ]
       }
-    ],
-    "right_padding": 60
+    ]
   },
   {
     "source": "books/static/tutorials/functional_imaging/connectomeworkbench/extract-archive.jpg",
@@ -680,52 +697,6 @@
         "tip": [
           33,
           85
-        ]
-      }
-    ]
-  },
-  {
-    "source": "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.jpg",
-    "size": [
-      1245,
-      675
-    ],
-    "title": "FieldTrip browser: 1 next segment, 2 horizontal zoom",
-    "markers": [
-      {
-        "number": 1,
-        "text": "Move to the next segment",
-        "target": [
-          224,
-          646,
-          61,
-          27
-        ],
-        "label": [
-          308,
-          618
-        ],
-        "tip": [
-          285,
-          646
-        ]
-      },
-      {
-        "number": 2,
-        "text": "Shorten the displayed time interval",
-        "target": [
-          799,
-          646,
-          59,
-          27
-        ],
-        "label": [
-          884,
-          618
-        ],
-        "tip": [
-          858,
-          646
         ]
       }
     ]
@@ -2081,6 +2052,754 @@
         "tip": [
           678,
           85
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/fieldtrip/download-script.png",
+    "size": [
+      1280,
+      650
+    ],
+    "title": "Download the FieldTrip MATLAB script",
+    "markers": [
+      {
+        "number": 1,
+        "target": [
+          1191,
+          209,
+          31,
+          26
+        ],
+        "label": [
+          1155,
+          184
+        ],
+        "tip": [
+          1205,
+          208
+        ],
+        "text": "Download raw file"
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/mrsiproc/part1-template.png",
+    "size": [
+      1280,
+      575
+    ],
+    "title": "MRSI Part 1: set the input paths and output folder",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Set the acquisition and structural input paths",
+        "target": [
+          0,
+          122,
+          650,
+          65
+        ],
+        "label": [
+          715,
+          153
+        ],
+        "tip": [
+          652,
+          153
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Set the Part 1 output folder",
+        "target": [
+          0,
+          186,
+          850,
+          22
+        ],
+        "label": [
+          920,
+          197
+        ],
+        "tip": [
+          852,
+          197
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/mrsiproc/part2-template.png",
+    "size": [
+      1280,
+      610
+    ],
+    "title": "MRSI Part 2: results folder and corrected argument flags",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Default Part 1 results folder",
+        "target": [
+          0,
+          178,
+          850,
+          24
+        ],
+        "label": [
+          920,
+          190
+        ],
+        "tip": [
+          852,
+          190
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Use -N Both and the argument-free -S, -R and -b flags",
+        "target": [
+          33,
+          499,
+          166,
+          84
+        ],
+        "label": [
+          245,
+          540
+        ],
+        "tip": [
+          201,
+          540
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/input-spectrum.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "FSLeyes MRS input: 1 select the spectroscopy plane, 2 enable the spectrum",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Set Location to X 0, Y 0, Z 42.67385",
+        "target": [
+          306,
+          574,
+          205,
+          97
+        ],
+        "label": [
+          275,
+          559
+        ],
+        "tip": [
+          305,
+          580
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Enable the mrsi spectrum with its eye button",
+        "target": [
+          979,
+          341,
+          30,
+          27
+        ],
+        "label": [
+          1025,
+          329
+        ],
+        "tip": [
+          1008,
+          343
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/load-fit-menu.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "Load fitted MRSI results: 1 Tools, 2 Load MRSI fit",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Tools",
+        "target": [
+          294,
+          22,
+          45,
+          23
+        ],
+        "label": [
+          389,
+          28
+        ],
+        "tip": [
+          341,
+          32
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Load MRSI fit",
+        "target": [
+          300,
+          143,
+          294,
+          25
+        ],
+        "label": [
+          635,
+          156
+        ],
+        "tip": [
+          596,
+          156
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "FieldTrip browser: 1 next segment, 2 horizontal zoom",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Advance one segment",
+        "target": [
+          230,
+          665,
+          64,
+          28
+        ],
+        "label": [
+          260,
+          625
+        ],
+        "tip": [
+          260,
+          663
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Shorten the time interval",
+        "target": [
+          819,
+          665,
+          62,
+          28
+        ],
+        "label": [
+          850,
+          625
+        ],
+        "tip": [
+          850,
+          663
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/download.png",
+    "size": [
+      1280,
+      650
+    ],
+    "title": "Download the public FSL-MRS example archive",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Download fsl_mrs-2.1.0.zip",
+        "target": [
+          752,
+          499,
+          88,
+          26
+        ],
+        "label": [
+          798,
+          465
+        ],
+        "tip": [
+          798,
+          497
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/metabolite-map.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "NAA+NAAG map: 1 MRSI map controls, 2 image visibility",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Choose NAA+NAAG and conc-internal",
+        "target": [
+          282,
+          544,
+          240,
+          133
+        ],
+        "label": [
+          250,
+          548
+        ],
+        "tip": [
+          280,
+          548
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Hide the spectral image planes in the left overlay list",
+        "target": [
+          94,
+          573,
+          32,
+          102
+        ],
+        "label": [
+          151,
+          550
+        ],
+        "tip": [
+          110,
+          572
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/map-display.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "NAA+NAAG display: 1 range 0.9 to 1.7, 2 clip the zero background",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Set the display minimum and maximum",
+        "target": [
+          394,
+          326,
+          82,
+          65
+        ],
+        "label": [
+          354,
+          349
+        ],
+        "tip": [
+          392,
+          349
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Set clipping minimum to 0.001",
+        "target": [
+          394,
+          406,
+          82,
+          28
+        ],
+        "label": [
+          354,
+          420
+        ],
+        "tip": [
+          392,
+          420
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/eeg_mne-python/mne-notebook-cell.png",
+    "size": [
+      1280,
+      690
+    ],
+    "title": "Paste Python into a code cell: 1 code cell, 2 run cell",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Paste a Python block into this notebook code cell",
+        "target": [
+          110,
+          323,
+          1150,
+          316
+        ],
+        "label": [
+          85,
+          299
+        ],
+        "tip": [
+          111,
+          323
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Run the cell with this triangle or Shift+Enter",
+        "target": [
+          70,
+          326,
+          25,
+          25
+        ],
+        "label": [
+          76,
+          390
+        ],
+        "tip": [
+          82,
+          352
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/eeg_mne-python/mne-terminal.png",
+    "size": [
+      1280,
+      690
+    ],
+    "title": "Paste shell commands into the integrated MNE terminal",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Shell commands go into this terminal, after the prompt",
+        "target": [
+          61,
+          444,
+          1208,
+          177
+        ],
+        "label": [
+          35,
+          487
+        ],
+        "tip": [
+          61,
+          487
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/structural_imaging/structuralconnectivity/05-fod-glyphs.png",
+    "size": [
+      1104,
+      688
+    ],
+    "right_padding": 70,
+    "title": "Inspect FODs: 1 ODF display, 2 loaded FOD image, 3 glyph scale",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open the Tool menu and choose the named display panel",
+        "target": [
+          965,
+          26,
+          74,
+          36
+        ],
+        "label": [
+          882,
+          43
+        ],
+        "tip": [
+          964,
+          43
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select wmfod_norm.mif in the loaded FOD list",
+        "target": [
+          859,
+          116,
+          238,
+          19
+        ],
+        "label": [
+          1010,
+          165
+        ],
+        "tip": [
+          1010,
+          136
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Increase the glyph scale to 4",
+        "target": [
+          919,
+          570,
+          174,
+          23
+        ],
+        "label": [
+          1140,
+          581
+        ],
+        "tip": [
+          1095,
+          581
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/structural_imaging/structuralconnectivity/06-5tt-alignment.png",
+    "size": [
+      1104,
+      688
+    ],
+    "right_padding": 70,
+    "title": "Check tissue alignment: 1 Overlay, 2 visibility, 3 opacity",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open the Tool menu and choose the named display panel",
+        "target": [
+          965,
+          26,
+          74,
+          36
+        ],
+        "label": [
+          882,
+          43
+        ],
+        "tip": [
+          964,
+          43
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select the loaded image; use its checkbox to hide or show it",
+        "target": [
+          913,
+          116,
+          184,
+          19
+        ],
+        "label": [
+          1010,
+          165
+        ],
+        "tip": [
+          1010,
+          136
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Set the 5TT overlay opacity to 0.6",
+        "target": [
+          913,
+          648,
+          184,
+          16
+        ],
+        "label": [
+          1140,
+          653
+        ],
+        "tip": [
+          1098,
+          653
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/structural_imaging/structuralconnectivity/08-tractogram.png",
+    "size": [
+      1104,
+      688
+    ],
+    "right_padding": 70,
+    "title": "Inspect streamlines: 1 Tractography, 2 visibility, 3 direction colours, 4 slice slab",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open the Tool menu and choose the named display panel",
+        "target": [
+          965,
+          26,
+          74,
+          36
+        ],
+        "label": [
+          882,
+          43
+        ],
+        "tip": [
+          964,
+          43
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select the loaded image; use its checkbox to hide or show it",
+        "target": [
+          950,
+          116,
+          147,
+          19
+        ],
+        "label": [
+          1010,
+          165
+        ],
+        "tip": [
+          1010,
+          136
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Keep Direction selected for streamline colours",
+        "target": [
+          985,
+          396,
+          77,
+          24
+        ],
+        "label": [
+          1140,
+          408
+        ],
+        "tip": [
+          1064,
+          408
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Keep crop to slab checked with a thickness of 2.5 mm",
+        "target": [
+          950,
+          576,
+          141,
+          48
+        ],
+        "label": [
+          1140,
+          600
+        ],
+        "tip": [
+          1093,
+          600
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/structural_imaging/structuralconnectivity/10-nodes-alignment.png",
+    "size": [
+      1104,
+      688
+    ],
+    "right_padding": 70,
+    "title": "Check node alignment: 1 Overlay, 2 visibility, 3 opacity, 4 interpolation off",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open the Tool menu and choose the named display panel",
+        "target": [
+          965,
+          26,
+          74,
+          36
+        ],
+        "label": [
+          882,
+          43
+        ],
+        "tip": [
+          964,
+          43
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select the loaded image; use its checkbox to hide or show it",
+        "target": [
+          913,
+          116,
+          184,
+          19
+        ],
+        "label": [
+          1010,
+          165
+        ],
+        "tip": [
+          1010,
+          136
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Adjust node opacity to compare labels with the underlying anatomy",
+        "target": [
+          913,
+          648,
+          184,
+          16
+        ],
+        "label": [
+          1140,
+          620
+        ],
+        "tip": [
+          1098,
+          653
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Leave Interpolate unchecked for integer node labels",
+        "target": [
+          913,
+          667,
+          90,
+          18
+        ],
+        "label": [
+          1140,
+          674
+        ],
+        "tip": [
+          1006,
+          674
         ]
       }
     ]

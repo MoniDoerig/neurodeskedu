@@ -1,0 +1,16 @@
+Installed MRSIProc 0.1.0 parser: o:d:s:n:f:a:l:k:r:N:SuRwbq?
+
+old
+o=/example/part1
+S=
+remaining=Glu,Gln,Raw-abs-csi -N Nifti -R -b
+
+corrected
+o=/example/part1
+N=Both
+S=
+R=
+b=
+remaining=
+
+Corrected template passes bash -n. No Part 2 image processing was run: completed Part 1 data is required.

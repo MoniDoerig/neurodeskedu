@@ -31,6 +31,7 @@ on:
       - '.github/scripts/build_book.py'
       - '.github/scripts/install_oxipng.py'
       - '.github/scripts/test_build_book.py'
+      - '.github/scripts/*notebook_outputs.py'
       - '.github/scripts/verify_book.py'
       - '.github/scripts/notebook_metadata.py'
       - '.github/scripts/offload_widget_volumes.py'
@@ -1908,7 +1909,7 @@ jobs:
               if [ -n "$target" ]; then
                 echo "  Target: $target"
                 echo "  Before: $(du -h "$target" | cut -f1)"
-                cp -v "$nb_file" "$target"
+                python .github/scripts/merge_notebook_outputs.py "$target" "$nb_file"
                 echo "  After: $(du -h "$target" | cut -f1)"
                 merged=$((merged + 1))
               else

@@ -1,0 +1,36 @@
+{
+  "fsl_mrs_version": "2.4.16",
+  "input_mask_shape": [
+    48,
+    48
+  ],
+  "mask_voxels": 96,
+  "output_folders": [
+    "concs",
+    "fit",
+    "misc",
+    "nuisance",
+    "qc",
+    "uncertainties"
+  ],
+  "html_reports": [
+    "report.html"
+  ],
+  "nifti_files_checked": 222,
+  "selected_values_checked": 315936,
+  "nonfinite_selected": 0,
+  "NAA_NAAG_internal": {
+    "path": "concs/internal/NAA+NAAG.nii.gz",
+    "shape": [
+      48,
+      48,
+      1
+    ],
+    "selected_values": 96,
+    "nonfinite_selected": 0,
+    "minimum": 0.9015717477959913,
+    "maximum": 1.6968068941452359,
+    "mean": 1.3135627931968823
+  },
+  "fit_duration": "38 minutes 56 seconds"
+}

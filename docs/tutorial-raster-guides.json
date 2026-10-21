@@ -1,0 +1,320 @@
+[
+  {
+    "source": "freeview-load-volume.png",
+    "output": "books/static/tutorials/structural_imaging/freesurfer/freeview-load-volume-guide.png",
+    "title": "Freeview load volume",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Enter the T1 filename",
+        "target": [
+          16,
+          60,
+          441,
+          28
+        ],
+        "label": [
+          231,
+          116
+        ],
+        "tip": [
+          231,
+          90
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Load the volume",
+        "target": [
+          305,
+          408,
+          91,
+          28
+        ],
+        "label": [
+          350,
+          376
+        ],
+        "tip": [
+          350,
+          407
+        ]
+      }
+    ],
+    "size": [
+      508,
+      450
+    ]
+  },
+  {
+    "source": "freeview-load-segmentation.png",
+    "output": "books/static/tutorials/structural_imaging/freesurfer/freeview-load-segmentation-guide.png",
+    "title": "Freeview load segmentation",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Enter the segmentation filename",
+        "target": [
+          16,
+          60,
+          441,
+          28
+        ],
+        "label": [
+          231,
+          116
+        ],
+        "tip": [
+          231,
+          90
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Lookup Table",
+        "target": [
+          116,
+          334,
+          373,
+          29
+        ],
+        "label": [
+          84,
+          350
+        ],
+        "tip": [
+          115,
+          350
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Load the segmentation",
+        "target": [
+          305,
+          408,
+          91,
+          28
+        ],
+        "label": [
+          350,
+          376
+        ],
+        "tip": [
+          350,
+          407
+        ]
+      }
+    ],
+    "size": [
+      508,
+      450
+    ]
+  },
+  {
+    "source": "freeview-select-surface.png",
+    "output": "books/static/tutorials/structural_imaging/freesurfer/freeview-select-surface-guide.png",
+    "title": "Freeview select surface",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Select lh.pial or enter its full path",
+        "target": [
+          112,
+          418,
+          487,
+          27
+        ],
+        "label": [
+          380,
+          384
+        ],
+        "tip": [
+          380,
+          416
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Open the surface",
+        "target": [
+          609,
+          418,
+          91,
+          28
+        ],
+        "label": [
+          654,
+          384
+        ],
+        "tip": [
+          654,
+          416
+        ]
+      }
+    ],
+    "size": [
+      714,
+      497
+    ]
+  },
+  {
+    "source": "freeview-segmentation.png",
+    "output": "books/static/tutorials/structural_imaging/freesurfer/freeview-segmentation-guide.png",
+    "title": "Freeview segmentation",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Toggle the segmentation visibility",
+        "target": [
+          51,
+          110,
+          255,
+          22
+        ],
+        "label": [
+          238,
+          88
+        ],
+        "tip": [
+          238,
+          109
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Set segmentation opacity to 0.35",
+        "target": [
+          108,
+          357,
+          213,
+          27
+        ],
+        "label": [
+          363,
+          371
+        ],
+        "tip": [
+          322,
+          371
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Read the structure name in Cursor",
+        "target": [
+          345,
+          728,
+          453,
+          27
+        ],
+        "label": [
+          839,
+          737
+        ],
+        "tip": [
+          799,
+          737
+        ]
+      }
+    ],
+    "size": [
+      1451,
+      782
+    ]
+  },
+  {
+    "source": "freeview-surface.png",
+    "output": "books/static/tutorials/structural_imaging/freesurfer/freeview-surface-guide.png",
+    "title": "Freeview surface",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Hide both volume layers",
+        "target": [
+          51,
+          110,
+          261,
+          45
+        ],
+        "label": [
+          315,
+          171
+        ],
+        "tip": [
+          315,
+          156
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Single View",
+        "target": [
+          367,
+          45,
+          31,
+          31
+        ],
+        "label": [
+          383,
+          108
+        ],
+        "tip": [
+          383,
+          77
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Choose the 3D view",
+        "target": [
+          638,
+          45,
+          31,
+          31
+        ],
+        "label": [
+          654,
+          108
+        ],
+        "tip": [
+          654,
+          77
+        ]
+      }
+    ],
+    "size": [
+      1451,
+      782
+    ]
+  },
+  {
+    "source": "osf-download-folder.png",
+    "size": [
+      1280,
+      690
+    ],
+    "title": "OSF: download the current folder as Zip",
+    "markers": [
+      {
+        "number": 1,
+        "target": [
+          1031,
+          348,
+          179,
+          44
+        ],
+        "label": [
+          1115,
+          311
+        ],
+        "tip": [
+          1115,
+          346
+        ],
+        "text": "Download input as Zip"
+      }
+    ],
+    "output": "books/static/tutorials/multimodal_imaging/mfcsc/osf-download-folder-guide.png"
+  }
+]
