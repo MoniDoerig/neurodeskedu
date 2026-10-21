@@ -251,6 +251,27 @@ def controls(source: Path, review_id: str | None, reviews: dict, settings: dict)
     return "\n\n".join(blocks)
 
 
+def streamline_header(text: str, authors: bool, date: bool) -> str:
+    """The page header owns author/date metadata; preserve code and narrative text."""
+    labels = (["authors?"] if authors else []) + (["date", "last updated"] if date else [])
+    if not labels:
+        return text
+    pattern = re.compile(r"^\s*(?:\*\*|__)?(?:" + "|".join(labels)
+                         + r")(?:\*\*|__)?\s*:(?:\*\*|__)?[^\n]*$", re.I)
+    lines, fence = [], None
+    for line in text.splitlines(keepends=True):
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if marker:
+            if fence is None:
+                fence = marker[1]
+            elif marker[1][0] == fence[0] and len(marker[1]) >= len(fence):
+                fence = None
+        if fence is None and pattern.fullmatch(line.rstrip("\n")):
+            continue
+        lines.append(line)
+    return "".join(lines)
+
+
 def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], settings: dict, dois: dict) -> None:
     shutil.copytree(book, stage, dirs_exist_ok=True,
                     ignore=shutil.ignore_patterns("_build", ".ipynb_checkpoints", "_ext"))
@@ -295,6 +316,15 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
             meta["authors"] = [{"name": name} for name in authors]
         if meta.get("authors"):
             meta.pop("author", None)
+        body = streamline_header(body, bool(meta.get("authors")), bool(meta.get("date")))
+        if notebook is not None:
+            for cell in cells:
+                if cell["cell_type"] == "code":
+                    break
+                if cell["cell_type"] == "markdown" and cell is not first:
+                    cell["source"] = streamline_header(
+                        "".join(cell["source"]), bool(meta.get("authors")), bool(meta.get("date"))
+                    ).splitlines(keepends=True)
         doi = dois.get("books/" + source.as_posix(), {}).get("doi_url")
         if doi:
             meta["doi"] = doi.removeprefix("https://doi.org/")

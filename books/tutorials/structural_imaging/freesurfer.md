@@ -56,11 +56,11 @@ Paste the following path into **Select volume file (1)** in the **Load Volume** 
 
 Leave **Color map** as **Grayscale**, then click **OK (2)**.
 
-![Enter the T1 image path in the Load Volume dialog, then click OK](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-load-volume-guide.png)
+![Enter the T1 image path in the Load Volume dialog, then click OK](/static/tutorials/structural_imaging/freesurfer/freeview-load-volume-guide.png)
 
 The image appears in sagittal, coronal and axial views, with a 3D view at the bottom right. Click within an anatomical view: the other slices follow the selected location, and the **Cursor** panel reports its coordinates and image value.
 
-![The bundled anatomical image displayed in Freeview](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-anatomy.png)
+![The bundled anatomical image displayed in Freeview](/static/tutorials/structural_imaging/freesurfer/freeview-anatomy.png)
 
 ### 2. Add the segmentation
 
@@ -72,7 +72,7 @@ Choose **File → Load Volume…** again. Paste this path into **Select volume f
 
 Keep **Sample method → Nearest neighbor** selected. Set **Color map → Lookup Table (2)** and leave **Look up table → FreeSurferColorLUT**. Click **OK (3)**.
 
-![Load the segmentation using the FreeSurfer colour lookup table](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-load-segmentation-guide.png)
+![Load the segmentation using the FreeSurfer colour lookup table](/static/tutorials/structural_imaging/freesurfer/freeview-load-segmentation-guide.png)
 
 This file contains anatomical label numbers. The lookup table gives those labels distinct colours; nearest-neighbour sampling preserves the label values.
 
@@ -82,7 +82,7 @@ Select **aparc+aseg** in the left-hand **Volumes** list. Its checkbox **(1)** hi
 
 Click a coloured structure in a slice and read the **aparc+aseg** row in the **Cursor** panel **(3)**. The screenshot shows label **51, Right-Putamen**; a different location will show a different label. If the panel is too small, drag its upper divider upward.
 
-![Toggle the segmentation, adjust its opacity and read the clicked structure name](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-segmentation-guide.png)
+![Toggle the segmentation, adjust its opacity and read the clicked structure name](/static/tutorials/structural_imaging/freesurfer/freeview-segmentation-guide.png)
 
 ### 4. Add a cortical surface
 
@@ -94,7 +94,7 @@ Choose **File → Load Surface…**. In the file chooser, enter this path in **F
 
 You can also select **lh.pial** from the displayed `surf` folder, as shown below. The surface appears under **Surfaces** in the left panel.
 
-![Select the left-hemisphere pial surface and open it](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-select-surface-guide.png)
+![Select the left-hemisphere pial surface and open it](/static/tutorials/structural_imaging/freesurfer/freeview-select-surface-guide.png)
 
 ### 5. Explore the surface in 3D
 
@@ -105,7 +105,7 @@ You can also select **lh.pial** from the displayed `surf` folder, as shown below
 
 For the clean view shown here, turn off **View → Show Cursor** and **View → Show Slice Frames (3D View)**. These display options do not change the data.
 
-![Show only the cortical surface in a single 3D pane](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-surface-guide.png)
+![Show only the cortical surface in a single 3D pane](/static/tutorials/structural_imaging/freesurfer/freeview-surface-guide.png)
 
 ## What you have checked
 

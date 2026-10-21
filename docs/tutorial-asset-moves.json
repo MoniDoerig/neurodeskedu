@@ -89,5 +89,12 @@
   "books/static/tutorials/electrophysiology/fieldtrip/run-script.jpg": "books/static/tutorials/electrophysiology/fieldtrip/run-script.png",
   "books/static/tutorials/electrophysiology/fieldtrip/first-segment.jpg": "books/static/tutorials/electrophysiology/fieldtrip/first-segment.png",
   "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.jpg": "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.png",
-  "books/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.jpg": "books/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.png"
+  "books/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.jpg": "books/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.png",
+  "https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-load-volume-guide.png": "books/static/tutorials/structural_imaging/freesurfer/freeview-load-volume-guide.png",
+  "https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-anatomy.png": "books/static/tutorials/structural_imaging/freesurfer/freeview-anatomy.png",
+  "https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-load-segmentation-guide.png": "books/static/tutorials/structural_imaging/freesurfer/freeview-load-segmentation-guide.png",
+  "https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-segmentation-guide.png": "books/static/tutorials/structural_imaging/freesurfer/freeview-segmentation-guide.png",
+  "https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-select-surface-guide.png": "books/static/tutorials/structural_imaging/freesurfer/freeview-select-surface-guide.png",
+  "https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/freeview-surface-guide.png": "books/static/tutorials/structural_imaging/freesurfer/freeview-surface-guide.png",
+  "https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/osf-download-folder-guide.png": "books/static/tutorials/multimodal_imaging/mfcsc/osf-download-folder-guide.png"
 }

@@ -24,6 +24,20 @@ from verify_book import PageFormatting, PageLinks
 
 
 class BookBuildTests(unittest.TestCase):
+    def test_author_and_date_are_shown_once_without_removing_code_or_license(self):
+        text = ('# Example\n\n**Authors:** First Author, Second Author\n'
+                '**Last updated:** 21 October 2026\n**Date**: 2025-01-01\n'
+                '**License:** MIT\nAuthor of this tutorial explains the method.\n'
+                '```text\nAuthor: Git User\nDate: commit date\n```\n')
+        result = build_book.streamline_header(text, True, True)
+        self.assertNotIn('**Authors:**', result)
+        self.assertNotIn('**Last updated:**', result)
+        self.assertNotIn('**Date**:', result)
+        self.assertIn('**License:** MIT', result)
+        self.assertIn('Author of this tutorial', result)
+        self.assertIn('Author: Git User\nDate: commit date', result)
+        self.assertEqual(build_book.streamline_header(text, False, False), text)
+
     def test_tutorial_pngs_remain_lossless_after_client_navigation(self):
         built = self.root / "published"
         built.mkdir()

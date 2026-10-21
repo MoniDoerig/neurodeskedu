@@ -46,7 +46,7 @@ Each row of the pairing file must identify a functional matrix and its matching 
 
 Open **Firefox inside Neurodesk** and visit the [OSF example files](https://osf.io/d7j9n/files/osfstorage). Click the **input** folder, then **Download As Zip (1)**. Check that the current folder is **input**, as shown below.
 
-![Download the selected OSF folder as a Zip archive](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/osf-download-folder-guide.png)
+![Download the selected OSF folder as a Zip archive](/static/tutorials/multimodal_imaging/mfcsc/osf-download-folder-guide.png)
 
 Wait for `d7j9n-osfstorage-input-archive.zip` to appear in Firefox's **Downloads**. The archive is approximately 6.5 MB. These public files do not require an OSF sign-in.
 
