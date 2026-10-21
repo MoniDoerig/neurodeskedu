@@ -13,13 +13,9 @@ description: A brief guide to using fmriprep with neurodesk
 authors:
 - name: Kelly G. Garner
 - name: Michèle Masson-Trottier
-date: '2026-10-20'
+date: '2026-10-21'
 ---
 # Using fmriprep with neurodesk on an HPC
-
-**Authors:** Kelly G. Garner, Michèle Masson-Trottier
-
-**Last updated:** 20 October 2026
 
 :::{admonition} Learning Objectives
 :class: tip
@@ -65,13 +61,13 @@ A brief guide to using fmriprep with Neurodesk.
 
 In JupyterLab, open a Launcher tab with the **+** button. Under **Neurodesk**, select **Neurodesktop RDP** or **Neurodesktop VNC**.
 
-![Current JupyterLab Launcher with Neurodesktop options](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/neurodesktop-launcher-desktop.png)
+![Current JupyterLab Launcher with Neurodesktop options](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/neurodesktop-launcher-desktop.png)
 
 ### Open fMRIPrep
 
 In the bottom-left Applications menu, select **Neurodesk (1) → Functional Imaging (2) → fmriprep (3) → fmriprep 25.2.6 (4)**. The four numbers match the screenshot below.
 
-![Neurodesk application categories on the current desktop](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launch-fmriprep-guide.png)
+![Neurodesk application categories on the current desktop](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/launch-fmriprep-guide.png)
 
 The application entry opens a terminal with fMRIPrep loaded. Check the version before entering the analysis command:
 

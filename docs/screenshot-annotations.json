@@ -687,45 +687,45 @@
   {
     "source": "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.jpg",
     "size": [
-      1245,
-      675
+      806,
+      438
     ],
     "title": "FieldTrip browser: 1 next segment, 2 horizontal zoom",
     "markers": [
       {
         "number": 1,
-        "text": "Move to the next segment",
+        "text": "Advance one segment",
         "target": [
-          224,
-          646,
-          61,
-          27
+          145,
+          419,
+          40,
+          18
         ],
         "label": [
-          308,
-          618
+          164,
+          394
         ],
         "tip": [
-          285,
-          646
+          164,
+          417
         ]
       },
       {
         "number": 2,
-        "text": "Shorten the displayed time interval",
+        "text": "Shorten the time interval",
         "target": [
-          799,
-          646,
-          59,
-          27
+          516,
+          419,
+          39,
+          18
         ],
         "label": [
-          884,
-          618
+          535,
+          394
         ],
         "tip": [
-          858,
-          646
+          535,
+          417
         ]
       }
     ]
@@ -2081,6 +2081,126 @@
         "tip": [
           678,
           85
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/fieldtrip/download-script.jpg",
+    "size": [
+      806,
+      409
+    ],
+    "title": "Download the FieldTrip MATLAB script",
+    "markers": [
+      {
+        "number": 1,
+        "target": [
+          747,
+          156,
+          25,
+          20
+        ],
+        "label": [
+          729,
+          129
+        ],
+        "tip": [
+          761,
+          154
+        ],
+        "text": "Download raw file"
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/mrsiproc/part1-template.jpg",
+    "size": [
+      806,
+      362
+    ],
+    "title": "MRSI Part 1: set the input paths and output folder",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Set the acquisition and structural input paths",
+        "target": [
+          0,
+          77,
+          409,
+          40
+        ],
+        "label": [
+          450,
+          95
+        ],
+        "tip": [
+          409,
+          95
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Set the Part 1 output folder",
+        "target": [
+          0,
+          116,
+          535,
+          14
+        ],
+        "label": [
+          579,
+          123
+        ],
+        "tip": [
+          535,
+          123
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/mrsiproc/part2-template.jpg",
+    "size": [
+      806,
+      362
+    ],
+    "title": "MRSI Part 2: results folder and corrected argument flags",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Default Part 1 results folder",
+        "target": [
+          0,
+          89,
+          535,
+          15
+        ],
+        "label": [
+          579,
+          96
+        ],
+        "tip": [
+          535,
+          96
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Use -N Both and the argument-free -S, -R and -b flags",
+        "target": [
+          21,
+          292,
+          104,
+          54
+        ],
+        "label": [
+          154,
+          318
+        ],
+        "tip": [
+          126,
+          318
         ]
       }
     ]

@@ -13,10 +13,6 @@ date: '2026-10-20'
 ---
 # Structural connectivity dMRI
 
-**Authors:** Joan Amos, Michèle Masson-Trottier
-
-**Last updated:** 20 October 2026
-
 :::{admonition} Learning Objectives
 :class: tip
 

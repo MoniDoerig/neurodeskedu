@@ -1,0 +1,1066 @@
+{
+  "date": "2026-10-21",
+  "pages_checked": 99,
+  "method": "Rendered browser DOM inspection at the normal desktop viewport, exported article validation, and visual review of affected layouts in dark and light themes.",
+  "fixed": {
+    "screenshot_caption_pairs": 18,
+    "affected_tutorials": [
+      "Accessing Tools in Neurodesk",
+      "SWI",
+      "ROMEO"
+    ],
+    "empty_published_headings": 10,
+    "duplicate_published_titles": 2,
+    "code_colors": {
+      "light": "#456b1b",
+      "dark": "#b7d886"
+    }
+  },
+  "checks": [
+    "one article title per page",
+    "no empty headings",
+    "no page-wide horizontal overflow",
+    "no tiny visible screenshots with descriptive alt text",
+    "inline code uses green instead of theme pink"
+  ],
+  "pages": [
+    {
+      "source": "examples/spectroscopy/osprey.ipynb",
+      "route": "examples/spectroscopy/osprey/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "MR Spectroscopy with Osprey - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/AFNI_preprocessing_plus_glm.ipynb",
+      "route": "examples/functional-imaging/afni-preprocessing-plus-glm/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "AFNI Preprocessing and GLM - Neurodesk"
+    },
+    {
+      "source": "contribute/examples.md",
+      "route": "contribute/examples/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Creating Example Notebooks - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/AFNI_processing_task_based.ipynb",
+      "route": "examples/functional-imaging/afni-processing-task-based/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Processing task-based FMRI with AFNI and afni_proc.py - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/deepretinotopy.ipynb",
+      "route": "examples/functional-imaging/deepretinotopy/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "DeepRetinotopy Toolbox - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/intro.md",
+      "route": "examples/diffusion-imaging/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Diffusion Imaging - Neurodesk"
+    },
+    {
+      "source": "tutorials/about_neurodesk/MySt_neurodesk.ipynb",
+      "route": "tutorials/about-neurodesk/myst-neurodesk/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Working with MyST in Neurodesk - Neurodesk"
+    },
+    {
+      "source": "tutorials/spectroscopy/intro.md",
+      "route": "tutorials/spectroscopy/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Spectroscopy - Neurodesk"
+    },
+    {
+      "source": "tutorials/reproducibility/datalad-run.md",
+      "route": "tutorials/reproducibility/datalad-run/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Reproducible script execution with DataLad - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/MRIQC.ipynb",
+      "route": "examples/workflows/mriqc/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "MRIQC - Neurodesk"
+    },
+    {
+      "source": "examples/spectroscopy/intro.md",
+      "route": "examples/spectroscopy/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Spectroscopy - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/Demo_fmriprep_FEAT.ipynb",
+      "route": "examples/functional-imaging/demo-fmriprep-feat/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Scripted First-Level Analyses in FSL using fMRIPrep data - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/nipype_short.ipynb",
+      "route": "examples/workflows/nipype-short/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Basic Nipype - Neurodesk"
+    },
+    {
+      "source": "tutorials/open_data/datalad.md",
+      "route": "tutorials/open-data/datalad/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "datalad - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/mrtrix3tissue.ipynb",
+      "route": "examples/diffusion-imaging/mrtrix3tissue/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "MRtrix3Tissue - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/AFNI_preprocessing_only.ipynb",
+      "route": "examples/functional-imaging/afni-preprocessing-only/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "AFNI Preprocessing - Neurodesk"
+    },
+    {
+      "source": "tutorials/open_data/osfclient.md",
+      "route": "tutorials/open-data/osfclient/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "osfclient - Neurodesk"
+    },
+    {
+      "source": "examples/structural_imaging/sct_toolbox.ipynb",
+      "route": "examples/structural-imaging/sct-toolbox/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "SCT Toolbox - Neurodesk"
+    },
+    {
+      "source": "examples/electrophysiology/eeg_with_mne.ipynb",
+      "route": "examples/electrophysiology/eeg-with-mne/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "EEG Analysis with MNE - Neurodesk"
+    },
+    {
+      "source": "tutorials/functional_imaging/physio.md",
+      "route": "tutorials/functional-imaging/physio/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "PhysIO - Neurodesk"
+    },
+    {
+      "source": "tutorials/electrophysiology/intro.md",
+      "route": "tutorials/electrophysiology/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Electrophysiology - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/fsl_all_levels_flanker_nipype.ipynb",
+      "route": "examples/functional-imaging/fsl-all-levels-flanker-nipype/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Nipype-FSL fMRI Analysis - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/DIPY_1.ipynb",
+      "route": "examples/diffusion-imaging/dipy-1/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Basic Tracking with DIPY - Neurodesk"
+    },
+    {
+      "source": "examples/quantitative_imaging/qsmxt.ipynb",
+      "route": "examples/quantitative-imaging/qsmxt/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "QSMxT - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/intro.md",
+      "route": "examples/workflows/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Workflows - Neurodesk"
+    },
+    {
+      "source": "examples/intro.md",
+      "route": "examples/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Examples - Neurodesk"
+    },
+    {
+      "source": "contribute/tutorials.md",
+      "route": "contribute/tutorials/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Creating Tutorials - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/MRtrix_3.ipynb",
+      "route": "examples/diffusion-imaging/mrtrix-3/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "MRtrix: Part 3 - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/FSL_preproc_glm.ipynb",
+      "route": "examples/functional-imaging/fsl-preproc-glm/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "FSL Preprocessing and GLM - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/fmriprep.ipynb",
+      "route": "examples/functional-imaging/fmriprep/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "fMRIprep - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/PyBIDS.ipynb",
+      "route": "examples/workflows/pybids/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "PyBIDS - Neurodesk"
+    },
+    {
+      "source": "tutorials/functional_imaging/physio_batch_workflow.md",
+      "route": "tutorials/functional-imaging/physio-batch-workflow/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "A batch scripting example for PhysIO toolbox - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/qsirecon.ipynb",
+      "route": "examples/diffusion-imaging/qsirecon/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "QSIRecon - Neurodesk"
+    },
+    {
+      "source": "tutorials/structural_imaging/structuralconnectivity.md",
+      "route": "tutorials/structural-imaging/structuralconnectivity/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Structural connectivity dMRI - Neurodesk"
+    },
+    {
+      "source": "tutorials/electrophysiology/EEG_mne-python.md",
+      "route": "tutorials/electrophysiology/eeg-mne-python/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Analysing EEG Data with MNE - Neurodesk"
+    },
+    {
+      "source": "examples/structural_imaging/freesurfer.ipynb",
+      "route": "examples/structural-imaging/freesurfer/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "FreeSurfer - Neurodesk"
+    },
+    {
+      "source": "tutorials/multimodal_imaging/MFCSC.md",
+      "route": "tutorials/multimodal-imaging/mfcsc/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Using MFCSC - Neurodesk"
+    },
+    {
+      "source": "examples/structural_imaging/brainageR.ipynb",
+      "route": "examples/structural-imaging/brainager/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Brain Age Prediction with brainageR - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/AA_Neurodesk_demo_tour.ipynb",
+      "route": "examples/workflows/aa-neurodesk-demo-tour/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Neurodesk Tools Demo - Neurodesk"
+    },
+    {
+      "source": "examples/structural_imaging/SYNcro.ipynb",
+      "route": "examples/structural-imaging/syncro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "SYNcro - Neurodesk"
+    },
+    {
+      "source": "tutorials/phase_processing/intro.md",
+      "route": "tutorials/phase-processing/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Phase Processing - Neurodesk"
+    },
+    {
+      "source": "contribute/intro.md",
+      "route": "contribute/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Contribute - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/qsiprep.ipynb",
+      "route": "examples/diffusion-imaging/qsiprep/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "QSIPrep - Neurodesk"
+    },
+    {
+      "source": "tutorials/multimodal_imaging/intro.md",
+      "route": "tutorials/multimodal-imaging/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Multimodal Imaging - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/MRtrix_2.ipynb",
+      "route": "examples/diffusion-imaging/mrtrix-2/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "MRtrix: Part 2 - Neurodesk"
+    },
+    {
+      "source": "examples/template.ipynb",
+      "route": "examples/template/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Example Notebook Template - Neurodesk"
+    },
+    {
+      "source": "tutorials/structural_imaging/freesurfer.md",
+      "route": "tutorials/structural-imaging/freesurfer/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "FreeSurfer: viewing anatomy with Freeview - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/pydra_preproc_ants.ipynb",
+      "route": "examples/workflows/pydra-preproc-ants/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [
+        {
+          "alt": "",
+          "complete": true,
+          "h": 19,
+          "nw": 560,
+          "shared": false,
+          "src": "http://localhost:8000/build/1fc0746e8516ea6b644e483f3631484c.webp",
+          "w": 20
+        },
+        {
+          "alt": "",
+          "complete": true,
+          "h": 19,
+          "nw": 560,
+          "shared": false,
+          "src": "http://localhost:8000/build/1fc0746e8516ea6b644e483f3631484c.webp",
+          "w": 20
+        }
+      ],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Pydra - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/process_five_echo_dataset.ipynb",
+      "route": "examples/functional-imaging/process-five-echo-dataset/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "tedana: TE Dependent ANAlysis - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/ipyniivue_ipywidgets.ipynb",
+      "route": "examples/workflows/ipyniivue-ipywidgets/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Ipyniivue and Ipywidgets - Neurodesk"
+    },
+    {
+      "source": "tutorials/phase_processing/swi.ipynb",
+      "route": "tutorials/phase-processing/swi/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Susceptibility-Weighted Imaging (SWI) - Neurodesk"
+    },
+    {
+      "source": "contribute/review.md",
+      "route": "contribute/review/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Reviewing Existing NeurodeskEDU Resources - Neurodesk"
+    },
+    {
+      "source": "examples/structural_imaging/FSL_course_bet.ipynb",
+      "route": "examples/structural-imaging/fsl-course-bet/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "FSL course - BET - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/MRtrix_1.ipynb",
+      "route": "examples/diffusion-imaging/mrtrix-1/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "MRtrix: Part 1 - Neurodesk"
+    },
+    {
+      "source": "tutorials/programming/intro.md",
+      "route": "tutorials/programming/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Programming - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/fMRI_tutorial_in_R_magic.ipynb",
+      "route": "examples/functional-imaging/fmri-tutorial-in-r-magic/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Resting-State fMRI Analysis in R - Neurodesk"
+    },
+    {
+      "source": "tutorials/functional_imaging/intro.md",
+      "route": "tutorials/functional-imaging/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Functional Imaging - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/Diffusion_TBSS_Demo.ipynb",
+      "route": "examples/diffusion-imaging/diffusion-tbss-demo/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "TBSS Tutorial - Neurodesk"
+    },
+    {
+      "source": "tutorials/electrophysiology/fieldtrip.md",
+      "route": "tutorials/electrophysiology/fieldtrip/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Analysing M/EEG Data with FieldTrip - Neurodesk"
+    },
+    {
+      "source": "examples/spectroscopy/lcmodel.ipynb",
+      "route": "examples/spectroscopy/lcmodel/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "MR Spectroscopy with LCModel - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/nipype_full.ipynb",
+      "route": "examples/workflows/nipype-full/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Nipype on Neurodesk - Neurodesk"
+    },
+    {
+      "source": "examples/structural_imaging/intro.md",
+      "route": "examples/structural-imaging/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Structural Imaging - Neurodesk"
+    },
+    {
+      "source": "tutorials/open_data/intro.md",
+      "route": "tutorials/open-data/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Open Data - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/mri_vol2surf.ipynb",
+      "route": "examples/functional-imaging/mri-vol2surf/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "FreeSurfer: mri_vol2surf - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/bids_conversion.ipynb",
+      "route": "examples/workflows/bids-conversion/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "BIDS conversion - Neurodesk"
+    },
+    {
+      "source": "examples/structural_imaging/freesurfer-recon-all-clinical.ipynb",
+      "route": "examples/structural-imaging/freesurfer-recon-all-clinical/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [
+        {
+          "alt": "",
+          "complete": true,
+          "h": 19,
+          "nw": 560,
+          "shared": false,
+          "src": "http://localhost:8000/build/1fc0746e8516ea6b644e483f3631484c.webp",
+          "w": 30
+        }
+      ],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "FreeSurfer: recon-all-clinical - Neurodesk"
+    },
+    {
+      "source": "tutorials/reproducibility/intro.md",
+      "route": "tutorials/reproducibility/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Reproducibility - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/nextflow_neurodesk.ipynb",
+      "route": "examples/workflows/nextflow-neurodesk/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Nextflow in Neurodesk - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/intro_to_preprocessing.ipynb",
+      "route": "examples/functional-imaging/intro-to-preprocessing/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Introduction to Preprocessing - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/snakemake.ipynb",
+      "route": "examples/workflows/snakemake/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Snakemake - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/Demo_FEAT_HigherLevelStats.ipynb",
+      "route": "examples/functional-imaging/demo-feat-higherlevelstats/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Scripted Higher-Level Analyses in FSL using FEAT derivatives - Neurodesk"
+    },
+    {
+      "source": "examples/electrophysiology/intro.md",
+      "route": "examples/electrophysiology/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Electrophysiology - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/container_paths_neurodesk.ipynb",
+      "route": "examples/workflows/container-paths-neurodesk/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Container Resource Paths on Neurodesk - Neurodesk"
+    },
+    {
+      "source": "tutorials/about_neurodesk/accessing_neurodesk_tools.ipynb",
+      "route": "tutorials/about-neurodesk/accessing-neurodesk-tools/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Accessing Tools in Neurodesk - Neurodesk"
+    },
+    {
+      "source": "tutorials/spectroscopy/mrsiproc.md",
+      "route": "tutorials/spectroscopy/mrsiproc/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Spectroscopy pipeline - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/first_and_second_level_spm.ipynb",
+      "route": "examples/functional-imaging/first-and-second-level-spm/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Nipype-SPM fMRI Analysis - Neurodesk"
+    },
+    {
+      "source": "tutorials/intro.md",
+      "route": "tutorials/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Tutorials - Neurodesk"
+    },
+    {
+      "source": "tutorials/phase_processing/unwrapping.ipynb",
+      "route": "tutorials/phase-processing/unwrapping/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "MRI Phase Unwrapping with ROMEO - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/FSLnets_course_practical.ipynb",
+      "route": "examples/functional-imaging/fslnets-course-practical/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Resting state with FSLnets - Neurodesk"
+    },
+    {
+      "source": "tutorials/structural_imaging/intro.md",
+      "route": "tutorials/structural-imaging/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Structural Imaging - Neurodesk"
+    },
+    {
+      "source": "examples/diffusion_imaging/DIPY_2.ipynb",
+      "route": "examples/diffusion-imaging/dipy-2/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Advanced Tracking with DIPY - Neurodesk"
+    },
+    {
+      "source": "examples/structural_imaging/brain_extraction_different_tools.ipynb",
+      "route": "examples/structural-imaging/brain-extraction-different-tools/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Brain Extraction Tools - Neurodesk"
+    },
+    {
+      "source": "tutorials/programming/matlab.md",
+      "route": "tutorials/programming/matlab/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Matlab - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/intro.md",
+      "route": "examples/functional-imaging/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Functional Imaging - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/papermill-slurm-submission-example.ipynb",
+      "route": "examples/workflows/papermill-slurm-submission-example/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Papermill Slurm Job Submission - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/NiWrap.ipynb",
+      "route": "examples/functional-imaging/niwrap/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "NiWrap and Connectome Workbench - Neurodesk"
+    },
+    {
+      "source": "examples/quantitative_imaging/intro.md",
+      "route": "examples/quantitative-imaging/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Quantitative Imaging - Neurodesk"
+    },
+    {
+      "source": "tutorials/functional_imaging/spm.md",
+      "route": "tutorials/functional-imaging/spm/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Statistical Parametric Mapping (SPM) - Neurodesk"
+    },
+    {
+      "source": "tutorials/about_neurodesk/intro.md",
+      "route": "tutorials/about-neurodesk/intro/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "About Neurodesk - Neurodesk"
+    },
+    {
+      "source": "tutorials/about_neurodesk/RISE_slideshow.ipynb",
+      "route": "tutorials/about-neurodesk/rise-slideshow/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "RISE Slideshow - Neurodesk"
+    },
+    {
+      "source": "intro.md",
+      "route": "",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [
+        {
+          "alt": "NeurodeskEDU - Neurodesk's education and learning resources",
+          "complete": true,
+          "h": 0,
+          "nw": 300,
+          "shared": false,
+          "src": "http://localhost:8000/build/neurodesk-edu-option-354beb74ff0398a4a45b61671c2b5630.svg",
+          "w": 0
+        },
+        {
+          "alt": "Neurodesk tutorials vs examples",
+          "complete": true,
+          "h": 0,
+          "nw": 248,
+          "shared": false,
+          "src": "http://localhost:8000/build/neurodesk-tutorials--74265f600d0baf8c42eb4a71d2c5dbf7.svg",
+          "w": 0
+        }
+      ],
+      "inlineCode": null,
+      "overflow": false,
+      "title": "Neurodesk"
+    },
+    {
+      "source": "tutorials/programming/conda.md",
+      "route": "tutorials/programming/conda/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Conda environments - Neurodesk"
+    },
+    {
+      "source": "tutorials/functional_imaging/mriqc.md",
+      "route": "tutorials/functional-imaging/mriqc/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "MRIQC: inspecting anatomical image quality - Neurodesk"
+    },
+    {
+      "source": "examples/workflows/Magic_commands.ipynb",
+      "route": "examples/workflows/magic-commands/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Magic Commands - Neurodesk"
+    },
+    {
+      "source": "tutorials/functional_imaging/fmriprep.md",
+      "route": "tutorials/functional-imaging/fmriprep/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Using fmriprep with neurodesk on an HPC - Neurodesk"
+    },
+    {
+      "source": "examples/functional_imaging/AFNI_preprocessing_plus_glm_group.ipynb",
+      "route": "examples/functional-imaging/afni-preprocessing-plus-glm-group/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "AFNI Preprocessing & Group Analysis - Neurodesk"
+    },
+    {
+      "source": "tutorials/spectroscopy/lcmodel.md",
+      "route": "tutorials/spectroscopy/lcmodel/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Spectroscopy with lcmodel - Neurodesk"
+    },
+    {
+      "source": "examples/quantitative_imaging/aslprep.ipynb",
+      "route": "examples/quantitative-imaging/aslprep/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "ASLprep - Neurodesk"
+    },
+    {
+      "source": "tutorials/functional_imaging/connectomeWorkbench.md",
+      "route": "tutorials/functional-imaging/connectomeworkbench/",
+      "emptyHeadings": 0,
+      "headingCount": 1,
+      "images": [],
+      "inlineCode": "rgb(183, 216, 134)",
+      "overflow": false,
+      "title": "Connectome Workbench - Neurodesk"
+    }
+  ]
+}

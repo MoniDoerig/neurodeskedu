@@ -9,13 +9,9 @@ description: 'Use mne-python to load, pre-process, and plot example EEG data in 
 authors:
 - name: Angela Renton
 - name: Michèle Masson-Trottier
-date: '2026-10-20'
+date: '2026-10-21'
 ---
 # Analysing EEG Data with MNE
-
-**Authors:** Angela Renton, Michèle Masson-Trottier
-
-**Last updated:** 20 October 2026
 
 :::{admonition} Learning Objectives
 :class: tip
@@ -44,7 +40,7 @@ Use mne-python to load, pre-process, and plot example EEG data in a jupyter note
 
 To begin, navigate to Neurodesk → Electrophysiology → mne → code 0.23.4 in the menu. This version of vscode has been installed in a software container together with a conda environment containing MNE-python. Note that if you open any other version of vscode in Neurodesk, you will not be able to access the MNE conda environment.
 
-![Click 1 Neurodesk, 2 Electrophysiology, 3 mne, and 4 code 0.23.4](https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launch-mne-guide.png)
+![Click 1 Neurodesk, 2 Electrophysiology, 3 mne, and 4 code 0.23.4](https://raw.githubusercontent.com/neurodesk/media/neurodesk-shared-gui-controls-2026-10-20/screenshots/neurodesk/launch-mne-guide.png)
 
 Follow the numbered menu targets: **1** Neurodesk → **2** Electrophysiology → **3** mne → **4** code 0.23.4.
 

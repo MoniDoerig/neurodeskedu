@@ -1,0 +1,22 @@
+MFCSC: public example results
+
+Participant matrices: 50
+Matrix shape: 84 x 84
+Connections selected by final mask: 1009
+Non-finite selected values: 15 across 8 participants
+Non-finite values coinciding with zero input SC: 15
+Invalid -999 values inside the mask: 0
+Connections valid across all participants: 998
+
+Reference matches within 1.1e-5: 50/50
+Matching reference NaN patterns: 50/50
+Largest finite difference: 1e-05
+Identical original masks: True
+
+Masked mismatch matrix
+
+Grey cells are excluded by the final mask, have an invalid sentinel value, or are non-finite in at least one participant. The lower triangle and between-hemisphere blocks are excluded by this run's defaults.
+
+The original results are unchanged. The separate common-valid-mask.csv is a conservative QC mask for comparing the same valid connections across participants.
+
+Example file: mFCSC-129028_sFC_meanFC-129028-masked.csv

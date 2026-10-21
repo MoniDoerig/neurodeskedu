@@ -45,12 +45,12 @@ def main():
                 f'<rect x="{x}" y="{y}" width="{w}" height="{h}" '
                 'rx="3" fill="none" stroke="white" stroke-width="5"/>',
                 f'<rect x="{x}" y="{y}" width="{w}" height="{h}" '
-                'rx="3" fill="none" stroke="#e76f00" stroke-width="2.5"/>',
+                'rx="3" fill="none" stroke="#6aa329" stroke-width="2.5"/>',
                 f'<path d="{line}" fill="none" '
                 'stroke="white" stroke-width="5"/>',
                 f'<path d="{line}" fill="none" '
-                'stroke="#e76f00" stroke-width="2.5"/>',
-                f'<circle cx="{cx}" cy="{cy}" r="12" fill="#123c5a" '
+                'stroke="#6aa329" stroke-width="2.5"/>',
+                f'<circle cx="{cx}" cy="{cy}" r="12" fill="#456b1b" '
                 'stroke="white" stroke-width="2"/>',
                 f'<text x="{cx}" y="{cy + 4.5}" text-anchor="middle" '
                 'font-family="Arial, sans-serif" font-size="14" '

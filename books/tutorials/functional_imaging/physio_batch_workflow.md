@@ -16,10 +16,6 @@ date: '2026-10-20'
 ---
 # A batch scripting example for PhysIO toolbox
 
-**Authors:** Kelly G. Garner, Michèle Masson-Trottier
-
-**Last updated:** 20 October 2026
-
 :::{admonition} Learning Objectives
 :class: tip
 

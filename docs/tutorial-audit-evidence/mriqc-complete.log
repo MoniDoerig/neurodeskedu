@@ -1,0 +1,47 @@
+nohup: ignoring input
+------------------------------------------------------------------
+  Running MRIQC version 24.1.0.dev0+gd5b13cb5.d20240826
+  ----------------------------------------------------------------
+
+  NOTICE
+  Copyright © The NiPreps Developers.
+  
+  This product includes software developed by
+  the NiPreps Community (https://nipreps.org/).
+  
+  Portions of this software were developed at the Department of
+  Psychology at Stanford University, Stanford, CA, US.
+  
+  This software contains code ultimately derived from the
+  PCP Quality Assessment Protocol (QAP;
+  http://preprocessed-connectomes-project.org/quality-assessment-protocol)
+  by C. Craddock, S. Giavasis, D. Clark, Z. Shezhad, and J. Pellman.
+  
+  This software is also distributed as a Docker container image.
+  The bootstrapping file for the image ("Dockerfile") is licensed
+  under the MIT License.
+
+  ----------------------------------------------------------------
+
+  * BIDS dataset path: /home/jovyan/neurodesktop-storage/open-data/ds000102.
+  * Output folder: /home/jovyan/neurodesktop-storage/mriqc-demo.
+  * Analysis levels: ['participant'].
+------------------------------------------------------------------
+
+2026-10-20 05:38:17 | IMPORTANT | mriqc            | DataLad dataset identified, attempting to `datalad get` unavailable files.
+2026-10-20 05:38:18 | IMPORTANT | mriqc            | Extracting metadata and entities for 1 input runs of modality 't1w'...
+2026-10-20 05:38:18 | IMPORTANT | mriqc            | File size ('t1w'): 0.01|0.01 GB [maximum|average].
+2026-10-20 05:38:25 | IMPORTANT | mriqc            | Building MRIQC's workflows...
+2026-10-20 05:38:32 | IMPORTANT | mriqc            | Workflow building finished (exit code 0).
+2026-10-20 05:41:27 | INFO     | niworkflows      | Estimating initial transform using AffineInitializer
+2026-10-20 05:42:01 | INFO     | niworkflows      | Loading settings from file /opt/conda/lib/python3.11/site-packages/niworkflows/data/t1w-mni_registration_testing_000.json.
+2026-10-20 05:42:01 | INFO     | niworkflows      | Retry #1, commandline: 
+antsRegistration --collapse-output-transforms 1 --dimensionality 3 --float 0 --initial-moving-transform [ /home/jovyan/neurodesktop-storage/mriqc-work/mriqc_wf/anatMRIQC/SpatialNormalization/_entities_subject08.suffixT1w.datatypeanat.extension.nii.gz_in_file_..home..jovyan..neurodesktop-storage..open-data..ds000102..sub-08..anat..sub-08_T1w.nii.gz_metadata_FileSize0.00983593612909317.FileSizeUnitsGB.NumberOfVolumes1/SpatialNormalization/transform.mat, 0 ] --initialize-transforms-per-stage 0 --interpolation LanczosWindowedSinc --output [ ants_t1_to_mni, ants_t1_to_mni_Warped.nii.gz ] --transform Rigid[ 1.0 ] --metric Mattes[ /home/jovyan/neurodesktop-storage/mriqc-work/mriqc_wf/anatMRIQC/SpatialNormalization/_entities_subject08.suffixT1w.datatypeanat.extension.nii.gz_in_file_..home..jovyan..neurodesktop-storage..open-data..ds000102..sub-08..anat..sub-08_T1w.nii.gz_metadata_FileSize0.00983593612909317.FileSizeUnitsGB.NumberOfVolumes1/SpatialNormalization/fixed_masked.nii.gz, /home/jovyan/neurodesktop-storage/mriqc-work/mriqc_wf/anatMRIQC/SpatialNormalization/_entities_subject08.suffixT1w.datatypeanat.extension.nii.gz_in_file_..home..jovyan..neurodesktop-storage..open-data..ds000102..sub-08..anat..sub-08_T1w.nii.gz_metadata_FileSize0.00983593612909317.FileSizeUnitsGB.NumberOfVolumes1/SpatialNormalization/moving_masked.nii.gz, 1, 56, Random, 0.2 ] --convergence [ 20, 1e-07, 15 ] --smoothing-sigmas 4.0vox --shrink-factors 2 --use-histogram-matching 0 --transform Affine[ 1.0 ] --metric Mattes[ /home/jovyan/neurodesktop-storage/mriqc-work/mriqc_wf/anatMRIQC/SpatialNormalization/_entities_subject08.suffixT1w.datatypeanat.extension.nii.gz_in_file_..home..jovyan..neurodesktop-storage..open-data..ds000102..sub-08..anat..sub-08_T1w.nii.gz_metadata_FileSize0.00983593612909317.FileSizeUnitsGB.NumberOfVolumes1/SpatialNormalization/fixed_masked.nii.gz, /home/jovyan/neurodesktop-storage/mriqc-work/mriqc_wf/anatMRIQC/SpatialNormalization/_entities_subject08.suffixT1w.datatypeanat.extension.nii.gz_in_file_..home..jovyan..neurodesktop-storage..open-data..ds000102..sub-08..anat..sub-08_T1w.nii.gz_metadata_FileSize0.00983593612909317.FileSizeUnitsGB.NumberOfVolumes1/SpatialNormalization/moving_masked.nii.gz, 1, 56, Random, 0.1 ] --convergence [ 15, 1e-08, 5 ] --smoothing-sigmas 2.0vox --shrink-factors 1 --use-histogram-matching 1 --winsorize-image-intensities [ 0.005, 0.995 ]  --write-composite-transform 1
+2026-10-20 05:42:10 | INFO     | niworkflows      | Successful spatial normalization (retry #1).
+2026-10-20 05:42:12 | INFO     | niworkflows      | Report - setting fixed (/home/jovyan/neurodesktop-storage/mriqc-work/mriqc_wf/anatMRIQC/SpatialNormalization/_entities_subject08.suffixT1w.datatypeanat.extension.nii.gz_in_file_..home..jovyan..neurodesktop-storage..open-data..ds000102..sub-08..anat..sub-08_T1w.nii.gz_metadata_FileSize0.00983593612909317.FileSizeUnitsGB.NumberOfVolumes1/SpatialNormalization/fixed_masked.nii.gz) and moving (/home/jovyan/neurodesktop-storage/mriqc-work/mriqc_wf/anatMRIQC/SpatialNormalization/_entities_subject08.suffixT1w.datatypeanat.extension.nii.gz_in_file_..home..jovyan..neurodesktop-storage..open-data..ds000102..sub-08..anat..sub-08_T1w.nii.gz_metadata_FileSize0.00983593612909317.FileSizeUnitsGB.NumberOfVolumes1/SpatialNormalization/ants_t1_to_mni_Warped.nii.gz) images
+2026-10-20 05:42:12 | INFO     | niworkflows      | Generating visual report
+2026-10-20 05:44:14 | IMPORTANT | mriqc            | Participant level finished successfully averaging 00h 06min 04s per subject.
+----------------------------------------------------------------
+  MRIQC completed (elapsed time 00h 06min 04s).
+----------------------------------------------------------------
+

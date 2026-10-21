@@ -28,6 +28,54 @@ class PageLinks(HTMLParser):
             self.refresh = attrs["content"].split("url=", 1)[1]
 
 
+class PageFormatting(HTMLParser):
+    """Catch title and screenshot layout regressions in every exported article."""
+
+    def __init__(self, text):
+        super().__init__()
+        self.article = False
+        self.heading = None
+        self.h1_count = 0
+        self.paragraph = None
+        self.problems = []
+        self.feed(text)
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "article":
+            self.article = True
+        if not self.article:
+            return
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+            self.heading = ""
+            self.h1_count += tag == "h1"
+        if tag == "p":
+            self.paragraph = {"screenshot": False, "text": ""}
+        if tag == "img" and self.paragraph is not None:
+            origin = attrs.get("data-canonical-url", attrs.get("src", ""))
+            self.paragraph["screenshot"] |= (
+                "/screenshots/neurodesk/" in origin or "/static/tutorials/" in origin
+            )
+
+    def handle_data(self, text):
+        if self.heading is not None:
+            self.heading += text
+        if self.paragraph is not None:
+            self.paragraph["text"] += text
+
+    def handle_endtag(self, tag):
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"} and self.heading is not None:
+            if not self.heading.replace("¶", "").strip():
+                self.problems.append("Empty heading")
+            self.heading = None
+        if tag == "p" and self.paragraph is not None:
+            if self.paragraph["screenshot"] and self.paragraph["text"].strip():
+                self.problems.append("Screenshot shares a paragraph with text; separate the caption")
+            self.paragraph = None
+        if tag == "article":
+            self.article = False
+
+
 def verify(book: Path, raw: Path) -> None:
     pages, _ = discover(book)
     output = book / "_build/html"
@@ -36,7 +84,11 @@ def verify(book: Path, raw: Path) -> None:
     assert set(routes) == {p.as_posix() for p in pages}, "Exported page inventory differs from the sources"
     assert len(set(routes.values())) == len(pages), "Page routes collide"
     for source in pages:
-        page = PageLinks((output / routes[source.as_posix()] / "index.html").read_text())
+        html = (output / routes[source.as_posix()] / "index.html").read_text()
+        page = PageLinks(html)
+        layout = PageFormatting(html)
+        assert layout.h1_count == 1, f"Expected one article title: {source}"
+        assert not layout.problems, f"{source}: {layout.problems}"
         editor = (settings["repository"].replace("://github.com/", "://github.dev/") + "/blob"
                   if source.suffix == ".ipynb" else settings["repository"] + "/edit")
         edit_url = f"{editor}/{settings['branch']}/books/{quote(source.as_posix())}"
@@ -80,7 +132,7 @@ def verify(book: Path, raw: Path) -> None:
         assert (alias.parent / redirect / "index.html").resolve() == (
             output / routes[source] / "index.html"
         ).resolve(), alias
-    print(f"Verified {len(pages)} pages, raw downloads, saved notebook cells, and {len(aliases)} redirects")
+    print(f"Verified {len(pages)} pages and article layouts, raw downloads, saved notebook cells, and {len(aliases)} redirects")
 
 
 if __name__ == "__main__":

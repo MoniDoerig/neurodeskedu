@@ -19,11 +19,30 @@ import yaml
 
 import build_book
 import install_oxipng
-from build_book import adapt_markdown, controls, discover, embed_widgets, finish, merge_streams, prepare
-from verify_book import PageLinks
+from build_book import adapt_markdown, controls, discover, embed_widgets, externalize_shared_images, finish, merge_streams, prepare
+from verify_book import PageFormatting, PageLinks
 
 
 class BookBuildTests(unittest.TestCase):
+    def test_empty_headings_are_removed_without_changing_code_examples(self):
+        text = "## Section\n\n##### \nParagraph\n```markdown\n###\n```\n~~~text\n##\n~~~\n"
+        result = adapt_markdown(text, set())
+        self.assertNotIn("#####", result)
+        self.assertIn("```markdown\n###\n```", result)
+        self.assertIn("~~~text\n##\n~~~", result)
+
+    def test_layout_check_catches_inline_screenshots_and_empty_headings(self):
+        html = ('<article><h1>Title</h1><h3>¶</h3><p><img '
+                'src="https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/terminal.png">'
+                '<em>Caption</em></p></article>')
+        result = PageFormatting(html)
+        self.assertEqual(result.h1_count, 1)
+        self.assertEqual(len(result.problems), 2)
+        good = PageFormatting('<article><h1>Title</h1><figure><img '
+                              'src="/static/tutorials/terminal.jpg"><figcaption>Caption</figcaption>'
+                              '</figure><p><img src="github-icon.svg"> GitHub</p></article>')
+        self.assertEqual(good.problems, [])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -69,6 +88,59 @@ class BookBuildTests(unittest.TestCase):
         (self.book / self.source.with_suffix(".md")).write_text("# Duplicate\n")
         with self.assertRaisesRegex(ValueError, "share a source stem"):
             discover(self.book)
+
+    def test_shared_screenshots_stay_external_in_html_and_navigation_without_cached_copies(self):
+        built = self.root / "published"
+        (built / "build").mkdir(parents=True)
+        origin = "https://raw.githubusercontent.com/neurodesk/media/main/screenshots/neurodesk/launcher.png"
+        png, webp = "/edu/build/shared.png", "/edu/build/shared.webp"
+        image = {"type": "image", "url": png, "urlSource": origin, "urlOptimized": webp}
+        foreign = {"type": "image", "url": "/edu/build/other.png", "urlSource": "https://example.org/other.png"}
+        record = {"children": [image, foreign]}
+        (built / "page.json").write_text(json.dumps(record))
+        page = (f'<meta name="image" content="{webp}"><picture>'
+                f'<source srcSet="{webp}" type="image/webp"/><img src="{png}"/></picture>'
+                '<source srcset="/edu/build/other.png"/><script>window.page = '
+                + json.dumps(record) + ';</script>')
+        (built / "index.html").write_text(page)
+        for name in ["shared.png", "shared.webp", "other.png"]:
+            (built / "build" / name).write_bytes(b"image")
+        (built / "_sources").mkdir()
+        raw = built / "_sources/example.json"
+        raw.write_text(json.dumps(record))
+        original = raw.read_bytes()
+
+        self.assertEqual(externalize_shared_images(built), 1)
+        article = json.loads((built / "page.json").read_text())
+        self.assertEqual(article["children"][0]["url"], origin)
+        self.assertNotIn("urlOptimized", article["children"][0])
+        self.assertEqual(article["children"][1], foreign)
+        result = (built / "index.html").read_text()
+        self.assertNotIn(png, result)
+        self.assertNotIn(webp, result)
+        self.assertNotIn('type="image/webp"', result)
+        self.assertIn(f'<img src="{origin}"', result)
+        self.assertIn('<source srcset="/edu/build/other.png"/>', result)
+        self.assertEqual(raw.read_bytes(), original)
+        self.assertFalse((built / "build/shared.png").exists())
+        self.assertFalse((built / "build/shared.webp").exists())
+        self.assertTrue((built / "build/other.png").exists())
+
+    def test_external_image_rewrite_handles_optimized_property_positions(self):
+        built = self.root / "published"
+        (built / "build").mkdir(parents=True)
+        origin = "https://raw.githubusercontent.com/neurodesk/media/review-branch/screenshots/neurodesk/menu.png"
+        for index, image in enumerate([
+            {"urlOptimized": "/build/menu.webp", "type": "image", "url": "/build/menu.png", "urlSource": origin},
+            {"type": "image", "urlOptimized": "/build/menu.webp", "url": "/build/menu.png", "urlSource": origin},
+            {"type": "image", "url": "/build/menu.png", "urlSource": origin, "urlOptimized": "/build/menu.webp"},
+        ]):
+            (built / f"page{index}.json").write_text(json.dumps(image))
+        self.assertEqual(externalize_shared_images(built), 1)
+        for path in built.glob("*.json"):
+            result = json.loads(path.read_text())
+            self.assertEqual(result["url"], origin)
+            self.assertNotIn("urlOptimized", result)
 
     def test_legacy_heading_links_and_social_handles_remain_readable(self):
         text = "[Step](#1.-Project-setup) [Other](#custom-ID)\n> Github: @example\n"
@@ -157,6 +229,26 @@ class BookBuildTests(unittest.TestCase):
         prepare(self.book, self.root / "stage", pages, toc, self.settings, {})
         text = "".join(json.loads((self.root / "stage" / self.source).read_text())["cells"][0]["source"])
         self.assertLess(text.index("# Example"), text.index("{dropdown} Run this notebook"))
+
+    def test_title_after_preamble_or_in_later_cell_is_only_published_once(self):
+        for title_in_first in (True, False):
+            with self.subTest(title_in_first=title_in_first):
+                self.notebook["cells"][0]["source"] = "Introductory note.\n\n"
+                if title_in_first:
+                    self.notebook["cells"][0]["source"] += "# Example\n\nBody.\n"
+                else:
+                    self.notebook["cells"].insert(1, {"cell_type": "markdown", "metadata": {},
+                                                     "source": "# Example\n\nBody.\n"})
+                original = json.dumps(self.notebook)
+                (self.book / self.source).write_text(original)
+                pages, toc = discover(self.book)
+                prepare(self.book, self.root / "stage", pages, toc, self.settings, {})
+                result = json.loads((self.root / "stage" / self.source).read_text())
+                text = "".join(result["cells"][0]["source"])
+                self.assertEqual(yaml.safe_load(text.split("---\n")[1])["title"], "Example")
+                self.assertNotIn("# Example", "".join("".join(c["source"]) for c in result["cells"]))
+                self.assertIn("Body.", "".join("".join(c["source"]) for c in result["cells"]))
+                self.assertEqual((self.book / self.source).read_text(), original)
 
     def test_launch_urls_identify_original_notebook_and_branch(self):
         text = controls(self.source, None, {}, self.settings)
@@ -300,12 +392,17 @@ class BookBuildTests(unittest.TestCase):
         (content / "page.json").write_text(json.dumps({"location": "/" + str(self.source),
                                                        "slug": route.replace("/", ".")}))
         (built / route).mkdir(parents=True)
-        (built / route / "index.html").write_text("<html><head></head><body>saved output</body></html>")
+        (built / "myst-theme.css").write_text("code { color: green; }")
+        theme_url = self.settings["base_url"] + "/myst-theme.css"
+        (built / route / "index.html").write_text(
+            f'<html><head><link rel="stylesheet" href="{theme_url}"></head><body>saved output</body></html>')
         for copy in [built / "_static/widgets/w.html", built / "build/_static/widgets/w.html"]:
             copy.parent.mkdir(parents=True)
             copy.write_text("widget")
         (built / "build/Test_one-0123.ipynb").write_text("{}")
         finish(stage, self.book, output, pages, self.settings)
+        version = hashlib.sha256((built / "myst-theme.css").read_bytes()).hexdigest()[:12]
+        self.assertIn(f'{theme_url}?v={version}', (output / route / "index.html").read_text())
         self.assertTrue((output / "_static/widgets/w.html").exists())
         self.assertFalse((output / "build/_static").exists())
         self.assertEqual(list((output / "build").glob("*.ipynb")), [])

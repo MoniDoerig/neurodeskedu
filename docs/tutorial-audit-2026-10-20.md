@@ -2,7 +2,7 @@
 
 20 October 2026 · Neurodesk Play America · Neurodesktop 2026-10-07 · Ubuntu 24.04.5 LTS
 
-The initial revision (`d396631d`) completed nine GUI walkthroughs. Follow-up revisions are in progress; the status below describes that initial revision.
+The initial revision (`d396631d`) completed nine GUI walkthroughs. The completed-walkthrough table describes that initial revision; the scope table and dated follow-up sections include subsequent work.
 
 Nine GUI walkthroughs were completed in the VNC desktop. Websites and downloads were used through Firefox inside Neurodesk. Tests followed the published steps first; necessary corrections and deviations are listed below. The Jupyter tools and RISE slideshow GUI checks were explicitly skipped at the user's request.
 
@@ -35,18 +35,21 @@ PhysIO emitted non-fatal “Ignoring extra legend entries” plotting warnings a
 | Tutorial(s) | Status and limits |
 | --- | --- |
 | Accessing Neurodesk tools; RISE slideshow | GUI checks skipped by user. Earlier notebook code checks passed (11 and 4 cells respectively). Fixed the tools kernelspec and RISE Markdown/metadata examples. These checks do not establish GUI completion. |
-| fMRIPrep; MRIQC | Menu launches captured; repaired shell continuations and MRIQC's 10000 GB request to 10 GB. Installed CLI options checked. Full processing not run; requires appropriate BIDS input and, for fMRIPrep, a FreeSurfer license. |
+| fMRIPrep | Menu captured and input preparation tested. Full processing remains unverified; see the follow-up notes below. |
+| MRIQC | Public ds000102 T1w example completed, with 68 finite numerical metrics. Report inspected in Firefox and captured; loaded-terminal screenshot added. |
 | DataLad; DataLad run | Corrected dataset directory/local setting and obsolete /storage path. Create, run, clone and rerun checked. OSF publication not performed. |
-| MRSI processing | Repaired malformed code fences; both installed processing entry points found. Full processing not run because acquisition data were not supplied. |
+| MRSI processing | Corrected Part 2 option parsing; both template syntax checks passed. Added preparation screenshots. Full processing and result screenshots await compatible acquisition data or completed Part 1 outputs. |
 | PhysIO batch scripting | Separate scripting guide requires the author's acquisition data and helper functions. Its complete batch workflow was not run; the Philips GUI example above was tested independently. |
-| Structural connectivity; FreeSurfer; MFCSC | Primarily command-line processing guides. Full pipelines and their output screenshots were not rerun in this GUI-focused pass. Their relocated images are retained originals, not refreshed captures. |
+| Structural connectivity | Full pipeline and output screenshots have not been rerun. Retained images are originals. |
+| FreeSurfer | Freeview fsaverage GUI walkthrough completed, including segmentation overlay and surface controls. Fresh startup screenshot now shows the open application. Reconstruction was not run. |
+| MFCSC | All 50 public FC–SC pairs processed and compared with published reference outputs. Diagnostic figures and result report captured; non-finite values documented. |
 | Conda; MyST; OSF client | Programming/documentation/open-data guides; no complete interactive GUI walkthrough claimed. |
 
 ## Screenshots and assets
 
 Initially reorganized 127 images into branding, supporters, guides, contribute, shared platform and per-tutorial folders. 60 superseded original captures were retired after replacing their references; original Git paths are recorded in [tutorial-retired-assets.json](tutorial-retired-assets.json). Retained moves are recorded in [tutorial-asset-moves.json](tutorial-asset-moves.json).
 
-There are 56 editable, self-contained SVG click guides. Genuine VNC captures sit beside their annotated versions. Markers identify controls without recreating application content. Teaching images use isolated dialogs or application windows and omit browser chrome/taskbar where possible. MNE's kernel list is cropped from the genuine capture to exclude temporary audit paths; the full capture remains in evidence. New screenshot names use lowercase words separated by hyphens. Original screenshot proportions are preserved.
+The initial revision contained 56 editable, self-contained SVG click guides. Genuine VNC captures sit beside their annotated versions. Markers identify controls without recreating application content. Teaching images use isolated dialogs or application windows and omit browser chrome/taskbar where possible. MNE's kernel list is cropped from the genuine capture to exclude temporary audit paths; the full capture remains in evidence. New screenshot names use lowercase words separated by hyphens. Original screenshot proportions are preserved.
 
 The asset validator checks Markdown and notebook references, including exact case for Linux deployment, and runs in the image-validation workflow. It excludes commented template examples and runtime image display calls.
 
@@ -83,3 +86,41 @@ Public dataset preparation was rerun in the VNC terminal: `datalad clone https:/
 FreeSurfer 8.2.0 was checked for a readable bundled license and bundled fsaverage demonstration files; no license contents were read or published. Freeview opens. The expanded GUI example and new output captures are in progress.
 
 The media repository's asset and PR-size checks pass. All shared image targets resolve locally and the published main-branch URLs return HTTP 200. The refreshed sources have no missing local image references. Remaining GUI/example revisions from the feedback are not marked complete by these checks.
+
+
+### FreeSurfer GUI example
+
+FreeSurfer 8.2.0 / Freeview was opened from LXTerminal. The bundled fsaverage `T1.mgz`, `aparc+aseg.mgz` and `lh.pial` were loaded through the File menu. Lookup-table colours, visibility, opacity 0.35 and Cursor structure labels were checked; label 51 read Right-Putamen. Single View, 3D view, cursor/frame hiding and mouse rotation worked. The tutorial now provides these complete GUI steps instead of a reconstruction-only recipe. Seven canonical Freeview images are on the media follow-up branch `neurodesk-shared-gui-controls-2026-10-20`; raw working captures are not duplicated in the repositories.
+
+### MRIQC open-data example
+
+MRIQC's menu entry 24.0.2 reports executable version `v24.1.0.dev0+gd5b13cb5.d20240826`. A T1w-only participant-08 run on the downloaded ds000102 dataset completed successfully in 6 minutes 4 seconds, with `--no-sub --notrack`. It produced `sub-08_T1w.html` and 68 finite numerical metrics in `sub-08/anat/sub-08_T1w.json`. Example values were SNR total 6.02006, CNR 2.26143 and EFC 0.4384. The same command completed from the menu-opened terminal in 49 seconds using its work cache. The HTML report was opened in Firefox inside VNC; its background and anatomical mosaic panels were inspected and captured. Execution and finite-metric checks are saved in the evidence folder.
+
+The first metadata revision introduced a duplicate MyST frontmatter block and repeated older author/date lines in the tools and RISE notebooks. Those have been consolidated, retaining the original author's ORCID, affiliations and license. Phase notebooks retain their original MIT license in frontmatter. These edits do not change the skipped GUI-test status.
+
+
+### Shared-image publication
+
+The MyST exporter normally copies remote screenshots into hashed PNG/WebP assets. The publisher now restores direct `neurodesk/media` URLs in rendered HTML and client-navigation article data, removes the local picture alternatives and deletes those copied assets. This keeps one canonical published screenshot and lets media updates propagate without rebuilding each consuming page. Raw source downloads remain unchanged. Two regression tests cover HTML, navigation data, preserved unrelated assets and source downloads, and JSON property ordering. All 28 build tests pass (one optional integration fixture skipped); a real 99-page build linked 27 shared screenshots directly. Browser checks confirmed that the Freeview images load from the media URLs after hydration.
+
+Duplicate body author/date lines were removed because the site already renders that information from frontmatter. Each tutorial retains its author list and revision date in the standard page header.
+
+### Formatting review — 21 October 2026
+
+Checked all 99 exported pages in the local browser and the publication validator. Separated 18 screenshot/caption pairs across Accessing Tools, SWI and ROMEO so shared screenshots render at reading width. The publication adapter removes 10 empty headings and promotes two titles that previously appeared twice, while preserving the source notebooks and saved code outputs. Fixed contribution-page link markup and literal GitHub/package names being parsed as citations.
+
+Inline code now uses the Neurodesk logo palette: dark green on light backgrounds and light green on dark backgrounds; fenced-code syntax highlighting is retained. Published custom stylesheets have a content version so refreshed previews pick up the change. Added layout regression checks; 31 build tests pass with one optional integration test skipped. The page-by-page browser results are in `tutorial-audit-evidence/formatting-check-2026-10-21.json`. These are formatting checks, not additional workflow execution claims.
+
+### GUI feedback revision — 21 October 2026
+
+- Replaced the FreeSurfer introduction's generic empty terminal with Freeview fully opened. Added the actual MRIQC-loaded terminal and made both terminal references explicit.
+- Regenerated shared PNG click guides and tutorial SVG annotations in the Neurodesk green palette. Launcher rectangles now match the tile bounds; number glyphs are geometrically centred. Reusable OSF folder-download controls are stored once in the media library.
+- Re-ran FieldTrip from a fresh 157 MB OSF download in `~/neurodesktop-storage/EEGDemo`. Downloaded `browse-eeg.m` through GitHub's Download raw file button in Firefox inside VNC, ran it from the menu-launched 20211114 terminal, opened segments 1 and 2 of 309 and tested horizontal zoom (approximately 7.07 seconds, 437 segments). Added preparation, launch and intermediate-view screenshots.
+- Ran MFCSC 1.1 on all 50 public FC–SC pairs, 84 regions each. The installed build writes `mask.csv`, selects 1,009 ipsilateral connections and opens diagnostic figures until Enter is pressed. Compared all output matrices with the OSF reference: identical masks and NaN locations; maximum finite difference approximately 0.00001, all 50 pairs agree within absolute tolerance 0.000011.
+- MFCSC QC found 15 selected non-finite values in eight participants, all at zero SC entries. The same locations occur in the published reference. The companion checker retains the original outputs, excludes non-finite/sentinel values and writes a common valid mask with 998 connections. The Firefox report and terminal check are genuine outputs of this run. See `tutorial-audit-evidence/mfcsc-result-check.txt`.
+- MRSIProc 0.1.0's installed Part 2 parser is `o:d:s:n:f:a:l:k:r:N:SuRwbq?`: `-S` takes no argument. The original metabolite-list operand halts option parsing, leaving `-N`, `-R` and `-b` unprocessed. Corrected the template to argument-free flags and an absolute Part 1 results path. `-N Both` retains MINC outputs while adding NIfTI. Verified the installed parser and both template syntax checks; the Neurodesk module function is available in a child Bash shell.
+- **MRSI end-to-end execution remains pending:** no compatible raw acquisition or completed Part 1 results folder was found. Requested a de-identified folder path or public demo from the user. Added genuine Mousepad preparation and terminal syntax-check images, labelled the page's verification status, and retired its unverified legacy screenshots. No reconstruction, Part 2 map generation or MRSI result screenshot is claimed.
+
+The revised shared screenshots currently use the media follow-up branch so the local preview displays the new green guides before that media PR is merged.
+
+Latest validation: the rebuilt site publishes 99 pages and 100 redirects; publication/layout checks and all 136 local image references pass. All 31 build tests pass with one optional integration fixture skipped. The five revised pages load all 35 teaching images in the local browser. Shared guides are proposed in [media PR #2](https://github.com/neurodesk/media/pull/2); its naming, format and size checks and PR-size budget pass.

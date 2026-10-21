@@ -418,5 +418,21 @@
     ],
     "replaced_in": "books/static/tutorials/phase_processing/unwrapping",
     "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/spectroscopy/mrsiproc/open_folder.png",
+      "books/static/tutorials/spectroscopy/mrsiproc/open-folder.png"
+    ],
+    "replaced_in": "books/static/tutorials/spectroscopy/mrsiproc",
+    "reason": "Replaced by current Mousepad script preparation and explicit execution checks; no completed MRSI analysis is claimed. Recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/spectroscopy/mrsiproc/run_mrsi.png",
+      "books/static/tutorials/spectroscopy/mrsiproc/run-mrsi.png"
+    ],
+    "replaced_in": "books/static/tutorials/spectroscopy/mrsiproc",
+    "reason": "Replaced by current Mousepad script preparation and explicit execution checks; no completed MRSI analysis is claimed. Recoverable from Git history."
   }
 ]
