@@ -459,8 +459,6 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
              " + location.search + location.hash);</script>")
     launch = "".join(f'<script src="{html.escape(base, quote=True)}_static/{name}" defer></script>'
                      for name in ("launch-menu.js", "home-button.js"))
-    theme = built / "myst-theme.css"
-    theme_version = hashlib.sha256(theme.read_bytes()).hexdigest()[:12] if theme.exists() else None
     for source in pages:
         page = built / routes[source.as_posix()] / "index.html"
         text = page.read_text()
@@ -470,10 +468,8 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
             names = html.escape(", ".join(authors), quote=True)
             tags += [f'<meta name="author" content="{names}">', f'<meta property="article:author" content="{names}">']
         text = re.sub(r"<head[^>]*>", lambda head: head[0] + guard + launch, text, count=1)
-        if theme_version:
-            # A changed theme must refresh even when a browser cached the previous local preview.
-            text = text.replace(f'href="{base}myst-theme.css"',
-                                f'href="{base}myst-theme.css?v={theme_version}"')
+        # Keep stylesheet URLs identical to MyST's serialized client data. Rewriting
+        # only the HTML head causes React hydration errors on every fresh page load.
         page.write_text(text.replace("</head>", "".join(tags) + "</head>", 1))
         target = built / "_sources" / source
         target.parent.mkdir(parents=True, exist_ok=True)

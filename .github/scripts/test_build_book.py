@@ -427,8 +427,8 @@ class BookBuildTests(unittest.TestCase):
             copy.write_text("widget")
         (built / "build/Test_one-0123.ipynb").write_text("{}")
         finish(stage, self.book, output, pages, self.settings)
-        version = hashlib.sha256((built / "myst-theme.css").read_bytes()).hexdigest()[:12]
-        self.assertIn(f'{theme_url}?v={version}', (output / route / "index.html").read_text())
+        self.assertIn(f'href="{theme_url}"', (output / route / "index.html").read_text())
+        self.assertNotIn('myst-theme.css?v=', (output / route / "index.html").read_text())
         self.assertTrue((output / "_static/widgets/w.html").exists())
         self.assertFalse((output / "build/_static").exists())
         self.assertEqual(list((output / "build").glob("*.ipynb")), [])

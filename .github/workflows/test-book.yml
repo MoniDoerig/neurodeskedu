@@ -9,6 +9,7 @@ on:
       - '.github/scripts/*book*.py'
       - '.github/scripts/install_oxipng.py'
       - '.github/scripts/*widget_volumes.py'
+      - '.github/scripts/*notebook_outputs.py'
       - '.github/scripts/publish_to_hf.py'
       - '.github/workflows/test-book.yml'
       - '.github/workflows/run_and_publish_notebooks.yml'
@@ -21,6 +22,7 @@ on:
       - '.github/scripts/*book*.py'
       - '.github/scripts/install_oxipng.py'
       - '.github/scripts/*widget_volumes.py'
+      - '.github/scripts/*notebook_outputs.py'
       - '.github/scripts/publish_to_hf.py'
       - '.github/workflows/test-book.yml'
 
@@ -47,6 +49,7 @@ jobs:
           BOOK_INTEGRATION_TEST: '1'
         run: python -m unittest discover -s .github/scripts -p test_build_book.py -v
       - run: python -m unittest discover -s .github/scripts -p test_offload_widget_volumes.py -v
+      - run: python -m unittest discover -s .github/scripts -p test_merge_notebook_outputs.py -v
       - run: python .github/scripts/build_book.py
       - run: python .github/scripts/verify_book.py
       - name: Check downloads and navigation in a browser
