@@ -26,11 +26,13 @@ By the end of this tutorial you will be able to:
 
 MRSIProc reconstructs and analyses MR spectroscopic imaging data. **Part 1** reconstructs the acquisition and runs LCModel fitting. **Part 2** evaluates those results and creates maps for inspection.
 
+For a complete public-data exercise with fitted spectra and map screenshots, follow [FSL-MRS: fit and inspect a public MRSI dataset](fsl-mrs.md). FSL-MRS uses a different processing workflow; its outputs are not inputs to MRSIProc Part 2.
+
 ## Inputs and verification status
 
 This is a **bring-your-own-data workflow**. The supplied scripts contain example paths; you must set them to a compatible MRSI DAT acquisition and its T1/INV1 DICOM folders. The T1 folders used by this example should contain the acquisition's `.IMA` files. Select a basis set and control file appropriate to your acquisition before processing.
 
-The current screenshots demonstrate script preparation and syntax checks. The Part 2 option parser has also been checked against the installed **mrsiproc 0.1.0** container. **A complete Part 2 result gallery is still awaiting a de-identified completed Part 1 example.** Preparation checks do not establish successful reconstruction or fitting.
+The current screenshots demonstrate script preparation and syntax checks. The Part 2 option parser has also been checked against the installed **mrsiproc 0.1.0** container. Preparation checks do not establish successful reconstruction or fitting. Use the FSL-MRS tutorial above for the demonstrated public-data example; use this reference when you have compatible MRSIProc inputs.
 
 ## General use: start the desktop
 
@@ -145,7 +147,7 @@ bash -n ~/Downloads/run_mrsi_part2.sh && printf 'Part 2 script syntax: OK\n'
 bash -c 'type ml >/dev/null' && printf 'Neurodesk module command: available\n'
 ```
 
-![The actual script syntax and module-command checks passed](/static/tutorials/spectroscopy/mrsiproc/part2-preflight.jpg)
+![The actual script syntax and module-command checks passed](/static/tutorials/spectroscopy/mrsiproc/part2-preflight.png)
 
 These checks verify script preparation. They do not run Part 2 or validate your acquisition data.
 

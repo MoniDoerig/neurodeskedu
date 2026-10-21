@@ -1,7 +1,7 @@
 """Place editable SVG click markers over unchanged screenshot pixels.
 
 Run from the repository root after updating docs/screenshot-annotations.json.
-The original JPEG remains alongside each self-contained annotated SVG.
+The original screenshot remains alongside each self-contained annotated SVG.
 """
 
 import base64

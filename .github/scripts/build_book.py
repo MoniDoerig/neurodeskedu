@@ -339,6 +339,45 @@ def prepare(book: Path, stage: Path, pages: list[Path], toc: list[dict], setting
             path.write_text(text)
 
 
+def preserve_screenshot_pngs(built: Path) -> int:
+    """Serve lossless tutorial PNGs instead of MyST's lossy WebP alternatives."""
+    optimized = set()
+
+    def collect(value):
+        if isinstance(value, dict):
+            origin = value.get("urlSource", "")
+            if (value.get("type") == "image" and isinstance(origin, str)
+                    and origin.startswith("/static/tutorials/") and origin.endswith(".png")
+                    and value.get("urlOptimized")):
+                optimized.add(value["urlOptimized"])
+            for child in value.values():
+                collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    for path in built.glob("*.json"):
+        collect(json.loads(path.read_text()))
+    if not optimized:
+        return 0
+    urls = re.compile("|".join(re.escape(url) for url in sorted(optimized, key=len, reverse=True)))
+    property_pattern = re.compile(
+        r'(,\s*)?(?<!\\)"urlOptimized"\s*:\s*(?:'
+        + "|".join(re.escape(json.dumps(url)) for url in optimized) + r')(\s*,)?'
+    )
+    for path in built.rglob("*"):
+        if path.suffix not in {".html", ".json"} or "_sources" in path.relative_to(built).parts:
+            continue
+        original = path.read_text()
+        text = property_pattern.sub(lambda m: "," if m[1] and m[2] else "", original)
+        text = re.sub(r"<source\b[^>]*>", lambda m: "" if urls.search(m[0]) else m[0], text)
+        if text != original:
+            if path.suffix == ".json":
+                json.loads(text)
+            path.write_text(text)
+    return len(optimized)
+
+
 def externalize_shared_images(built: Path) -> int:
     """Keep the shared screenshot library external in HTML and client navigation data."""
     replacements = {}
@@ -463,6 +502,9 @@ def finish(stage: Path, raw: Path, output: Path, pages: list[Path], settings: di
     shared_images = externalize_shared_images(built)
     if shared_images:
         print(f"Linked {shared_images} shared screenshots directly to neurodesk/media")
+    lossless_images = preserve_screenshot_pngs(built)
+    if lossless_images:
+        print(f"Preserved {lossless_images} lossless tutorial PNGs")
     (built / ".nojekyll").touch()
     (built / "neurodesk-pages.json").write_text(json.dumps(routes, indent=2) + "\n")
     # Lossless recompression saves about a third of the figure bytes. _sources stays byte-identical.

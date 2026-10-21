@@ -65,13 +65,13 @@ unzip -nq Data_sample.zip
 
 The [public OSF recording](https://osf.io/c689u/) is approximately 157 MB and has five EEG channels. Wait for **100%** and for the terminal prompt to return. `unzip -nq` extracts quietly and preserves files that already exist. If you already downloaded `Data_sample.zip` for the MNE tutorial, reuse it and run only the extraction command.
 
-![The EEG archive has finished downloading and extraction has returned to the prompt](/static/tutorials/electrophysiology/fieldtrip/download-data.jpg)
+![The EEG archive has finished downloading and extraction has returned to the prompt](/static/tutorials/electrophysiology/fieldtrip/download-data.png)
 
 The recording's BrainVision files should now be under `~/neurodesktop-storage/EEGDemo/Data_sample/sub-01/eeg/`.
 
 ### 2. Download the browsing script
 
-In **Firefox inside Neurodesk**, open the [browse-eeg.m file on GitHub](https://github.com/neurodesk/neurodeskedu/blob/tutorial-platform-audit-2026-10-20/books/static/tutorials/electrophysiology/fieldtrip/browse-eeg.m). Click **Download raw file (1)**, the downward arrow beside **Raw**, and save it in **Downloads** as **browse-eeg.m**.
+In **Firefox inside Neurodesk**, open the [browse-eeg.m file on GitHub](https://github.com/neurodesk/neurodeskedu/blob/main/books/static/tutorials/electrophysiology/fieldtrip/browse-eeg.m). Click **Download raw file (1)**, the downward arrow beside **Raw**, and save it in **Downloads** as **browse-eeg.m**.
 
 ![The browsing script and GitHub's Download raw file button](/static/tutorials/electrophysiology/fieldtrip/download-script-annotated.svg)
 
@@ -87,11 +87,11 @@ Return to the **FieldTrip terminal opened from the application menu**, identifie
 run_fieldtrip.sh /opt/MCR/v99 ~/Downloads/browse-eeg.m
 ```
 
-![The downloaded script is run in the FieldTrip-loaded terminal](/static/tutorials/electrophysiology/fieldtrip/run-script.jpg)
+![The downloaded script is run in the FieldTrip-loaded terminal](/static/tutorials/electrophysiology/fieldtrip/run-script.png)
 
 Wait for **ft_databrowser** to open, then double-click its title bar to maximise it. The first view shows **segment 1/309**, covering approximately 0–10 seconds. The large initial transient is present in this recording. Five EEG traces and the TRIG channel are displayed.
 
-![The first segment in the actual FieldTrip data browser](/static/tutorials/electrophysiology/fieldtrip/first-segment.jpg)
+![The first segment in the actual FieldTrip data browser](/static/tutorials/electrophysiology/fieldtrip/first-segment.png)
 
 ### 4. Move between segments
 
@@ -103,6 +103,6 @@ Click **> beside segment (1)** at the bottom of the viewer. The title changes to
 
 Click **+ beside horizontal (2)** to shorten the displayed interval. The title and segment count update; this click displays approximately seven seconds. The matching **−** button widens the interval again.
 
-![The same recording after shortening the horizontal time interval](/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.jpg)
+![The same recording after shortening the horizontal time interval](/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.png)
 
 Close the data-browser window to finish this viewing exercise and return to the terminal. For artifact selection and other browsing options, see the [official FieldTrip data-browser guide](https://www.fieldtriptoolbox.org/faq/how_can_i_use_the_databrowser/).

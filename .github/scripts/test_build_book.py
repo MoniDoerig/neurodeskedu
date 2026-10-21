@@ -24,6 +24,32 @@ from verify_book import PageFormatting, PageLinks
 
 
 class BookBuildTests(unittest.TestCase):
+    def test_tutorial_pngs_remain_lossless_after_client_navigation(self):
+        built = self.root / "published"
+        built.mkdir()
+        png, webp = "/edu/build/view.png", "/edu/build/view.webp"
+        record = {"children": [
+            {"type": "image", "urlSource": "/static/tutorials/topic/view.png",
+             "url": png, "urlOptimized": webp},
+            {"type": "image", "urlSource": "/photo.jpg",
+             "url": "/build/photo.jpg", "urlOptimized": "/build/photo.webp"},
+        ]}
+        (built / "page.json").write_text(json.dumps(record))
+        (built / "page.html").write_text(
+            f'<picture><source srcSet="{webp}" type="image/webp"><img src="{png}"></picture>'
+            '<source srcset="/build/photo.webp"><script>' + json.dumps(record) + '</script>')
+        (built / "_sources").mkdir()
+        raw = built / "_sources/raw.json"
+        raw.write_text(json.dumps(record))
+        self.assertEqual(build_book.preserve_screenshot_pngs(built), 1)
+        published = json.loads((built / "page.json").read_text())
+        self.assertNotIn("urlOptimized", published["children"][0])
+        self.assertEqual(published["children"][0]["url"], png)
+        self.assertEqual(published["children"][1], record["children"][1])
+        self.assertNotIn(webp, (built / "page.html").read_text())
+        self.assertIn("/build/photo.webp", (built / "page.html").read_text())
+        self.assertEqual(json.loads(raw.read_text()), record)
+
     def test_empty_headings_are_removed_without_changing_code_examples(self):
         text = "## Section\n\n##### \nParagraph\n```markdown\n###\n```\n~~~text\n##\n~~~\n"
         result = adapt_markdown(text, set())

@@ -73,5 +73,21 @@
   "books/static/tutorials/tutorial-template/5_branch.png": "books/static/contribute/tutorials/5_branch.png",
   "books/static/tutorials/tutorial-template/4_clone.png": "books/static/contribute/tutorials/4_clone.png",
   "books/static/tutorials/tutorial-template/1_fork.png": "books/static/contribute/tutorials/1_fork.png",
-  "books/static/tutorials/tutorial-template/8_contribute.png": "books/static/contribute/tutorials/8_contribute.png"
+  "books/static/tutorials/tutorial-template/8_contribute.png": "books/static/contribute/tutorials/8_contribute.png",
+  "books/static/tutorials/multimodal_imaging/mfcsc/extract-input.jpg": "books/static/tutorials/multimodal_imaging/mfcsc/extract-input.png",
+  "books/static/tutorials/multimodal_imaging/mfcsc/check-pairs.jpg": "books/static/tutorials/multimodal_imaging/mfcsc/check-pairs.png",
+  "books/static/tutorials/multimodal_imaging/mfcsc/sc-transformation.jpg": "books/static/tutorials/multimodal_imaging/mfcsc/sc-transformation.png",
+  "books/static/tutorials/multimodal_imaging/mfcsc/completed.jpg": "books/static/tutorials/multimodal_imaging/mfcsc/completed.png",
+  "books/static/tutorials/multimodal_imaging/mfcsc/output-check.jpg": "books/static/tutorials/multimodal_imaging/mfcsc/output-check.png",
+  "books/static/tutorials/multimodal_imaging/mfcsc/result-report.jpg": "books/static/tutorials/multimodal_imaging/mfcsc/result-report.png",
+  "books/static/tutorials/spectroscopy/mrsiproc/part1-template.jpg": "books/static/tutorials/spectroscopy/mrsiproc/part1-template.png",
+  "books/static/tutorials/spectroscopy/mrsiproc/part2-template.jpg": "books/static/tutorials/spectroscopy/mrsiproc/part2-template.png",
+  "books/static/tutorials/spectroscopy/mrsiproc/part2-preflight.jpg": "books/static/tutorials/spectroscopy/mrsiproc/part2-preflight.png",
+  "books/static/tutorials/multimodal_imaging/mfcsc/participant-fit.jpg": "books/static/tutorials/multimodal_imaging/mfcsc/participant-fit.png",
+  "books/static/tutorials/electrophysiology/fieldtrip/download-data.jpg": "books/static/tutorials/electrophysiology/fieldtrip/download-data.png",
+  "books/static/tutorials/electrophysiology/fieldtrip/download-script.jpg": "books/static/tutorials/electrophysiology/fieldtrip/download-script.png",
+  "books/static/tutorials/electrophysiology/fieldtrip/run-script.jpg": "books/static/tutorials/electrophysiology/fieldtrip/run-script.png",
+  "books/static/tutorials/electrophysiology/fieldtrip/first-segment.jpg": "books/static/tutorials/electrophysiology/fieldtrip/first-segment.png",
+  "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.jpg": "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.png",
+  "books/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.jpg": "books/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.png"
 }

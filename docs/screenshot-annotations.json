@@ -685,52 +685,6 @@
     ]
   },
   {
-    "source": "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.jpg",
-    "size": [
-      806,
-      438
-    ],
-    "title": "FieldTrip browser: 1 next segment, 2 horizontal zoom",
-    "markers": [
-      {
-        "number": 1,
-        "text": "Advance one segment",
-        "target": [
-          145,
-          419,
-          40,
-          18
-        ],
-        "label": [
-          164,
-          394
-        ],
-        "tip": [
-          164,
-          417
-        ]
-      },
-      {
-        "number": 2,
-        "text": "Shorten the time interval",
-        "target": [
-          516,
-          419,
-          39,
-          18
-        ],
-        "label": [
-          535,
-          394
-        ],
-        "tip": [
-          535,
-          417
-        ]
-      }
-    ]
-  },
-  {
     "source": "books/static/tutorials/programming/matlab/activate-matlab.jpg",
     "size": [
       675,
@@ -2086,38 +2040,38 @@
     ]
   },
   {
-    "source": "books/static/tutorials/electrophysiology/fieldtrip/download-script.jpg",
+    "source": "books/static/tutorials/electrophysiology/fieldtrip/download-script.png",
     "size": [
-      806,
-      409
+      1280,
+      650
     ],
     "title": "Download the FieldTrip MATLAB script",
     "markers": [
       {
         "number": 1,
         "target": [
-          747,
-          156,
-          25,
-          20
+          1191,
+          209,
+          31,
+          26
         ],
         "label": [
-          729,
-          129
+          1155,
+          184
         ],
         "tip": [
-          761,
-          154
+          1205,
+          208
         ],
         "text": "Download raw file"
       }
     ]
   },
   {
-    "source": "books/static/tutorials/spectroscopy/mrsiproc/part1-template.jpg",
+    "source": "books/static/tutorials/spectroscopy/mrsiproc/part1-template.png",
     "size": [
-      806,
-      362
+      1280,
+      575
     ],
     "title": "MRSI Part 1: set the input paths and output folder",
     "markers": [
@@ -2126,17 +2080,17 @@
         "text": "Set the acquisition and structural input paths",
         "target": [
           0,
-          77,
-          409,
-          40
+          122,
+          650,
+          65
         ],
         "label": [
-          450,
-          95
+          715,
+          153
         ],
         "tip": [
-          409,
-          95
+          652,
+          153
         ]
       },
       {
@@ -2144,26 +2098,26 @@
         "text": "Set the Part 1 output folder",
         "target": [
           0,
-          116,
-          535,
-          14
+          186,
+          850,
+          22
         ],
         "label": [
-          579,
-          123
+          920,
+          197
         ],
         "tip": [
-          535,
-          123
+          852,
+          197
         ]
       }
     ]
   },
   {
-    "source": "books/static/tutorials/spectroscopy/mrsiproc/part2-template.jpg",
+    "source": "books/static/tutorials/spectroscopy/mrsiproc/part2-template.png",
     "size": [
-      806,
-      362
+      1280,
+      610
     ],
     "title": "MRSI Part 2: results folder and corrected argument flags",
     "markers": [
@@ -2172,35 +2126,293 @@
         "text": "Default Part 1 results folder",
         "target": [
           0,
-          89,
-          535,
-          15
+          178,
+          850,
+          24
         ],
         "label": [
-          579,
-          96
+          920,
+          190
         ],
         "tip": [
-          535,
-          96
+          852,
+          190
         ]
       },
       {
         "number": 2,
         "text": "Use -N Both and the argument-free -S, -R and -b flags",
         "target": [
-          21,
-          292,
-          104,
-          54
+          33,
+          499,
+          166,
+          84
         ],
         "label": [
-          154,
-          318
+          245,
+          540
         ],
         "tip": [
-          126,
-          318
+          201,
+          540
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/input-spectrum.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "FSLeyes MRS input: 1 select the spectroscopy plane, 2 enable the spectrum",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Set Location to X 0, Y 0, Z 42.67385",
+        "target": [
+          306,
+          574,
+          205,
+          97
+        ],
+        "label": [
+          275,
+          559
+        ],
+        "tip": [
+          305,
+          580
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Enable the mrsi spectrum with its eye button",
+        "target": [
+          979,
+          341,
+          30,
+          27
+        ],
+        "label": [
+          1025,
+          329
+        ],
+        "tip": [
+          1008,
+          343
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/load-fit-menu.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "Load fitted MRSI results: 1 Tools, 2 Load MRSI fit",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open Tools",
+        "target": [
+          294,
+          22,
+          45,
+          23
+        ],
+        "label": [
+          389,
+          28
+        ],
+        "tip": [
+          341,
+          32
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose Load MRSI fit",
+        "target": [
+          300,
+          143,
+          294,
+          25
+        ],
+        "label": [
+          635,
+          156
+        ],
+        "tip": [
+          596,
+          156
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "FieldTrip browser: 1 next segment, 2 horizontal zoom",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Advance one segment",
+        "target": [
+          230,
+          665,
+          64,
+          28
+        ],
+        "label": [
+          260,
+          625
+        ],
+        "tip": [
+          260,
+          663
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Shorten the time interval",
+        "target": [
+          819,
+          665,
+          62,
+          28
+        ],
+        "label": [
+          850,
+          625
+        ],
+        "tip": [
+          850,
+          663
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/download.png",
+    "size": [
+      1280,
+      650
+    ],
+    "title": "Download the public FSL-MRS example archive",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Download fsl_mrs-2.1.0.zip",
+        "target": [
+          752,
+          499,
+          88,
+          26
+        ],
+        "label": [
+          798,
+          465
+        ],
+        "tip": [
+          798,
+          497
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/metabolite-map.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "NAA+NAAG map: 1 MRSI map controls, 2 image visibility",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Choose NAA+NAAG and conc-internal",
+        "target": [
+          282,
+          544,
+          240,
+          133
+        ],
+        "label": [
+          250,
+          548
+        ],
+        "tip": [
+          280,
+          548
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Hide the spectral image planes in the left overlay list",
+        "target": [
+          94,
+          573,
+          32,
+          102
+        ],
+        "label": [
+          151,
+          550
+        ],
+        "tip": [
+          110,
+          572
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/spectroscopy/fsl-mrs/map-display.png",
+    "size": [
+      1280,
+      695
+    ],
+    "title": "NAA+NAAG display: 1 range 0.9 to 1.7, 2 clip the zero background",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Set the display minimum and maximum",
+        "target": [
+          394,
+          326,
+          82,
+          65
+        ],
+        "label": [
+          354,
+          349
+        ],
+        "tip": [
+          392,
+          349
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Set clipping minimum to 0.001",
+        "target": [
+          394,
+          406,
+          82,
+          28
+        ],
+        "label": [
+          354,
+          420
+        ],
+        "tip": [
+          392,
+          420
         ]
       }
     ]

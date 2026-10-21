@@ -400,7 +400,7 @@
   },
   {
     "original_paths": [
-      "books/static/tutorials/phase_processing/unwrapping/Screenshot 2026-03-16 at 2.11.16\u202fpm.png"
+      "books/static/tutorials/phase_processing/unwrapping/Screenshot 2026-03-16 at 2.11.16 pm.png"
     ],
     "replaced_in": "books/static/tutorials/phase_processing/unwrapping",
     "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
@@ -434,5 +434,117 @@
     ],
     "replaced_in": "books/static/tutorials/spectroscopy/mrsiproc",
     "reason": "Replaced by current Mousepad script preparation and explicit execution checks; no completed MRSI analysis is claimed. Recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/multimodal_imaging/mfcsc/extract-input.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/multimodal_imaging/mfcsc/extract-input.png",
+    "reason": "Recaptured from the native 1280-pixel VNC desktop as an original PNG; the scaled JPEG remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/multimodal_imaging/mfcsc/check-pairs.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/multimodal_imaging/mfcsc/check-pairs.png",
+    "reason": "Recaptured from the native 1280-pixel VNC desktop as an original PNG; the scaled JPEG remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/multimodal_imaging/mfcsc/sc-transformation.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/multimodal_imaging/mfcsc/sc-transformation.png",
+    "reason": "Recaptured from the native 1280-pixel VNC desktop as an original PNG; the scaled JPEG remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/multimodal_imaging/mfcsc/completed.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/multimodal_imaging/mfcsc/completed.png",
+    "reason": "Recaptured from the native 1280-pixel VNC desktop as an original PNG; the scaled JPEG remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/multimodal_imaging/mfcsc/output-check.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/multimodal_imaging/mfcsc/output-check.png",
+    "reason": "Recaptured from the native 1280-pixel VNC desktop as an original PNG; the scaled JPEG remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/multimodal_imaging/mfcsc/result-report.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/multimodal_imaging/mfcsc/result-report.png",
+    "reason": "Recaptured from the native 1280-pixel VNC desktop as an original PNG; the scaled JPEG remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/spectroscopy/mrsiproc/part1-template.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/spectroscopy/mrsiproc/part1-template.png",
+    "reason": "Recaptured from the native 1280-pixel VNC desktop as an original PNG; the scaled JPEG remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/spectroscopy/mrsiproc/part2-template.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/spectroscopy/mrsiproc/part2-template.png",
+    "reason": "Recaptured from the native 1280-pixel VNC desktop as an original PNG; the scaled JPEG remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/spectroscopy/mrsiproc/part2-preflight.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/spectroscopy/mrsiproc/part2-preflight.png",
+    "reason": "Recaptured from the native 1280-pixel VNC desktop as an original PNG; the scaled JPEG remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/multimodal_imaging/mfcsc/participant-fit.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/multimodal_imaging/mfcsc/participant-fit.png",
+    "reason": "Replaced by an authentic native-resolution PNG recapture; original remains recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/fieldtrip/download-data.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip/download-data.png",
+    "reason": "Native 1280-pixel PNG recapture replaces the scaled JPEG; recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/fieldtrip/download-script.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip/download-script.png",
+    "reason": "Native 1280-pixel PNG recapture replaces the scaled JPEG; recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/fieldtrip/run-script.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip/run-script.png",
+    "reason": "Replaced with a native PNG capture of the actual script launch; recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/fieldtrip/first-segment.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip/first-segment.png",
+    "reason": "Native-resolution PNG recapture of the verified EEG viewer; recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip/raw-eeg-browser.png",
+    "reason": "Native-resolution PNG recapture of the verified EEG viewer; recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.png",
+    "reason": "Native-resolution PNG recapture of the verified EEG viewer; recoverable in Git history."
   }
 ]
