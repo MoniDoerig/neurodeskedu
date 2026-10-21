@@ -78,14 +78,17 @@ pip install -r requirements-book.txt
 python .github/scripts/install_oxipng.py
 python .github/scripts/build_book.py --base-url ''
 python .github/scripts/verify_book.py
-python -m http.server --directory books/_build/html 8000
+python .github/scripts/preview_book.py
 ```
 
 The installer adds the pinned oxipng CLI to the active virtual environment.
 It supports Linux x86_64 and macOS x86_64 or Apple Silicon. To use another
 directory on `PATH`, pass `--destination /path/to/bin`.
 
-Open `http://localhost:8000`. The build reads saved notebook outputs and never
+Open `http://localhost:8000`. The preview disables caching so older HTML and
+application assets are not reused after rebuilding. If a tab was open before
+starting this server, reload it with Cmd+Shift+R (Mac) or Ctrl+Shift+R (Linux/Windows).
+The build reads saved notebook outputs and never
 executes code cells. CI executes notebooks separately before it builds the site.
 
 Edit `books/myst.yml` for theme options and `books/publishing.yml` for launch
