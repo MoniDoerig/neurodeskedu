@@ -28,24 +28,9 @@ By the end of this tutorial you will be able to:
 :::
 
 
-A brief guide to using fmriprep with Neurodesk.
+This guide shows how to launch fMRIPrep in Neurodesk, configure a preprocessing run, and troubleshoot common setup problems.
 
-
-> _This tutorial was created by Kelly G. Garner._ 
->
-> Github: [@kel_github](https://github.com/garner-code)
->
-
-> This workflow documents how to use fmriprep with neurodesk and provides some details that may help you troubleshoot some common problems I found along the way. 
-
-<!-- Following line adds a link to getting set up with Neurodesk -->
-[Getting Set Up with Neurodesk](https://neurodesk.org/getting-started/)
-<!-- -->
-
-> _An example notebook can be found here:_
-> https://github.com/neurodesk/neurodeskedu/blob/main/books/examples/functional_imaging/fmriprep.ipynb
->
----
+[Neurodesk setup](https://neurodesk.org/getting-started/) · [Runnable fMRIPrep notebook](../../examples/functional_imaging/fmriprep.ipynb) · [Original author's GitHub](https://github.com/garner-code)
 
 ## Assumptions
 

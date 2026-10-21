@@ -546,5 +546,17 @@
     ],
     "replaced_in": "books/static/tutorials/electrophysiology/fieldtrip/horizontal-zoom.png",
     "reason": "Native-resolution PNG recapture of the verified EEG viewer; recoverable in Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/electrophysiology/eeg_mne-python/mne-code-editor.jpg",
+      "books/static/tutorials/electrophysiology/eeg_mne-python/raw-eeg.jpg",
+      "books/static/tutorials/electrophysiology/eeg_mne-python/events.jpg",
+      "books/static/tutorials/electrophysiology/eeg_mne-python/filtered-eeg.jpg",
+      "books/static/tutorials/electrophysiology/eeg_mne-python/evoked-responses.jpg",
+      "books/static/tutorials/electrophysiology/eeg_mne-python/frequency-spectrum.jpg"
+    ],
+    "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
+    "reason": "Replaced scaled JPEGs with fresh native-resolution PNG captures from a successful MNE GUI rerun; original files remain recoverable from Git history."
   }
 ]

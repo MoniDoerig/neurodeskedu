@@ -66,31 +66,48 @@
   {
     "source": "books/static/tutorials/electrophysiology/eeg_mne-python/mne-kernel-options.png",
     "size": [
-      420,
-      60
+      1280,
+      690
     ],
-    "title": "Choose the mne-0.23.4 Python environment",
+    "title": "Choose the MNE kernel: 1 Select Kernel, 2 mne-0.23.4",
     "markers": [
       {
         "number": 1,
-        "text": "Select mne-0.23.4",
+        "text": "Click Select Kernel in the notebook toolbar",
         "target": [
-          1,
-          22,
-          416,
-          16
+          1131,
+          115,
+          140,
+          28
         ],
         "label": [
-          450,
-          30
+          1195,
+          182
         ],
         "tip": [
-          419,
-          30
+          1200,
+          144
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Choose mne-0.23.4 (Python 3.9.7)",
+        "target": [
+          282,
+          114,
+          720,
+          27
+        ],
+        "label": [
+          1040,
+          128
+        ],
+        "tip": [
+          1003,
+          128
         ]
       }
-    ],
-    "right_padding": 60
+    ]
   },
   {
     "source": "books/static/tutorials/functional_imaging/connectomeworkbench/extract-archive.jpg",
@@ -2413,6 +2430,80 @@
         "tip": [
           392,
           420
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/eeg_mne-python/mne-notebook-cell.png",
+    "size": [
+      1280,
+      690
+    ],
+    "title": "Paste Python into a code cell: 1 code cell, 2 run cell",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Paste a Python block into this notebook code cell",
+        "target": [
+          110,
+          323,
+          1150,
+          316
+        ],
+        "label": [
+          85,
+          299
+        ],
+        "tip": [
+          111,
+          323
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Run the cell with this triangle or Shift+Enter",
+        "target": [
+          70,
+          326,
+          25,
+          25
+        ],
+        "label": [
+          76,
+          390
+        ],
+        "tip": [
+          82,
+          352
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/electrophysiology/eeg_mne-python/mne-terminal.png",
+    "size": [
+      1280,
+      690
+    ],
+    "title": "Paste shell commands into the integrated MNE terminal",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Shell commands go into this terminal, after the prompt",
+        "target": [
+          61,
+          444,
+          1208,
+          177
+        ],
+        "label": [
+          35,
+          487
+        ],
+        "tip": [
+          61,
+          487
         ]
       }
     ]

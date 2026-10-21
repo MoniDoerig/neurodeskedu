@@ -74,10 +74,12 @@ def verify(url: str, executable: str | None, widgets: bool, screenshot: str | No
         verify_section_navigation(page, url, routes)
         # Exercise a page with lossless PNGs and SVG screenshot guides. Its server
         # markup must hydrate with the same image structure as client navigation.
-        page.goto(url + "/" + routes["tutorials/spectroscopy/fsl-mrs.md"], wait_until="domcontentloaded")
-        expect(page.locator("article img")).to_have_count(8)
-        for image in page.locator("article img").all():
-            expect(image).to_have_js_property("naturalWidth", 1280)
+        for source, count in [("tutorials/spectroscopy/fsl-mrs.md", 8),
+                              ("tutorials/electrophysiology/EEG_mne-python.md", 9)]:
+            page.goto(url + "/" + routes[source], wait_until="domcontentloaded")
+            expect(page.locator("article img")).to_have_count(count)
+            for image in page.locator("article img").all():
+                expect(image).to_have_js_property("naturalWidth", 1280)
         source = "examples/structural_imaging/brain_extraction_different_tools.ipynb"
         notebook_url = url + "/" + routes[source]
         page.goto(notebook_url, wait_until="domcontentloaded")
