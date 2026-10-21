@@ -1,0 +1,36 @@
+{
+  "checked": "2026-10-21",
+  "purpose": "Find public demonstration inputs for MRSIProc 0.1.0",
+  "candidates": [
+    {
+      "url": "https://zenodo.org/records/3904584",
+      "title": "Vienna 7T MRSI raw spectra",
+      "access": "restricted",
+      "note": "Record requires an individual non-commercial access request; files are not openly downloadable."
+    },
+    {
+      "url": "https://zenodo.org/records/5006923",
+      "title": "Vienna inter-subject stability MRSI maps",
+      "access": "restricted"
+    },
+    {
+      "url": "https://zenodo.org/records/5705959",
+      "title": "DeuteriumToProtonExchangeMRS, version 1.0",
+      "access": "open",
+      "license": "CC-BY-4.0",
+      "archive_bytes": 3909607461,
+      "archive_entries": 108849,
+      "check": "ZIP central directory inspected using HTTP range requests; raw data archive was not downloaded in full.",
+      "mrsi_coordinate_files": 0,
+      "svs_coordinate_files": 68,
+      "part1_metadata_candidates": [],
+      "conclusion": "Contains processed maps and MRSI fitting tables; not a complete Part 1 folder for unchanged Part 2 execution. Could support a separately labelled viewing exercise."
+    },
+    {
+      "url": "https://pages.fmrib.ox.ac.uk/fsl/fsl_mrs_practicals/ch4_mrsi_fitting.html",
+      "title": "FSL-MRS MRSI fitting practical",
+      "note": "Official instructions link spectra, structural image, mask, basis set and prepared fitting results. This is a different processing pipeline, not a drop-in MRSIProc example. Direct archive HEAD request timed out; archive not downloaded or tested."
+    }
+  ],
+  "status": "No freely downloadable complete Part 1 example verified for the current MRSIProc tutorial. No Part 1 or Part 2 processing success claimed."
+}

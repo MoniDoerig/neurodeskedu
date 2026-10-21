@@ -124,3 +124,9 @@ Inline code now uses the Neurodesk logo palette: dark green on light backgrounds
 The revised shared screenshots currently use the media follow-up branch so the local preview displays the new green guides before that media PR is merged.
 
 Latest validation: the rebuilt site publishes 99 pages and 100 redirects; publication/layout checks and all 136 local image references pass. All 31 build tests pass with one optional integration fixture skipped. The five revised pages load all 35 teaching images in the local browser. Shared guides are proposed in [media PR #2](https://github.com/neurodesk/media/pull/2); its naming, format and size checks and PR-size budget pass.
+
+### Public MRSI example-data search — 21 October 2026
+
+The Vienna [raw-spectrum example](https://zenodo.org/records/3904584) and [volunteer map release](https://zenodo.org/records/5006923) currently require individual access approval. The open CC BY 4.0 [DeuteriumToProtonExchangeMRS v1.0 archive](https://zenodo.org/records/5705959) is 3.9 GB. Its full ZIP directory (108,849 entries) contains processed MRSI maps, fitting tables and basis sets, but no MRSI coordinate files or complete Part 1 metadata folder. Its 68 coordinate files belong to the separate SVS analysis. This archive can support viewing published maps, but does not establish an unchanged Part 2 processing example.
+
+The official [FSL-MRS MRSI practical](https://pages.fmrib.ox.ac.uk/fsl/fsl_mrs_practicals/ch4_mrsi_fitting.html) offers spectra, anatomy, a mask, a basis set and prepared results for a separate FSL-MRS exercise. Its download was not tested in Neurodesk; switching to that workflow would require a separately labelled tutorial. No compatible MRSIProc end-to-end demo was verified. See `tutorial-audit-evidence/mrsiproc-public-data-search.json`.
