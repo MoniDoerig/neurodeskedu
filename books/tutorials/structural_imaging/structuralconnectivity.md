@@ -9,7 +9,7 @@ description: 'Example workflow for constructing strutural connectivity (Human co
 authors:
 - name: Joan Amos
 - name: Michèle Masson-Trottier
-date: '2026-10-20'
+date: '2026-10-21'
 ---
 # Structural connectivity dMRI
 
@@ -162,6 +162,7 @@ In constructing the connectome, the desikan-killany atlas which includes the cor
 Copy the "FreeSurferColorLUT.txt" file from the ml freesurfer 7.2.0 singularity container to the subject's folder:
 
 ![structuralconnectivity](/static/tutorials/structural_imaging/structuralconnectivity/19-connectome.png)
+
 ![structuralconnectivity](/static/tutorials/structural_imaging/structuralconnectivity/20-connectome.png)
 
 Copy the "fs_default.txt" file from the ml mrtrix3 3.0.3 singularity container to the subject's folder:

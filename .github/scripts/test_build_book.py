@@ -83,6 +83,8 @@ class BookBuildTests(unittest.TestCase):
                               'src="/static/tutorials/terminal.jpg"><figcaption>Caption</figcaption>'
                               '</figure><p><img src="github-icon.svg"> GitHub</p></article>')
         self.assertEqual(good.problems, [])
+        image_only = PageFormatting('<article><p><img src="/static/tutorials/batch.png"> </p></article>')
+        self.assertEqual(len(image_only.problems), 1)
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

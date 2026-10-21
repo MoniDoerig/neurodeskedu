@@ -69,8 +69,8 @@ class PageFormatting(HTMLParser):
                 self.problems.append("Empty heading")
             self.heading = None
         if tag == "p" and self.paragraph is not None:
-            if self.paragraph["screenshot"] and self.paragraph["text"].strip():
-                self.problems.append("Screenshot shares a paragraph with text; separate the caption")
+            if self.paragraph["screenshot"]:
+                self.problems.append("Screenshot is inline inside a paragraph; use a standalone figure")
             self.paragraph = None
         if tag == "article":
             self.article = False
