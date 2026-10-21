@@ -110,9 +110,14 @@ outputs without running notebook code.
 For browser checks, install `requirements-book-browser.txt`, run
 `playwright install chromium`, and serve the site as above. Then run
 `python .github/scripts/verify_book_browser.py http://localhost:8000`.
-This checks the launch menu, source download, page navigation, and the RISE
-redirect. Add `--widgets` when the build contains the published brain extraction
-notebook's five saved NiiVue viewers.
+This checks section landing pages, desktop and mobile sidebar navigation, the
+launch menu, source download, and the RISE redirect. Section contents must link
+only to pages in that section. Add `--widgets` when the build contains the
+published brain extraction notebook's five saved NiiVue viewers.
+
+Build on a case-sensitive filesystem to match Linux CI. With the pinned MyST
+version, macOS's default case-insensitive filesystem can cause links to mixed-case
+notebook filenames (such as `MRIQC.ipynb`) to become downloads instead of page links.
 
 The build renders saved Jupyter widgets in separate HTML frames because MyST's
 static renderer removes widget views. These frames use the Jupyter widget
