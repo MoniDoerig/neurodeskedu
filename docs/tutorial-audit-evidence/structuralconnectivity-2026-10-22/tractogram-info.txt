@@ -1,0 +1,31 @@
+***********************************
+  Tracks file: "100307/mrtrix-results/tracks_100k.tck"
+    act:                  5TT_coreg.mif
+    backtrack:            1
+    command_history:      /opt/mrtrix3-3.0.3/bin/tckgen wmfod_norm.mif tracks_100k.tck -algorithm iFOD2 -act 5TT_coreg.mif -backtrack -crop_at_gmwmi -seed_gmwmi gmwmSeed_coreg.mif -maxlength 300 -select 100000 -nthreads 4  (version=3.0.3)
+    count:                100000
+    crop_at_gmwmi:        1
+    downsample_factor:    3
+    fod_power:            0.25
+    init_threshold:       0.0500000007
+    lmax:                 8
+    max_angle:            45
+    max_dist:             300
+    max_num_seeds:        100000000
+    max_num_tracks:       100000
+    max_seed_attempts:    1000
+    max_trials:           1000
+    method:               iFOD2
+    min_dist:             2.5
+    mrtrix_version:       3.0.3
+    rk4:                  0
+    samples_per_step:     4
+    sh_precomputed:       1
+    source:               wmfod_norm.mif
+    step_size:            0.625
+    stop_on_all_include:  0
+    threshold:            0.0500000007
+    timestamp:            1792585135.4600031376
+    total_count:          204103
+    unidirectional:       0
+    ROI:                  seed gmwmSeed_coreg.mif

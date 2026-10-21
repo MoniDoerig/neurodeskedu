@@ -1,0 +1,49 @@
+
+Generating T1w-space labels from the supplied anatomy
++ mri_synthseg --i ../T1w/T1w_acpc_dc_restore_brain.nii.gz --o parcellation_synthseg.nii.gz --parc --cpu --threads 8 --qc synthseg_qc.csv
+SynthSeg 2.0
+using CPU, hiding all CUDA_VISIBLE_DEVICES
+using 8 threads
+predicting 1/1
+
+1/1 [==============================] - ETA: 0s
+1/1 [==============================] - 69s 69s/step
+
+segmentation  saved in:    /home/jovyan/neurodesktop-storage/structuralconnectivity-demo/100307/mrtrix-results/parcellation_synthseg.nii.gz
+QC scores saved in:        /home/jovyan/neurodesktop-storage/structuralconnectivity-demo/100307/mrtrix-results/synthseg_qc.csv
+
+If you use this tool in a publication, please cite:
+SynthSeg: Segmentation of brain MRI scans of any contrast and resolution without retraining
+B. Billot, D.N. Greve, O. Puonti, A. Thielscher, K. Van Leemput, B. Fischl, A.V. Dalca, J.E. Iglesias
+Medical Image Analysis, accepted for publication.
++ set +x
++ labelconvert parcellation_synthseg.nii.gz FreeSurferColorLUT.txt /opt/mrtrix3-3.0.3/share/mrtrix3/labelconvert/fs_default.txt nodes.mif
+labelconvert: Image "parcellation_synthseg.nii.gz" stored with signed integer type; need to check for negative values
+
+labelconvert: [100%] uncompressing image "parcellation_synthseg.nii.gz"...
+labelconvert: [100%] uncompressing image "parcellation_synthseg.nii.gz"
+
+labelconvert: [100%] Verifying parcellation image...
+labelconvert: [100%] Verifying parcellation image
+
+labelconvert: [100%] uncompressing image "parcellation_synthseg.nii.gz"...
+labelconvert: [100%] uncompressing image "parcellation_synthseg.nii.gz"
++ mrtransform nodes.mif -linear diff2struct_mrtrix.txt -inverse -datatype uint32 nodes_coreg.mif
+
+mrtransform: [100%] preloading data for "nodes.mif"...
+mrtransform: [100%] preloading data for "nodes.mif"
+
+mrtransform: [100%] copying from "nodes.mif" to "nodes_coreg.mif"......
+mrtransform: [100%] copying from "nodes.mif" to "nodes_coreg.mif"...
+
+mrtransform: [100%] writing back direct IO buffer for "nodes_coreg.mif"...
+mrtransform: [100%] writing back direct IO buffer for "nodes_coreg.mif"
++ tck2connectome tracks_100k.tck nodes_coreg.mif connectome.csv -tck_weights_in sift2_weights.txt -symmetric -zero_diagonal -scale_invnodevol -out_assignments assignments.txt
+
+tck2connectome: [100%] Constructing connectome...
+tck2connectome: [100%] Constructing connectome
++ set +x
+
+Connectome complete. Check nodes_coreg.mif against mean_b0.mif before interpreting.
+Wed Oct 21 20:25:58 UTC 2026
+Press Enter to close this terminal.

@@ -400,7 +400,7 @@
   },
   {
     "original_paths": [
-      "books/static/tutorials/phase_processing/unwrapping/Screenshot 2026-03-16 at 2.11.16 pm.png"
+      "books/static/tutorials/phase_processing/unwrapping/Screenshot 2026-03-16 at 2.11.16\u202fpm.png"
     ],
     "replaced_in": "books/static/tutorials/phase_processing/unwrapping",
     "reason": "Superseded by verified VNC captures; original remains recoverable from Git history."
@@ -558,5 +558,12 @@
     ],
     "replaced_in": "books/static/tutorials/electrophysiology/eeg_mne-python",
     "reason": "Replaced scaled JPEGs with fresh native-resolution PNG captures from a successful MNE GUI rerun; original files remain recoverable from Git history."
+  },
+  {
+    "original_paths": [
+      "books/static/tutorials/structural_imaging/structuralconnectivity/01-mrtrix-input.png"
+    ],
+    "replaced_in": "books/static/tutorials/structural_imaging/structuralconnectivity",
+    "reason": "Superseded by captures from a complete MRtrix3 run in Neurodesktop on Neurodesk Play on 2026-10-21–22; original remains recoverable from Git history."
   }
 ]

@@ -1,0 +1,14 @@
+{
+  "matrix_shape": [
+    84,
+    84
+  ],
+  "finite": true,
+  "nonnegative": true,
+  "symmetric": true,
+  "zero_diagonal": true,
+  "sift2_weights": 100000,
+  "weights_finite_nonnegative": true,
+  "nonzero_edges": 1499,
+  "matrix_max": 0.1107675254676995
+}
