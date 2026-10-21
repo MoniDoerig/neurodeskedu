@@ -371,6 +371,9 @@ def preserve_screenshot_pngs(built: Path) -> int:
         original = path.read_text()
         text = property_pattern.sub(lambda m: "," if m[1] and m[2] else "", original)
         text = re.sub(r"<source\b[^>]*>", lambda m: "" if urls.search(m[0]) else m[0], text)
+        # Without urlOptimized the React image component renders an img directly.
+        # Match that structure in the exported HTML to preserve hydration.
+        text = re.sub(r"<picture\b[^>]*>(\s*<img\b[^>]*>\s*)</picture>", r"\1", text)
         if text != original:
             if path.suffix == ".json":
                 json.loads(text)
@@ -427,6 +430,7 @@ def externalize_shared_images(built: Path) -> int:
             text = optimized_property.sub(lambda m: "," if m[1] and m[2] else "", text)
         text = re.sub(r"<source\b[^>]*>",
                       lambda m: "" if urls.search(m[0]) else m[0], text)
+        text = re.sub(r"<picture\b[^>]*>(\s*<img\b[^>]*>\s*)</picture>", r"\1", text)
         text = urls.sub(lambda m: replacements[m[0]], text)
         if text != original:
             if path.suffix == ".json":

@@ -47,6 +47,7 @@ class BookBuildTests(unittest.TestCase):
         self.assertEqual(published["children"][0]["url"], png)
         self.assertEqual(published["children"][1], record["children"][1])
         self.assertNotIn(webp, (built / "page.html").read_text())
+        self.assertNotIn("<picture", (built / "page.html").read_text())
         self.assertIn("/build/photo.webp", (built / "page.html").read_text())
         self.assertEqual(json.loads(raw.read_text()), record)
 
@@ -145,6 +146,7 @@ class BookBuildTests(unittest.TestCase):
         self.assertNotIn(png, result)
         self.assertNotIn(webp, result)
         self.assertNotIn('type="image/webp"', result)
+        self.assertNotIn("<picture", result)
         self.assertIn(f'<img src="{origin}"', result)
         self.assertIn('<source srcset="/edu/build/other.png"/>', result)
         self.assertEqual(raw.read_bytes(), original)
