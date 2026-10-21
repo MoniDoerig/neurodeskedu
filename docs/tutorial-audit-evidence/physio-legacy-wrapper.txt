@@ -1,0 +1,30 @@
+LEGACY CONTAINER DIRECTORY
+.cvmfscatalog
+.git
+.github
+.gitignore
+.vscode
+LICENSE
+README.md
+activate_physio_r7771_20211206.simg.sh
+commands.txt
+commands_raw.txt
+deactivate_physio_r7771_20211206.simg.sh
+env.txt
+manual_module_files
+run_spm12.sh
+run_transparent_singularity.sh
+spm12
+ts_binaryFinder.sh
+ts_binaryFinderExcludes.txt
+ts_deactivate_
+ts_uninstall.sh
+RUN WRAPPER
+#!/usr/bin/env bash
+echo "This container was disabled due to a known bug or vulnerability. To keep using the software please use a different version. If you absolutely need this container for reproducibility you can pull it from docker hub via the command apptainer pull docker://vnmd/physio_r7771:20211206" >&2
+exit 1
+
+CVMFS TOP-LEVEL DIRECTORIES
+containers
+neurodesk-modules
+neurocommand

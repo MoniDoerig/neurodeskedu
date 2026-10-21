@@ -1,0 +1,1 @@
+-r-xr-xr-x 1 nobody nogroup 23862 Nov 23  2021 /opt/matlab/R2022a/bin/activate_matlab.sh

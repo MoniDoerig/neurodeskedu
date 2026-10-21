@@ -1,0 +1,139 @@
+=== DataLad create and save ===
+[INFO] Running procedure cfg_yoda
+[INFO] == Command start (output follows) =====
+[INFO] == Command exit (modification check follows) =====
+run(ok): /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/datalad-demo/SomeProject (dataset) [/opt/conda/bin/python3.13 /opt/conda/lib...]
+create(ok): /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/datalad-demo/SomeProject (dataset)
+action summary:
+  create (ok: 1)
+  run (ok: 1)
+add(ok): code/hello.jl (file)
+save(ok): . (dataset)
+action summary:
+  add (ok: 1)
+  save (ok: 1)
+[INFO] == Command start (output follows) =====
+[INFO] == Command exit (modification check follows) =====
+run(ok): /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/datalad-demo/SomeProject (dataset) [julia code/hello.jl > outputs/hello.txt]
+add(ok): outputs/hello.txt (file)
+save(ok): . (dataset)
+hello neurodesktop
+[INFO] Attempting a clone into /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/datalad-demo/SomeProject-rerun
+[INFO] Attempting to clone from SomeProject to /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/datalad-demo/SomeProject-rerun
+[INFO] Completed clone attempts for Dataset(/home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/datalad-demo/SomeProject-rerun)
+install(ok): /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/datalad-demo/SomeProject-rerun (dataset)
+[INFO] run commit 14e4dff; (run hello)
+run.remove(ok): outputs/hello.txt (file) [Removed file]
+[INFO] == Command start (output follows) =====
+[INFO] == Command exit (modification check follows) =====
+run(ok): /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/datalad-demo/SomeProject-rerun (dataset) [julia code/hello.jl > outputs/hello.txt]
+add(ok): outputs/hello.txt (file)
+action summary:
+  add (ok: 1)
+  run (ok: 1)
+  run.remove (ok: 1)
+  save (notneeded: 1)
+hello neurodesktop
+
+=== MRSI actual entry points ===
+/cvmfs/neurodesk.ardc.edu.au/containers/mrsiproc_0.1.0_20231211/Part1_ProcessMRSI.sh
+/cvmfs/neurodesk.ardc.edu.au/containers/mrsiproc_0.1.0_20231211/Part2_EvaluateMRSI.sh
+
+=== MNE module definition ===
+-------------------------------------------------------------
+   /cvmfs/neurodesk.ardc.edu.au/neurodesk-modules/electrophysiology/mne/0.23.4:
+-------------------------------------------------------------
+whatis("mne_0.23.4_20220121.simg")
+whatis("Commands: code")
+prepend_path("PATH","/cvmfs/neurodesk.ardc.edu.au/containers/mne_0.23.4_20220121")
+
+
+=== Phase demo download ===
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100  1108  100  1108    0     0  11688      0 --:--:-- --:--:-- --:--:-- 11787
+
+  2 37.2M    2  814k    0     0  1178k      0  0:00:32 --:--:--  0:00:32 1178k
+100 37.2M  100 37.2M    0     0  40.1M      0 --:--:-- --:--:-- --:--:--  153M
+Archive:  01_bids.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+        0  2022-06-17 14:26   01_bids/
+      117  2022-06-17 14:26   01_bids/README
+       47  2022-06-17 14:26   01_bids/.bidsignore
+      251  2022-06-17 14:26   01_bids/dataset_description.json
+      890  2022-06-17 14:26   01_bids/details_and_citations.txt
+        0  2022-06-17 14:26   01_bids/sub-170705134431std1312211075243167001/
+        0  2022-06-17 14:26   01_bids/sub-170706160506std1312211075243167001/
+        0  2022-06-17 14:26   01_bids/sub-170705134431std1312211075243167001/ses-1/
+        0  2022-06-17 14:26   01_bids/sub-170706160506std1312211075243167001/ses-1/
+        0  2022-06-17 14:26   01_bids/sub-170705134431std1312211075243167001/ses-1/anat/
+ 16056672  2022-06-17 14:26   01_bids/sub-170705134431std1312211075243167001/ses-1/anat/sub-170705134431std1312211075243167001_ses-1_run-1_part-phase_T2starw.nii
+     1968  2022-06-17 14:26   01_bids/sub-170705134431std1312211075243167001/ses-1/anat/sub-170705134431std1312211075243167001_ses-1_run-1_part-phase_T2starw.json
+ 16056672  2022-06-17 14:26   01_bids/sub-170705134431std1312211075243167001/ses-1/anat/sub-170705134431std1312211075243167001_ses-1_run-1_part-mag_T2starw.nii
+     1926  2022-06-17 14:26   01_bids/sub-170705134431std1312211075243167001/ses-1/anat/sub-170705134431std1312211075243167001_ses-1_run-1_part-mag_T2starw.json
+        0  2022-06-17 14:26   01_bids/sub-170705134431std1312211075243167001/ses-1/extra_data/
+      709  2022-06-17 14:26   01_bids/sub-170705134431std1312211075243167001/ses-1/extra_data/dcm2niix_output.txt
+        0  2022-06-17 14:26   01_bids/sub-170706160506std1312211075243167001/ses-1/anat/
+ 14623072  2022-06-17 14:26   01_bids/sub-170706160506std1312211075243167001/ses-1/anat/sub-170706160506std1312211075243167001_ses-1_run-1_part-phase_T2starw.nii
+     1968  2022-06-17 14:26   01_bids/sub-170706160506std1312211075243167001/ses-1/anat/sub-170706160506std1312211075243167001_ses-1_run-1_part-phase_T2starw.json
+ 14623072  2022-06-17 14:26   01_bids/sub-170706160506std1312211075243167001/ses-1/anat/sub-170706160506std1312211075243167001_ses-1_run-1_part-mag_T2starw.nii
+     1926  2022-06-17 14:26   01_bids/sub-170706160506std1312211075243167001/ses-1/anat/sub-170706160506std1312211075243167001_ses-1_run-1_part-mag_T2starw.json
+        0  2022-06-17 14:26   01_bids/sub-170706160506std1312211075243167001/ses-1/extra_data/
+
+=== EEG demo download ===
+
+  0%|          | 0.00/157M [00:00<?, ?bytes/s]
+  0%|          | 32.8k/157M [00:00<14:10, 185kbytes/s]
+  0%|          | 81.9k/157M [00:00<09:41, 270kbytes/s]
+  0%|          | 164k/157M [00:00<07:28, 350kbytes/s]
+  0%|          | 279k/157M [00:00<05:45, 454kbytes/s]
+  0%|          | 557k/157M [00:00<03:08, 830kbytes/s]
+  1%|          | 983k/157M [00:01<01:58, 1.32Mbytes/s]
+  1%|          | 1.95M/157M [00:01<01:00, 2.56Mbytes/s]
+  2%|▏         | 3.93M/157M [00:01<00:30, 5.06Mbytes/s]
+  5%|▍         | 7.86M/157M [00:01<00:15, 9.94Mbytes/s]
+ 10%|█         | 15.7M/157M [00:01<00:07, 19.5Mbytes/s]
+ 15%|█▍        | 23.4M/157M [00:01<00:04, 30.2Mbytes/s]
+ 17%|█▋        | 27.1M/157M [00:02<00:04, 27.4Mbytes/s]
+ 20%|██        | 32.2M/157M [00:02<00:04, 27.2Mbytes/s]
+ 26%|██▌       | 40.4M/157M [00:02<00:03, 31.5Mbytes/s]
+ 31%|███       | 48.6M/157M [00:02<00:03, 34.3Mbytes/s]
+ 36%|███▌      | 56.8M/157M [00:02<00:02, 36.0Mbytes/s]
+ 41%|████▏     | 64.9M/157M [00:03<00:02, 36.9Mbytes/s]
+ 46%|████▋     | 73.1M/157M [00:03<00:02, 37.8Mbytes/s]
+ 52%|█████▏    | 81.3M/157M [00:03<00:01, 38.6Mbytes/s]
+ 57%|█████▋    | 89.5M/157M [00:03<00:01, 39.0Mbytes/s]
+ 62%|██████▏   | 97.7M/157M [00:03<00:01, 39.3Mbytes/s]
+ 67%|██████▋   | 106M/157M [00:04<00:01, 39.7Mbytes/s]
+ 73%|███████▎  | 114M/157M [00:04<00:01, 39.8Mbytes/s]
+ 78%|███████▊  | 122M/157M [00:04<00:00, 39.8Mbytes/s]
+ 83%|████████▎ | 130M/157M [00:04<00:00, 40.1Mbytes/s]
+ 88%|████████▊ | 139M/157M [00:04<00:00, 40.0Mbytes/s]
+ 93%|█████████▎| 147M/157M [00:05<00:00, 40.0Mbytes/s]
+ 99%|█████████▊| 155M/157M [00:05<00:00, 40.2Mbytes/s]
+100%|██████████| 157M/157M [00:05<00:00, 29.2Mbytes/s]
+Archive:  EEGDemo/Data_sample.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+        0  2021-10-06 12:31   Data_sample/
+     2432  2021-01-06 12:35   Data_sample/helperdata.asv
+     2562  2021-01-06 15:04   Data_sample/helperdata.m
+      927  2021-01-06 15:04   Data_sample/helperdata.mat
+      302  2019-03-01 14:18   Data_sample/participants.json
+      442  2019-03-01 14:17   Data_sample/participants.tsv
+        0  2021-10-06 12:30   Data_sample/sourcedata/
+        0  2021-10-06 12:30   Data_sample/sourcedata/sub-01/
+        0  2021-10-06 12:30   Data_sample/sourcedata/sub-01/behave/
+  3456657  2018-12-20 18:10   Data_sample/sourcedata/sub-01/behave/sub-01_task-FeatAttnDec_behav.mat
+        0  2021-10-06 12:30   Data_sample/sourcedata/sub-01/eeg/
+ 83843841  2018-12-20 18:10   Data_sample/sourcedata/sub-01/eeg/sub-01_task-FeatAttnDec_eeg.mat
+        0  2021-10-06 12:30   Data_sample/sub-01/
+        0  2021-10-06 12:30   Data_sample/sub-01/eeg/
+      389  2019-02-28 17:21   Data_sample/sub-01/eeg/sub-01_task-FeatAttnDec_channels.tsv
+ 88951296  2019-02-28 17:21   Data_sample/sub-01/eeg/sub-01_task-FeatAttnDec_eeg.eeg
+     2081  2019-02-28 17:21   Data_sample/sub-01/eeg/sub-01_task-FeatAttnDec_eeg.json
+
+=== WORKFLOW CHECKS COMPLETE ===

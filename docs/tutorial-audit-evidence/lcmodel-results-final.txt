@@ -1,0 +1,33 @@
+Mon Oct 19 23:18:17 UTC 2026
+SAVED RESULTS
+/home/jovyan/.lcmodel/saved/sl1_2-1.table 5760 bytes
+/home/jovyan/.lcmodel/saved/sl1_4-1.ps 100743 bytes
+/home/jovyan/.lcmodel/saved/sl1_7-1.ps 100753 bytes
+/home/jovyan/.lcmodel/saved/sl1_9-1.table 5610 bytes
+/home/jovyan/.lcmodel/saved/sl1_5-1.table 5760 bytes
+/home/jovyan/.lcmodel/saved/sl1_1-1.ps 100293 bytes
+/home/jovyan/.lcmodel/saved/sl1_8-1.table 5760 bytes
+/home/jovyan/.lcmodel/saved/sl1_10-1.ps 100745 bytes
+/home/jovyan/.lcmodel/saved/sl1_7-1.table 5760 bytes
+/home/jovyan/.lcmodel/saved/sl1_1-1.table 5536 bytes
+/home/jovyan/.lcmodel/saved/sl1_8-1.ps 100753 bytes
+/home/jovyan/.lcmodel/saved/sl1_2-1.ps 100753 bytes
+/home/jovyan/.lcmodel/saved/sl1_5-1.ps 100753 bytes
+/home/jovyan/.lcmodel/saved/sl1_4-1.table 5760 bytes
+/home/jovyan/.lcmodel/saved/sl1_3-1.table 5835 bytes
+/home/jovyan/.lcmodel/saved/sl1_3-1.ps 100925 bytes
+/home/jovyan/.lcmodel/saved/sl1_6-1.ps 100925 bytes
+/home/jovyan/.lcmodel/saved/sl1_9-1.ps 100550 bytes
+/home/jovyan/.lcmodel/saved/sl1_6-1.table 5835 bytes
+/home/jovyan/.lcmodel/saved/sl1_10-1.table 5761 bytes
+GENERATED PLOTS
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_4-1.ps 100743 bytes
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_7-1.ps 100753 bytes
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_1-1.ps 100293 bytes
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_10-1.ps 100745 bytes
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_8-1.ps 100753 bytes
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_2-1.ps 100753 bytes
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_5-1.ps 100753 bytes
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_3-1.ps 100925 bytes
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_6-1.ps 100925 bytes
+/home/jovyan/.lcmodel/temp/19d-23h-05m-45s-7085pid/sl1_9-1.ps 100550 bytes

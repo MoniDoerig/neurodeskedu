@@ -1,9 +1,65 @@
 #!/usr/bin/env python3
-"""Verify downloads, page navigation, redirects, and optional saved widgets."""
+"""Verify section lists, menus, downloads, redirects, and optional saved widgets."""
 
 import argparse
+from pathlib import PurePosixPath
 import re
+from urllib.parse import urlsplit
 from playwright.sync_api import expect, sync_playwright
+
+
+def verify_section_navigation(page, url: str, routes: dict[str, str]) -> None:
+    """Section landing pages must list their own pages, not the whole project."""
+    sections = [source for source in routes if source.endswith("/intro.md")
+                and source not in {"examples/intro.md", "tutorials/intro.md"}]
+    for source in sections:
+        folder = PurePosixPath(source).parent
+        expected = {urlsplit(url + "/" + route).path.rstrip("/")
+                    for child, route in routes.items()
+                    if child != source and PurePosixPath(child).parent == folder}
+        page.goto(url + "/" + routes[source], wait_until="domcontentloaded")
+        links = page.locator("article ul a")
+        expect(links, f"{source} must list only its own pages").to_have_count(len(expected))
+        actual = {urlsplit(href).path.rstrip("/")
+                  for href in links.evaluate_all("els => els.map(el => el.href)")}
+        assert actual == expected, f"{source} lists pages outside its section: {actual ^ expected}"
+
+    # Exercise actual sidebar links and disclosure buttons at desktop and phone sizes.
+    functional_source = "tutorials/functional_imaging/intro.md"
+    functional_count = sum(child != functional_source
+                           and PurePosixPath(child).parent == PurePosixPath(functional_source).parent
+                           for child in routes)
+    for width in (1440, 390):
+        page.set_viewport_size({"width": width, "height": 1000})
+        page.goto(url + "/" + routes["tutorials/intro.md"], wait_until="domcontentloaded")
+        menu = page.get_by_role("button", name="Open Menu", exact=True)
+        if menu.is_visible():
+            menu.click()
+        toc = page.locator(".myst-toc:visible")
+        section = toc.get_by_role("link", name="Functional Imaging", exact=True)
+        row = section.locator("..")
+        toggle = row.get_by_role("button", name="Open Folder", exact=True)
+        expect(toggle).to_have_attribute("aria-expanded", "false")
+        before = page.url
+        toggle.click()
+        expect(toggle).to_have_attribute("aria-expanded", "true")
+        assert page.url == before, "Opening a folder navigated away"
+        toggle.click()
+        expect(toggle).to_have_attribute("aria-expanded", "false")
+        expect(toc.get_by_role("link", name="Examples", exact=True).locator("..")
+               .get_by_role("button")).to_have_attribute("aria-expanded", "false")
+        section.click()
+        expect(page).to_have_url(url + "/" + routes[functional_source])
+        expect(page.locator("article ul a")).to_have_count(functional_count)
+        if menu.is_visible():
+            menu.click()
+        toc.get_by_role("link", name="PhysIO", exact=True).click()
+        expect(page).to_have_url(url + "/" + routes["tutorials/functional_imaging/physio.md"])
+        expect(page.get_by_role("heading", name="PhysIO", exact=True)).to_be_visible()
+        page.go_back(wait_until="domcontentloaded")
+        expect(page.locator("article ul a")).to_have_count(functional_count)
+    page.set_viewport_size({"width": 1440, "height": 1000})
+    print(f"Verified {len(sections)} section lists and desktop/mobile sidebar navigation")
 
 
 def verify(url: str, executable: str | None, widgets: bool, screenshot: str | None) -> None:
@@ -15,6 +71,7 @@ def verify(url: str, executable: str | None, widgets: bool, screenshot: str | No
         response = page.request.get(url + "/neurodesk-pages.json")
         assert response.ok, "Missing page inventory"
         routes = response.json()
+        verify_section_navigation(page, url, routes)
         source = "examples/structural_imaging/brain_extraction_different_tools.ipynb"
         notebook_url = url + "/" + routes[source]
         page.goto(notebook_url, wait_until="domcontentloaded")

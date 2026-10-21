@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# neurodesk-artifact-v2
+_neurodesk_wrapper=$(readlink -f -- "${BASH_SOURCE[0]}") || exit 2
+_neurodesk_dir=$(cd "$(dirname "$_neurodesk_wrapper")" && pwd -P) || exit 2
+source "$_neurodesk_dir/container_runtime.sh" || exit 2
+neurodesk_container exec "$_neurodesk_dir/"matlab_2022a_20231207.simg matlab "$@"
+-----------------------------------------------------------------------------------------------------------------
+   /cvmfs/neurodesk.ardc.edu.au/neurodesk-modules/machine_learning/matlab/2026b.lua:
+-----------------------------------------------------------------------------------------------------------------
+help([[----------------------------------
+## matlab/R2026b ##
+
+MATLAB with the Deep Learning Toolbox Converter for ONNX Model Format preinstalled.
+
+Licensing:
+MATLAB is commercial software and requires a valid MathWorks license.
+Preferred options are:
+- set `MLM_LICENSE_FILE=port@hostname` for a network license manager
+- place a `.lic` file in `~/Downloads`; the wrapper script automatically uses the first `.lic` file it finds there
+
+Examples:
+```bash
+matlab
+matlab -batch "ver"
+mex -help
+module avail
+```
+
+The ONNX support package is installed under `/opt/matlab/support-packages/R2026b`.
+This location is registered as the MATLAB support package root, so
+`matlabshared.supportpkg.getSupportPackageRoot` resolves to the shared path.
+
+More documentation:
+- https://www.mathworks.com/help/deeplearning/ref/importonnxfunction.html
+- https://github.com/mathworks-ref-arch/matlab-dockerfile
+
+To run the application outside of this environment: ml matlab/R2026b
+
+----------------------------------]])
+whatis("matlab_2026b_20260929.simg")
+prepend_path("PATH","/cvmfs/neurodesk.ardc.edu.au/containers/matlab_2026b_20260929")
+setenv("NEURODESK_IMAGE_6D61746C61622F3230323662","/cvmfs/neurodesk.ardc.edu.au/containers/matlab_2026b_20260929/matlab_2026b_20260929.simg")
+whatis("Commands: ClassPathGenerator, ProductData.json, controllingProduct.json, genSLTarget, lcdata.xsd, ldd, matlab, matlab_jenv, mex, mexext, mw_mpiexec, worker")
+prepend_path{"APPTAINER_BINDPATH","/home/jovyan:/opt/matlab/R2026b/licenses",delim=","}
+
+bash: type: matlabGUI: not found
+matlab is /cvmfs/neurodesk.ardc.edu.au/containers/matlab_2026b_20260929/matlab

@@ -1,0 +1,10 @@
+-----------------------------------------------------------------------------------------------------------------
+   /cvmfs/neurodesk.ardc.edu.au/neurodesk-modules/machine_learning/matlab/2022a:
+-----------------------------------------------------------------------------------------------------------------
+whatis("matlab_2022a_20231207.simg")
+whatis("Commands: datalad, matlab, mex")
+prepend_path("PATH","/cvmfs/neurodesk.ardc.edu.au/containers/matlab_2022a_20231207")
+prepend_path{"APPTAINER_BINDPATH","/home/jovyan:/opt/matlab/R2022a/licenses",delim=","}
+
+bash: type: matlabGUI: not found
+matlab is /cvmfs/neurodesk.ardc.edu.au/containers/matlab_2022a_20231207/matlab

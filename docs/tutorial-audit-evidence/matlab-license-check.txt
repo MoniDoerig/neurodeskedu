@@ -1,0 +1,14 @@
+MLM_LICENSE_FILE=/home/jovyan/Downloads
+License checkout failed.
+License Manager Error -1
+The license file cannot be found.
+
+Troubleshoot this issue by visiting:
+https://www.mathworks.com/support/lme/R2022a/1
+
+Diagnostic Information:
+Feature: MATLAB
+License path: /home/jovyan/Downloads/*.lic:/home/jovyan/.matlab/R2022a_licenses:/opt/matlab/R2022a/licenses/licens
+e.dat:/opt/matlab/R2022a/licenses/*.lic
+Licensing error: -1,359. System Error: 2
+EXIT_STATUS=1

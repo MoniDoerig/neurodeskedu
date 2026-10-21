@@ -1,0 +1,15 @@
+Saved notebook: /home/jovyan/neurodesktop-storage/tutorial-audit-2026-10-20/EEGDemo/EEGDemo.ipynb
+Kernel: {'display_name': 'Python 3', 'language': 'python', 'name': 'python3'}
+Cell 1 execution_count 1 errors []
+Cell 2 execution_count 2 errors []
+Cell 3 execution_count 3 errors []
+Cell 4 execution_count 4 errors []
+Cell 5 execution_count 5 errors []
+Cell 6 execution_count 6 errors []
+Cell 7 execution_count 7 errors []
+Cell 8 execution_count 8 errors []
+Cell 9 execution_count 9 errors []
+Cell 10 execution_count 10 errors []
+Cell 11 execution_count 11 errors []
+Cell 12 execution_count 12 errors []
+Cell 13 execution_count 13 errors []

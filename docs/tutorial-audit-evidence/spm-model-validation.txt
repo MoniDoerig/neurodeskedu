@@ -1,0 +1,10 @@
+Timing: {'units': 'secs', 'RT': 2, 'fmri_t': 16, 'fmri_t0': 8}
+SESSION 1 scans: 146
+Inc onsets: [  0  10  20  52  88 130 144 174 236 248 260 274] duration: 2
+Con onsets: [ 32  42  64  76 102 116 154 164 184 196 208 222] duration: 2
+SESSION 2 scans: 146
+Inc onsets: [  0  10  52  64  88 150 164 174 184 196 232 260] duration: 2
+Con onsets: [ 20  30  40  76 102 116 130 140 208 220 246 274] duration: 2
+Model rows/columns: (292, 6) rank: 6
+Columns: ['Sn(1) Inc*bf(1)' 'Sn(1) Con*bf(1)' 'Sn(2) Inc*bf(1)' 'Sn(2) Con*bf(1)'
+ 'Sn(1) constant' 'Sn(2) constant']
