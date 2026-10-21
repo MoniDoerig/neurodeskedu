@@ -111,18 +111,34 @@ mrtransform 5TT.mif -linear diff2struct_mrtrix.txt -inverse 5TT_coreg.mif
 Now that `mean_b0.mif` exists, check the FODs before tracking. Load the mean b=0 image and overlay the normalised white-matter FODs; in a coronal slice the corpus callosum (red, left–right) and the corticospinal tracts (blue, superior–inferior) should be obvious, with crossing-fibre lobes where they meet:
 
 ```bash
-mrview mean_b0.mif -odf.load_sh wmfod_norm.mif
+mrview mean_b0.mif -plane 1 -odf.load_sh wmfod_norm.mif
 ```
 
-![mrview coronal view with white-matter FOD glyphs over the mean b=0 image, showing the corpus callosum and corticospinal tracts](/static/tutorials/structural_imaging/structuralconnectivity/05-fod-glyphs.png)
+In the MRview window:
+
+1. Choose **Tool → ODF display (1)** to show the settings panel.
+2. Select **wmfod_norm.mif (2)** in the loaded-image list. The eye button above the list hides or shows the glyphs.
+3. Increase **scale (3)** to **4**, leaving **colour by direction** checked. This changes the display size, not the FOD data.
+
+Use **View → Zoom in** to bring the corpus callosum into view, as shown below. The red left–right lobes and blue superior–inferior lobes should follow the major white-matter pathways.
+
+![MRview FOD guide: 1 opens the ODF display panel, 2 selects the loaded FODs, and 3 adjusts glyph scale](/static/tutorials/structural_imaging/structuralconnectivity/05-fod-glyphs-annotated.svg)
 
 Confirm the registration by overlaying the coregistered 5TT image on the mean b=0 image. The first 5TT volume (cortical grey matter) should trace the cortical ribbon of the diffusion image in all three planes:
 
 ```bash
-mrview mean_b0.mif -mode 1 -overlay.load 5TT_coreg.mif -overlay.opacity 0.6
+mrview mean_b0.mif -mode 2 -overlay.load 5TT_coreg.mif -overlay.opacity 0.6
 ```
 
-![mrview orthogonal views with the coregistered cortical grey-matter volume of the 5TT image overlaid on the mean b=0 image](/static/tutorials/structural_imaging/structuralconnectivity/06-5tt-alignment.png)
+The command opens the three-plane view. If you need to return to it later, choose **View → Ortho view** or press **F2**.
+
+1. Choose **Tool → Overlay (1)** to show the overlay controls.
+2. Use the checkbox beside **5TT_coreg.mif (2)** to hide and show the tissue map. Leave the volume index at **4: 0**, the first 5TT volume.
+3. Adjust **opacity (3)** to compare the overlay with the underlying anatomy; the screenshot uses **0.6**.
+
+Check that the cortical ribbon follows the anatomy in the coronal, sagittal and axial views. Close MRview to return to the terminal when you have finished.
+
+![MRview tissue alignment guide: 1 opens Overlay, 2 toggles the 5TT image, and 3 adjusts opacity](/static/tutorials/structural_imaging/structuralconnectivity/06-5tt-alignment-annotated.svg)
 
 ## 3. Generate and filter a tractogram
 
@@ -149,7 +165,14 @@ Inspect the streamlines in `mrview` before building the connectome. Directionall
 mrview mean_b0.mif -tractography.load tracks_100k.tck
 ```
 
-![mrview axial view of the 100,000-streamline tractogram over the mean b=0 image](/static/tutorials/structural_imaging/structuralconnectivity/08-tractogram.png)
+1. Choose **Tool → Tractography (1)**.
+2. Use the checkbox beside **tracks_100k.tck (2)** to hide and show the streamlines.
+3. Keep **color → Direction (3)** so the colours encode streamline orientation.
+4. Leave **crop to slab (4)** checked, with **thickness (mm) → 2.5**, to inspect the streamlines near the current slice rather than projecting the entire tractogram.
+
+Move through the slices and compare the streamlines with the underlying white matter. Close MRview before continuing in the terminal.
+
+![MRview tractography guide: 1 opens the panel, 2 toggles tracks, 3 selects direction colours, and 4 limits the display to a slice slab](/static/tutorials/structural_imaging/structuralconnectivity/08-tractogram-annotated.svg)
 
 ## 4. Generate the parcellation and build the connectome
 
@@ -196,11 +219,18 @@ tck2connectome tracks_100k.tck nodes_coreg.mif connectome.csv \
 Check image alignment in MRtrix before interpreting the matrix. A parcellation that is shifted or in a different space will produce misleading node assignments. Overlay the transformed node image on the mean b=0 image; each coloured region should sit on the matching grey-matter structure:
 
 ```bash
-mrview mean_b0.mif -mode 1 -overlay.load nodes_coreg.mif \
+mrview mean_b0.mif -mode 2 -overlay.load nodes_coreg.mif \
   -overlay.opacity 0.5 -overlay.colourmap 3 -overlay.interpolation 0
 ```
 
-![mrview orthogonal views with the coregistered parcellation nodes overlaid on the mean b=0 image](/static/tutorials/structural_imaging/structuralconnectivity/10-nodes-alignment.png)
+1. Choose **Tool → Overlay (1)**.
+2. Use the checkbox beside **nodes_coreg.mif (2)** to compare the labels with the mean b=0 image.
+3. Adjust **opacity (3)**; the screenshot uses **0.5**.
+4. Leave **Interpolate (4)** unchecked so integer labels are displayed without smoothing between regions.
+
+Click a structure in any plane to move all three views to that location. Inspect the cortex and deep grey matter, then close MRview to return to the terminal.
+
+![MRview node alignment guide: 1 opens Overlay, 2 toggles the labels, 3 adjusts opacity, and 4 disables interpolation](/static/tutorials/structural_imaging/structuralconnectivity/10-nodes-alignment-annotated.svg)
 
 `connectome.csv` is an 84 × 84 matrix (34 cortical regions per hemisphere plus the subcortical structures in `fs_default.txt`). Plot it in a Python session opened from the Neurodesktop terminal in `mrtrix-results` (run `python3`, then paste the following). The figure opens as a desktop window:
 

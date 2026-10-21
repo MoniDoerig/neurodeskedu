@@ -141,3 +141,15 @@ biological connectivity. Processing timestamps, normalized command output,
 SynthSeg QC, tractogram metadata and numerical checks are retained under
 `structuralconnectivity-2026-10-22/`. Terminal progress escape codes and
 intermediate percentage updates have been removed from the saved text logs.
+
+
+## Structural connectivity screenshot style follow-up — 22 October 2026
+
+Compared the FreeSurfer and FieldTrip GUI guides with the structural connectivity
+page. Recaptured the four MRview checks with their actual ODF display, Overlay
+and Tractography panels visible. Added the repository's editable green numbered
+SVG markers and matching numbered instructions. The unmarked PNGs remain beside
+the guides. FOD glyph scale is 4; the tractography panel shows direction colours
+and a 2.5 mm slice slab; the node overlay has Interpolate disabled. Corrected
+`-mode 1` to `-mode 2` for the three-plane MRview commands (F2 in the GUI).
+The completed 100,000-streamline analysis and matrix are unchanged.

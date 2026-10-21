@@ -2507,5 +2507,301 @@
         ]
       }
     ]
+  },
+  {
+    "source": "books/static/tutorials/structural_imaging/structuralconnectivity/05-fod-glyphs.png",
+    "size": [
+      1104,
+      688
+    ],
+    "right_padding": 70,
+    "title": "Inspect FODs: 1 ODF display, 2 loaded FOD image, 3 glyph scale",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open the Tool menu and choose the named display panel",
+        "target": [
+          965,
+          26,
+          74,
+          36
+        ],
+        "label": [
+          882,
+          43
+        ],
+        "tip": [
+          964,
+          43
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select wmfod_norm.mif in the loaded FOD list",
+        "target": [
+          859,
+          116,
+          238,
+          19
+        ],
+        "label": [
+          1010,
+          165
+        ],
+        "tip": [
+          1010,
+          136
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Increase the glyph scale to 4",
+        "target": [
+          919,
+          570,
+          174,
+          23
+        ],
+        "label": [
+          1140,
+          581
+        ],
+        "tip": [
+          1095,
+          581
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/structural_imaging/structuralconnectivity/06-5tt-alignment.png",
+    "size": [
+      1104,
+      688
+    ],
+    "right_padding": 70,
+    "title": "Check tissue alignment: 1 Overlay, 2 visibility, 3 opacity",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open the Tool menu and choose the named display panel",
+        "target": [
+          965,
+          26,
+          74,
+          36
+        ],
+        "label": [
+          882,
+          43
+        ],
+        "tip": [
+          964,
+          43
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select the loaded image; use its checkbox to hide or show it",
+        "target": [
+          913,
+          116,
+          184,
+          19
+        ],
+        "label": [
+          1010,
+          165
+        ],
+        "tip": [
+          1010,
+          136
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Set the 5TT overlay opacity to 0.6",
+        "target": [
+          913,
+          648,
+          184,
+          16
+        ],
+        "label": [
+          1140,
+          653
+        ],
+        "tip": [
+          1098,
+          653
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/structural_imaging/structuralconnectivity/08-tractogram.png",
+    "size": [
+      1104,
+      688
+    ],
+    "right_padding": 70,
+    "title": "Inspect streamlines: 1 Tractography, 2 visibility, 3 direction colours, 4 slice slab",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open the Tool menu and choose the named display panel",
+        "target": [
+          965,
+          26,
+          74,
+          36
+        ],
+        "label": [
+          882,
+          43
+        ],
+        "tip": [
+          964,
+          43
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select the loaded image; use its checkbox to hide or show it",
+        "target": [
+          950,
+          116,
+          147,
+          19
+        ],
+        "label": [
+          1010,
+          165
+        ],
+        "tip": [
+          1010,
+          136
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Keep Direction selected for streamline colours",
+        "target": [
+          985,
+          396,
+          77,
+          24
+        ],
+        "label": [
+          1140,
+          408
+        ],
+        "tip": [
+          1064,
+          408
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Keep crop to slab checked with a thickness of 2.5 mm",
+        "target": [
+          950,
+          576,
+          141,
+          48
+        ],
+        "label": [
+          1140,
+          600
+        ],
+        "tip": [
+          1093,
+          600
+        ]
+      }
+    ]
+  },
+  {
+    "source": "books/static/tutorials/structural_imaging/structuralconnectivity/10-nodes-alignment.png",
+    "size": [
+      1104,
+      688
+    ],
+    "right_padding": 70,
+    "title": "Check node alignment: 1 Overlay, 2 visibility, 3 opacity, 4 interpolation off",
+    "markers": [
+      {
+        "number": 1,
+        "text": "Open the Tool menu and choose the named display panel",
+        "target": [
+          965,
+          26,
+          74,
+          36
+        ],
+        "label": [
+          882,
+          43
+        ],
+        "tip": [
+          964,
+          43
+        ]
+      },
+      {
+        "number": 2,
+        "text": "Select the loaded image; use its checkbox to hide or show it",
+        "target": [
+          913,
+          116,
+          184,
+          19
+        ],
+        "label": [
+          1010,
+          165
+        ],
+        "tip": [
+          1010,
+          136
+        ]
+      },
+      {
+        "number": 3,
+        "text": "Adjust node opacity to compare labels with the underlying anatomy",
+        "target": [
+          913,
+          648,
+          184,
+          16
+        ],
+        "label": [
+          1140,
+          620
+        ],
+        "tip": [
+          1098,
+          653
+        ]
+      },
+      {
+        "number": 4,
+        "text": "Leave Interpolate unchecked for integer node labels",
+        "target": [
+          913,
+          667,
+          90,
+          18
+        ],
+        "label": [
+          1140,
+          674
+        ],
+        "tip": [
+          1006,
+          674
+        ]
+      }
+    ]
   }
 ]
